@@ -7,12 +7,15 @@ export type VizConfig =
   | { type: "array-memory"; title?: string; presets: ArrayMemoryPresetId[] }
   | { type: "traversal"; title?: string; modes: TraversalMode[]; rows: number; cols: number }
   | { type: "matrix-algo"; title?: string; algorithms: MatrixAlgorithmId[] }
-  | { type: "image-lab"; title?: string; filter: ImageFilterId };
+  | { type: "image-lab"; title?: string; filter: ImageFilterId }
+  | { type: "filter-lab"; title?: string; filter: FilterLabId };
 
 export type ArrayMemoryPresetId = "jagged" | "rectangular" | "alias" | "shared-row" | "null-row";
 export type TraversalMode = "row-major" | "column-major" | "enhanced-for";
 export type MatrixAlgorithmId = "row-sum" | "column-sum" | "main-diagonal" | "anti-diagonal" | "max" | "transpose";
 export type ImageFilterId = "brighten";
+/** Filters of the PF-2xx tickets, previewed by components/viz/FilterLab.tsx. */
+export type FilterLabId = "grayscale" | "flip" | "blur" | "edges" | "pipeline";
 
 export type LessonBlock =
   | { type: "markdown"; md: string }
