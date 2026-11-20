@@ -1,0 +1,81 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Java runner</title>
+  <!--
+    In-browser Java runtime (CheerpJ, JVM compiled to WebAssembly).
+    This page lives in a hidden iframe. The parent page talks to it with postMessage, and kills /
+    recreates the iframe when student code runs too long (e.g. an infinite loop).
+    Student code therefore never runs on our server; it runs in the student's own browser.
+  -->
+  <script src="https://cjrtnc.leaningtech.com/4.2/loader.js"></script>
+</head>
+<body>
+<script>
+  const CLASSPATH = "/app/java/tutor-runtime.jar:/app/java/ecj.jar";
+  let bridgePromise = null;
+
+  function post(msg) { parent.postMessage({ source: "java-runner", ...msg }, location.origin); }
+
+  async function getBridge() {
+    if (!bridgePromise) {
+      bridgePromise = (async () => {
+        await cheerpjInit({ version: 17, status: "none" });
+        const lib = await cheerpjRunLibrary(CLASSPATH);
+        const Bridge = await lib.tutor.Bridge;
+        // Warm up the compiler so the first real compile is faster.
+        return Bridge;
+      })();
+    }
+    return bridgePromise;
+  }
+
+  async function handle(req) {
+    const Bridge = await getBridge();
+    const dir = `/str/run${req.id}/`;
+    const out = `/files/run${req.id}/`;
+    const names = [];
+    for (const f of req.files) {
+      if (!/^[A-Za-z0-9_\/]+\.java$/.test(f.path)) throw new Error("bad path " + f.path);
+      cheerpOSAddStringFile(dir + f.path, new TextEncoder().encode(f.content));
+      names.push(f.path);
+    }
+    for (const extra of req.dataFiles || []) {
+      cheerpOSAddStringFile("/str/data/" + extra.name, new TextEncoder().encode(extra.content));
+    }
+    const t0 = performance.now();
+    const compiled = JSON.parse(await Bridge.compile(dir, out, names.join(" "), "/app/java/tutor-runtime.jar"));
+    const compileMs = Math.round(performance.now() - t0);
+    if (!compiled.ok) {
+      return { status: "compile_error", stdout: "", stderr: compiled.diagnostics, compileMs };
+    }
+    const t1 = performance.now();
+    const result = req.mode === "test"
+      ? JSON.parse(await Bridge.runTests(out, req.testClass))
+      : JSON.parse(await Bridge.run(out, req.mainClass));
+    return { ...result, compileMs, runMs: Math.round(performance.now() - t1), warnings: compiled.diagnostics };
+  }
+
+  let queue = Promise.resolve();
+  window.addEventListener("message", (ev) => {
+    if (ev.origin !== location.origin || !ev.data || ev.data.target !== "java-runner") return;
+    const req = ev.data;
+    if (req.type === "warmup") {
+      getBridge().then(() => post({ type: "ready" }), (e) => post({ type: "fatal", error: String(e) }));
+      return;
+    }
+    if (req.type !== "run") return;
+    queue = queue.then(async () => {
+      post({ type: "started", id: req.id });
+      try {
+        post({ type: "result", id: req.id, result: await handle(req) });
+      } catch (e) {
+        post({ type: "result", id: req.id, result: { status: "runtime_error", stdout: "", stderr: "Runner error: " + (e && e.message ? e.message : String(e)) } });
+      }
+    });
+  });
+  post({ type: "loaded" });
+</script>
+</body>
+</html>
