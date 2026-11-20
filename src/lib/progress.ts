@@ -176,12 +176,12 @@ export async function login(username: string, password: string): Promise<string 
       body: JSON.stringify({ username, password }),
     });
     const body = await res.json().catch(() => null);
-    if (!res.ok) return body?.detail ?? `登入失敗（${res.status}）`;
+    if (!res.ok) return body?.detail ?? `Login failed (${res.status})`;
     const prog = await fetch("/api/progress", { headers: { Authorization: `Bearer ${body.token}` } }).then((r) => r.json());
     applyServer(body.username, body.token, prog.data, prog.rev);
     return null;
   } catch {
-    return "連不到伺服器，請檢查網路後再試一次。";
+    return "Cannot reach the server. Check your connection and try again.";
   }
 }
 

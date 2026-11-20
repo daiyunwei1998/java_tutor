@@ -92,14 +92,14 @@ export function CodePanel({
 
   return (
     <div className="code-panel">
-      <div className="file-tabs" role="tablist" aria-label="檔案">
+      <div className="file-tabs" role="tablist" aria-label="Files">
         {task.files.map((f) => (
           <button key={f.path} role="tab" aria-selected={f.path === active} className="file-tab" onClick={() => setActive(f.path)}>
             {f.readOnly ? "🔒 " : ""}{f.path}
           </button>
         ))}
       </div>
-      {activeFile.readOnly && <div className="small muted" style={{ padding: "4px 10px", background: "var(--surface-2)" }}>這是測試檔（唯讀）。看看測試在檢查什麼，可以幫你理解需求。</div>}
+      {activeFile.readOnly && <div className="small muted" style={{ padding: "4px 10px", background: "var(--surface-2)" }}>This is the test file (read-only). Reading what the tests check helps you understand the requirements.</div>}
       <div className="editor-wrap">
         <CodeMirror
           ref={cm}
@@ -110,52 +110,52 @@ export function CodePanel({
           theme={theme}
           onChange={(v) => !activeFile.readOnly && onChangeFile(active, v)}
           basicSetup={{ tabSize: 4, indentOnInput: true }}
-          aria-label={`程式碼編輯器：${active}`}
+          aria-label={`Code editor: ${active}`}
         />
       </div>
       <div className="toolbar">
         <button className="btn" onClick={() => exec("run")} disabled={!!running || runner.s === "error"}>
-          {running === "run" ? "⏳ 執行中…" : "▶ 執行 main"}
+          {running === "run" ? "⏳ Running…" : "▶ Run main"}
         </button>
         <button className="btn primary" onClick={() => exec("test")} disabled={!!running || runner.s === "error"}>
-          {running === "test" ? "⏳ 測試中…" : "✓ 執行測試"}
+          {running === "test" ? "⏳ Testing…" : "✓ Run tests"}
         </button>
-        <button className="btn" onClick={debugWithAi} disabled={ai.busy} title="把程式碼和最近一次的錯誤送給 AI 導師">
-          {ai.busy ? "🤖 分析中…" : "🤖 AI 協助 Debug"}
+        <button className="btn" onClick={debugWithAi} disabled={ai.busy} title="Send your code and the latest error to the AI mentor">
+          {ai.busy ? "🤖 Thinking…" : "🤖 AI Debug Help"}
         </button>
         <div className="spacer" />
         <span className="small muted row" style={{ gap: 6 }} aria-live="polite">
           <span className={`status-dot ${runner.s}`} />
-          {runner.s === "loading" ? "Java 環境載入中（第一次約 10–30 秒）" : runner.s === "error" ? "Java 環境錯誤" : runner.s === "busy" ? "執行中" : "Java 17 · 在你的瀏覽器執行"}
+          {runner.s === "loading" ? "Loading Java (first time ~10–30 s)" : runner.s === "error" ? "Java error" : runner.s === "busy" ? "Running" : "Java 17 · runs in your browser"}
         </span>
-        <button className="btn small ghost" onClick={() => confirm("確定要把程式碼還原成一開始的版本嗎？你的修改會不見。") && onReset()}>↺ 還原</button>
+        <button className="btn small ghost" onClick={() => confirm("Reset the code to the starter version? Your changes will be lost.") && onReset()}>↺ Reset</button>
       </div>
       <div className="output" aria-live="polite">
         {runner.s === "error" && <div className="console err">{runner.err}</div>}
         {!result && !ai.text && !ai.error && (
           <p className="muted small" style={{ margin: 0 }}>
-            按 <strong>▶ 執行 main</strong> 看輸出，或按 <strong>✓ 執行測試</strong> 檢查你的實作。卡住了可以看提示或按 🤖。
+            Press <strong>▶ Run main</strong> to see output, or <strong>✓ Run tests</strong> to check your work. Stuck? Open a hint or press 🤖.
           </p>
         )}
         {result && (
           <div>
             <div className="row" style={{ justifyContent: "space-between" }}>
               <strong>
-                {result.status === "compile_error" && "❌ 編譯錯誤"}
-                {result.status === "runtime_error" && "💥 執行時錯誤 (Exception)"}
-                {result.status === "timeout" && "⏱️ 執行逾時"}
-                {result.status === "completed" && (lastMode === "test" ? (passed === total ? `✅ 測試全部通過 (${passed}/${total})` : `🧪 測試 ${passed}/${total} 通過`) : "✅ 執行完成")}
+                {result.status === "compile_error" && "❌ Compile error"}
+                {result.status === "runtime_error" && "💥 Runtime error (exception)"}
+                {result.status === "timeout" && "⏱️ Time limit exceeded"}
+                {result.status === "completed" && (lastMode === "test" ? (passed === total ? `✅ All tests passed (${passed}/${total})` : `🧪 ${passed}/${total} tests passed`) : "✅ Finished")}
               </strong>
-              {result.compileMs !== undefined && <span className="small muted">編譯 {result.compileMs} ms{result.runMs !== undefined ? ` · 執行 ${result.runMs} ms` : ""}</span>}
+              {result.compileMs !== undefined && <span className="small muted">compile {result.compileMs} ms{result.runMs !== undefined ? ` · run ${result.runMs} ms` : ""}</span>}
             </div>
             {diagnostics.length > 0 && (
               <ul className="small" style={{ paddingLeft: 18 }}>
                 {diagnostics.map((d, i) => (
                   <li key={i}>
                     <button className="btn small ghost" style={{ color: "var(--bad)" }} onClick={() => jumpTo(d.file, d.line)}>
-                      {d.file} 第 {d.line} 行
+                      {d.file} line {d.line}
                     </button>
-                    ：{d.message}
+                    : {d.message}
                   </li>
                 ))}
               </ul>
@@ -164,7 +164,7 @@ export function CodePanel({
               <div style={{ margin: "6px 0" }}>
                 {result.tests.map((t) => (
                   <div key={t.name} className="test-row">
-                    <span aria-label={t.passed ? "通過" : "失敗"}>{t.passed ? "✅" : "❌"}</span>
+                    <span aria-label={t.passed ? "passed" : "failed"}>{t.passed ? "✅" : "❌"}</span>
                     <div>
                       <div>{task.testLabels[t.name] ?? t.name}</div>
                       {!t.passed && <div className="msg">{t.message}</div>}
@@ -177,29 +177,29 @@ export function CodePanel({
             {result.stderr && (result.status !== "compile_error" || diagnostics.length === 0) && <div className="console err">{result.stderr}</div>}
             {result.status === "compile_error" && diagnostics.length > 0 && (
               <details>
-                <summary className="small muted">完整編譯器訊息</summary>
+                <summary className="small muted">Full compiler output</summary>
                 <div className="console err">{result.stderr}</div>
               </details>
             )}
           </div>
         )}
         <details style={{ marginTop: 8 }}>
-          <summary className="small muted">想跟 AI 補充說明你的問題？（選填）</summary>
-          <input type="text" value={aiQuestion} onChange={(e) => setAiQuestion(e.target.value)} maxLength={500} placeholder="例如：我不懂為什麼 column 會超出範圍" style={{ width: "100%", marginTop: 6 }} />
+          <summary className="small muted">Add a note for the AI? (optional)</summary>
+          <input type="text" value={aiQuestion} onChange={(e) => setAiQuestion(e.target.value)} maxLength={500} placeholder="e.g. I don't get why the column goes out of range" style={{ width: "100%", marginTop: 6 }} />
         </details>
         {ai.error && <div className="ai-box error" role="alert">⚠️ {ai.error}</div>}
         {ai.text && (
           <div className="ai-box">
-            <div className="small muted">🤖 Senior Dev 的建議</div>
+            <div className="small muted">🤖 Senior Dev says</div>
             <Markdown>{ai.text}</Markdown>
           </div>
         )}
         <div style={{ marginTop: 10 }}>
           {task.hints.slice(0, hintsShown).map((h, i) => (
-            <div key={i} className="callout"><strong>提示 {i + 1}：</strong><Markdown>{h}</Markdown></div>
+            <div key={i} className="callout"><strong>Hint {i + 1}:</strong><Markdown>{h}</Markdown></div>
           ))}
           {hintsShown < task.hints.length && (
-            <button className="btn small" onClick={onShowHint}>💡 看提示 {hintsShown + 1} / {task.hints.length}</button>
+            <button className="btn small" onClick={onShowHint}>💡 Hint {hintsShown + 1} / {task.hints.length}</button>
           )}
         </div>
       </div>

@@ -10,8 +10,8 @@ export function ThemeToggle() {
       type="button"
       className="theme-toggle"
       onClick={() => setTheme(next)}
-      aria-label={next === "dark" ? "切換成深色模式" : "切換成淺色模式"}
-      title={next === "dark" ? "切換成深色模式" : "切換成淺色模式"}
+      aria-label={next === "dark" ? "Switch to dark mode" : "Switch to light mode"}
+      title={next === "dark" ? "Switch to dark mode" : "Switch to light mode"}
     >
       <span aria-hidden>{theme === "dark" ? "☀️" : "🌙"}</span>
     </button>

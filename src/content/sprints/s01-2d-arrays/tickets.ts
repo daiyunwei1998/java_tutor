@@ -9,83 +9,83 @@ import type { Ticket } from "../../types";
 const pf101: Ticket = {
   id: "PF-101",
   slug: "image-buffer-memory",
-  title: "Image buffer 健康檢查：2D 陣列與記憶體",
+  title: "Image buffer health check: 2D arrays and memory",
   xp: 100,
   dependsOn: [],
-  briefing: `歡迎加入 **PixelForge Studio**！🎉 我們在做一個在瀏覽器裡跑的 Mini Photoshop。
+  briefing: `Welcome to **PixelForge Studio**! 🎉 We're building a Mini Photoshop that runs in the browser.
 
-在我們的程式裡，每一張影像都是一個 \`int[][]\`（我們叫它 *image buffer*）。上週有人把一個 row 是 \`null\` 的 buffer 丟進濾鏡，整個 app 就 crash 了 😅
+In our code, every image is an \`int[][]\` (we call it an *image buffer*). Last week someone passed a buffer with a \`null\` row into a filter and the whole app crashed 😅
 
-你的第一張 ticket：寫兩個工具方法，讓團隊可以在處理影像前先檢查 buffer 是否健康。`,
+Your first ticket: write two utility methods so the team can check that a buffer is healthy before processing it.`,
   objectives: [
-    "分辨「陣列變數」和「陣列物件」",
-    "說明 int[][] 其實是「裝著 int[] 參考的陣列」",
-    "指出外層陣列 (outer array) 和內層陣列 (inner arrays)",
-    "解釋為什麼 jagged array（每列長度不同）在 Java 是合法的",
+    "Tell an array variable apart from an array object",
+    "Explain that an int[][] is really an array of references to int[] arrays",
+    "Point out the outer array and the inner arrays",
+    "Explain why jagged arrays (rows of different lengths) are legal in Java",
   ],
   blocks: [
     {
       type: "markdown",
-      md: `## int[][] 到底是什麼？
+      md: `## What is an int[][] really?
 
-在 Java 裡，\`int[][] a\` 的意思是：**a 是一個陣列，裡面每一格裝的是「指向一個 int[] 的參考 (reference)」**。
+In Java, \`int[][] a\` means: **a is an array, and each slot holds a reference to an int[]**.
 
-- \`a\` 這個 **變數** 存的是一個參考，指向 **外層陣列物件**。
-- 外層陣列的每一格 \`a[0]\`、\`a[1]\`… 又各自指向一個 **內層陣列物件**（真正存放數字的地方）。
-- 每個內層陣列都是獨立的物件，所以它們的長度可以不同，這就是 **jagged array**。
+- The **variable** \`a\` stores a reference to the **outer array object**.
+- Each slot of the outer array, \`a[0]\`, \`a[1]\`, … points to an **inner array object** (where the numbers actually live).
+- Every inner array is its own object, so they can have different lengths. That is a **jagged array**.
 
 ~~~java
-int[][] a = new int[3][];   // 只建立外層陣列，3 格都是 null
+int[][] a = new int[3][];   // creates only the outer array; all 3 slots are null
 a[0] = new int[]{1, 2, 3};
 a[1] = new int[]{4};
 a[2] = new int[]{5, 6};
 ~~~`,
     },
-    { type: "viz-link", vizIndex: 0, label: "打開右邊的 Array vs Memory，一步一步建立上面這個陣列" },
+    { type: "viz-link", vizIndex: 0, label: "Open Array vs Memory and build this array step by step" },
     {
       type: "callout",
       tone: "warn",
-      md: "右邊顯示的記憶體位址（像 `@0x1A40`）是 **教學用的模擬值**，不是真的 JVM 位址。Java 不保證陣列物件在記憶體裡放在哪裡，也不保證它們彼此相鄰。",
+      md: "The memory addresses shown in the visualization (like `@0x1A40`) are **made up for teaching**, not real JVM addresses. Java does not promise where array objects live in memory, or that they sit next to each other.",
     },
     {
       type: "predict",
       id: "pf101-null",
-      question: "執行下面的程式，會印出什麼？",
+      question: "What does this code print?",
       code: `int[][] a = new int[3][];
 System.out.println(a[1]);`,
-      options: ["0", "null", "[]", "編譯錯誤"],
+      options: ["0", "null", "[]", "Compile error"],
       answer: 1,
-      explain: "`new int[3][]` 只建立了外層陣列。外層陣列每一格裝的是 int[] 的參考，預設值是 `null`，內層陣列還沒被建立。",
+      explain: "`new int[3][]` creates only the outer array. Each slot holds a reference to an int[], and the default is `null`: no inner arrays exist yet.",
     },
     {
       type: "predict",
       id: "pf101-alias",
-      question: "下面的程式最後印出什麼？",
+      question: "What does this code print at the end?",
       code: `int[][] a = {{1, 2}, {3, 4}};
 int[][] b = a;
 b[0][0] = 9;
 System.out.println(a[0][0]);`,
-      options: ["1", "9", "編譯錯誤", "執行時錯誤"],
+      options: ["1", "9", "Compile error", "Runtime error"],
       answer: 1,
-      explain: "`b = a` 沒有複製陣列，只是複製了參考。a 和 b 指向 **同一個** 外層陣列物件（aliasing），所以透過 b 修改，從 a 也看得到。右邊選「Aliasing」可以看到兩個箭頭指向同一個物件。",
+      explain: "`b = a` does not copy the array, only the reference. a and b point to the **same** outer array object (aliasing), so a change made through b is visible through a. Pick \"Aliasing\" in the visualization to see two arrows pointing at one object.",
     },
     {
       type: "markdown",
-      md: `## 這張 ticket 要你做的事
+      md: `## Your task
 
-在 \`ImageBuffer.java\` 實作：
+In \`ImageBuffer.java\`, implement:
 
-1. \`countPixels(int[][] img)\`：回傳所有 row 加起來共有幾個元素。**null 的 row 算 0 個**。
-2. \`isRectangular(int[][] img)\`：每一個 row 都不是 \`null\`，而且長度都跟第 0 列一樣時回傳 \`true\`。外層長度是 0 的陣列也算 \`true\`。
+1. \`countPixels(int[][] img)\`: return the total number of elements across all rows. **A null row counts as 0.**
+2. \`isRectangular(int[][] img)\`: return \`true\` when no row is \`null\` and every row has the same length as row 0. An outer array of length 0 also counts as \`true\`.
 
-做完按 **✓ 執行測試**，全部通過就可以 **Merge**。`,
+When you're done, press **✓ Run tests**. Once everything passes you can **Merge**.`,
     },
   ],
   visualizations: [
     { type: "array-memory", title: "Array vs Memory", presets: ["jagged", "rectangular", "alias", "shared-row", "null-row"] },
   ],
   task: {
-    instructions: "實作 `countPixels` 和 `isRectangular`。注意 jagged array 和 `null` row！",
+    instructions: "Implement `countPixels` and `isRectangular`. Watch out for jagged arrays and `null` rows!",
     mainClass: "ImageBuffer",
     testClass: "ImageBufferTest",
     files: [
@@ -94,17 +94,17 @@ System.out.println(a[0][0]);`,
         content: `public class ImageBuffer {
 
     /**
-     * 回傳所有 row 的元素總數。
-     * null 的 row 視為 0 個元素。
+     * Returns the total number of elements in all rows.
+     * A null row counts as 0 elements.
      */
     public static int countPixels(int[][] img) {
-        // TODO: 走訪每一個 row，把長度加起來
+        // TODO: visit every row and add up the lengths
         return 0;
     }
 
     /**
-     * 每一個 row 都不是 null，而且長度都和 img[0] 一樣時回傳 true。
-     * img.length == 0 時回傳 true。
+     * Returns true when no row is null and every row has the same length as img[0].
+     * Returns true when img.length == 0.
      */
     public static boolean isRectangular(int[][] img) {
         // TODO
@@ -132,56 +132,56 @@ public class ImageBufferTest {
 
     static void test1_rectangular() {
         int[][] img = {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}};
-        Check.equal(9, ImageBuffer.countPixels(img), "3x3 的像素數");
+        Check.equal(9, ImageBuffer.countPixels(img), "pixels in a 3x3");
     }
 
     static void test2_jagged() {
         int[][] img = {{1, 2, 3}, {4}, {5, 6}};
-        Check.equal(6, ImageBuffer.countPixels(img), "jagged array 的像素數");
+        Check.equal(6, ImageBuffer.countPixels(img), "pixels in a jagged array");
     }
 
     static void test3_nullRow() {
         int[][] img = new int[3][];
         img[0] = new int[]{1, 2};
         img[2] = new int[]{3};
-        Check.equal(3, ImageBuffer.countPixels(img), "有 null row 的像素數");
+        Check.equal(3, ImageBuffer.countPixels(img), "pixels with a null row");
     }
 
     static void test4_isRectangularTrue() {
-        Check.isTrue(ImageBuffer.isRectangular(new int[][]{{1, 2}, {3, 4}, {5, 6}}), "3x2 應該是 rectangular");
+        Check.isTrue(ImageBuffer.isRectangular(new int[][]{{1, 2}, {3, 4}, {5, 6}}), "3x2 should be rectangular");
     }
 
     static void test5_isRectangularJagged() {
-        Check.isTrue(!ImageBuffer.isRectangular(new int[][]{{1, 2, 3}, {4}, {5, 6}}), "jagged array 不是 rectangular");
+        Check.isTrue(!ImageBuffer.isRectangular(new int[][]{{1, 2, 3}, {4}, {5, 6}}), "a jagged array is not rectangular");
     }
 
     static void test6_isRectangularNullRow() {
         int[][] img = new int[2][];
         img[0] = new int[]{1};
-        Check.isTrue(!ImageBuffer.isRectangular(img), "有 null row 就不是 rectangular");
+        Check.isTrue(!ImageBuffer.isRectangular(img), "a null row means not rectangular");
     }
 
     static void test7_empty() {
-        Check.equal(0, ImageBuffer.countPixels(new int[0][]), "空陣列的像素數");
-        Check.isTrue(ImageBuffer.isRectangular(new int[0][]), "空陣列算 rectangular");
+        Check.equal(0, ImageBuffer.countPixels(new int[0][]), "pixels in an empty array");
+        Check.isTrue(ImageBuffer.isRectangular(new int[0][]), "an empty array counts as rectangular");
     }
 }
 `,
       },
     ],
     testLabels: {
-      test1_rectangular: "3×3 矩陣的像素數",
-      test2_jagged: "jagged array 的像素數",
-      test3_nullRow: "null row 算 0 個",
-      test4_isRectangularTrue: "3×2 是 rectangular",
-      test5_isRectangularJagged: "jagged 不是 rectangular",
-      test6_isRectangularNullRow: "有 null row 不是 rectangular",
-      test7_empty: "空陣列 (edge case)",
+      test1_rectangular: "Pixels in a 3×3 matrix",
+      test2_jagged: "Pixels in a jagged array",
+      test3_nullRow: "A null row counts as 0",
+      test4_isRectangularTrue: "3×2 is rectangular",
+      test5_isRectangularJagged: "Jagged is not rectangular",
+      test6_isRectangularNullRow: "A null row is not rectangular",
+      test7_empty: "Empty array (edge case)",
     },
     hints: [
-      "外層迴圈走 `img.length` 個 row；每個 row 是 `img[r]`，它的長度是 `img[r].length`。",
-      "在讀 `img[r].length` 之前，先檢查 `img[r] == null`，不然會 NullPointerException。",
-      "`isRectangular`：先處理 `img.length == 0`，再把 `img[0]` 的長度記下來，跟其他 row 比。別忘了 `img[0]` 自己也可能是 null。",
+      "The outer loop visits `img.length` rows; each row is `img[r]`, and its length is `img[r].length`.",
+      "Before reading `img[r].length`, check `img[r] == null`, or you will get a NullPointerException.",
+      "`isRectangular`: handle `img.length == 0` first, then remember the length of `img[0]` and compare the other rows to it. Don't forget `img[0]` itself could be null.",
     ],
   },
 };
@@ -189,23 +189,23 @@ public class ImageBufferTest {
 const pf102: Ticket = {
   id: "PF-102",
   slug: "row-column-major",
-  title: "直方圖統計：Row-major 與 Column-major 走訪",
+  title: "Brightness stats: row-major and column-major traversal",
   xp: 120,
   dependsOn: ["PF-101"],
-  briefing: `設計師想在 Mini Photoshop 加一個「亮度分布」面板：要知道 **每一列 (row)** 和 **每一欄 (column)** 的亮度總和。
+  briefing: `The designers want a "brightness profile" panel in Mini Photoshop: the total brightness of **every row** and **every column**.
 
-這張 ticket 你會學到兩種走訪 2D 陣列的順序，以及為什麼順序有時候會影響效能。`,
+In this ticket you'll learn the two orders for visiting a 2D array, and when each one is the natural choice.`,
   objectives: [
-    "區分「邏輯座標 (r, c)」、「走訪順序」和「實體儲存方式」",
-    "寫出 row-major 與 column-major 的巢狀迴圈",
-    "理解 locality（區域性）的概念，以及它的限制",
+    "Separate the logical position (r, c) from the order you visit cells in",
+    "Write row-major and column-major nested loops",
+    "Choose the traversal order that matches what you are computing",
   ],
   blocks: [
     {
       type: "markdown",
-      md: `## 兩種走訪順序
+      md: `## Two traversal orders
 
-**Row-major**：一列一列走，外層迴圈是 row。
+**Row-major**: go row by row; the outer loop is the row.
 
 ~~~java
 for (int r = 0; r < m.length; r++)
@@ -213,7 +213,7 @@ for (int r = 0; r < m.length; r++)
         visit(m[r][c]);
 ~~~
 
-**Column-major**：一欄一欄走，外層迴圈是 column（通常假設矩陣是 rectangular）。
+**Column-major**: go column by column; the outer loop is the column (usually assuming the matrix is rectangular).
 
 ~~~java
 for (int c = 0; c < m[0].length; c++)
@@ -221,45 +221,34 @@ for (int c = 0; c < m[0].length; c++)
         visit(m[r][c]);
 ~~~`,
     },
-    { type: "viz-link", vizIndex: 0, label: "在右邊用 Step ▶ 比較兩種順序，觀察 r 和 c 怎麼變" },
+    { type: "viz-link", vizIndex: 0, label: "Use Step ▶ to compare the two orders and watch how r and c change" },
     {
       type: "predict",
       id: "pf102-order",
-      question: "m = {{1, 2, 3}, {4, 5, 6}}，用 column-major 走訪並依序印出，結果是？",
+      question: "m = {{1, 2, 3}, {4, 5, 6}}. Visiting it column-major and printing each value gives?",
       options: ["1 2 3 4 5 6", "1 4 2 5 3 6", "6 5 4 3 2 1", "1 3 5 2 4 6"],
       answer: 1,
-      explain: "外層是 column：先走第 0 欄 (1, 4)，再第 1 欄 (2, 5)，最後第 2 欄 (3, 6)。",
-    },
-    {
-      type: "markdown",
-      md: `## 效能和 locality
-
-右邊的「連續記憶體模型」是一個 **假想** 的情況：如果整個矩陣放在一塊連續記憶體裡，
-
-- row-major 存放時位置是 \`offset = r * cols + c\`
-- column-major 存放時位置是 \`offset = c * rows + r\`
-
-CPU 一次會把相鄰的一小段資料（cache line）讀進來，所以 **連續地讀** 通常比 **跳著讀** 快。`,
+      explain: "The outer loop is the column: first column 0 (1, 4), then column 1 (2, 5), then column 2 (3, 6).",
     },
     {
       type: "callout",
-      tone: "warn",
-      md: "Java 的 `int[][]` **不是** 一整塊連續的矩陣，而是「陣列的陣列」：每一列是獨立的物件。在同一列裡面依序讀通常有比較好的 locality，但實際快慢取決於 JVM 最佳化、硬體和怎麼做 benchmark，**不能說 row-major 一定比較快**。",
+      tone: "info",
+      md: "Curious whether the order changes **speed**? That's a deeper topic (memory layout and CPU caches). It's in this sprint's **Knowledge Space**, not needed for this ticket.",
     },
     {
       type: "markdown",
-      md: `## 這張 ticket 要你做的事
+      md: `## Your task
 
-在 \`BrightnessStats.java\` 實作：
+In \`BrightnessStats.java\`, implement:
 
-1. \`rowSums(int[][] m)\`：回傳長度為 \`m.length\` 的陣列，第 r 格是第 r 列的總和。
-2. \`columnSums(int[][] m)\`：回傳長度為欄數的陣列，第 c 格是第 c 欄的總和（假設 m 是 rectangular）。
-3. 如果 \`m.length == 0\`，兩個方法都回傳 \`new int[0]\`。`,
+1. \`rowSums(int[][] m)\`: return an array of length \`m.length\` where slot r is the sum of row r.
+2. \`columnSums(int[][] m)\`: return an array with one slot per column, where slot c is the sum of column c (assume m is rectangular).
+3. If \`m.length == 0\`, both methods return \`new int[0]\`.`,
     },
   ],
   visualizations: [{ type: "traversal", title: "Traversal Lab", modes: ["row-major", "column-major"], rows: 3, cols: 4 }],
   task: {
-    instructions: "實作 `rowSums` 和 `columnSums`。哪一個的外層迴圈應該是 column？",
+    instructions: "Implement `rowSums` and `columnSums`. Which one should have the column as its outer loop?",
     mainClass: "BrightnessStats",
     testClass: "BrightnessStatsTest",
     files: [
@@ -269,16 +258,16 @@ CPU 一次會把相鄰的一小段資料（cache line）讀進來，所以 **連
 
 public class BrightnessStats {
 
-    /** 第 r 格 = 第 r 列 (row) 的總和 */
+    /** slot r = sum of row r */
     public static int[] rowSums(int[][] m) {
         int[] sums = new int[m.length];
         // TODO
         return sums;
     }
 
-    /** 第 c 格 = 第 c 欄 (column) 的總和。假設 m 是 rectangular。 */
+    /** slot c = sum of column c. Assumes m is rectangular. */
     public static int[] columnSums(int[][] m) {
-        // TODO: 想一想 m.length == 0 的時候，要怎麼知道欄數？
+        // TODO: when m.length == 0, how do you know the number of columns?
         return new int[0];
     }
 
@@ -324,24 +313,24 @@ public class BrightnessStatsTest {
     }
 
     static void test5_empty() {
-        Check.equal(new int[0], BrightnessStats.rowSums(new int[0][0]), "rowSums 空陣列");
-        Check.equal(new int[0], BrightnessStats.columnSums(new int[0][0]), "columnSums 空陣列");
+        Check.equal(new int[0], BrightnessStats.rowSums(new int[0][0]), "rowSums of an empty array");
+        Check.equal(new int[0], BrightnessStats.columnSums(new int[0][0]), "columnSums of an empty array");
     }
 }
 `,
       },
     ],
     testLabels: {
-      test1_rowSums: "rowSums（2×3）",
-      test2_columnSums: "columnSums（2×3）",
-      test3_tallMatrix: "非正方形 3×2",
-      test4_singleCell: "1×1 矩陣",
-      test5_empty: "空陣列 (edge case)",
+      test1_rowSums: "rowSums (2×3)",
+      test2_columnSums: "columnSums (2×3)",
+      test3_tallMatrix: "Non-square 3×2",
+      test4_singleCell: "1×1 matrix",
+      test5_empty: "Empty array (edge case)",
     },
     hints: [
-      "`rowSums`：外層迴圈走 r，內層走 c，把 `m[r][c]` 加到 `sums[r]`。",
-      "`columnSums` 的結果長度是欄數 `m[0].length`，但只有在 `m.length > 0` 時才能讀 `m[0]`。",
-      "`columnSums` 用 column-major：外層 `for (int c ...)`，內層 `for (int r ...)`，加到 `sums[c]`。",
+      "`rowSums`: the outer loop goes over r, the inner over c; add `m[r][c]` to `sums[r]`.",
+      "The result of `columnSums` has `m[0].length` slots, but you can only read `m[0]` when `m.length > 0`.",
+      "`columnSums` is column-major: outer `for (int c ...)`, inner `for (int r ...)`, adding into `sums[c]`.",
     ],
   },
 };
@@ -349,16 +338,16 @@ public class BrightnessStatsTest {
 const pf103: Ticket = {
   id: "PF-103",
   slug: "enhanced-for",
-  title: "曝光調整：Enhanced for 的陷阱",
+  title: "Exposure fix: the enhanced for trap",
   xp: 120,
   dependsOn: ["PF-102"],
-  briefing: `QA 回報一個 bug：「曝光 +10」按鈕按下去，影像完全沒變 🐛
+  briefing: `QA reported a bug: pressing "Exposure +10" doesn't change the image at all 🐛
 
-前一位工程師用了 enhanced for loop 來改像素值。這張 ticket 你要搞懂為什麼那樣寫沒效果，然後寫出正確的版本。`,
+The previous engineer used an enhanced for loop to change the pixel values. In this ticket you'll figure out why that has no effect, then write a version that works.`,
   objectives: [
-    "讀懂 enhanced for (for-each) 的語法",
-    "把巢狀 enhanced for 改寫成 index 版本，反之亦然",
-    "解釋為什麼修改 for-each 的區域變數不會改到陣列，但修改 row[c] 會",
+    "Read enhanced for (for-each) syntax",
+    "Rewrite a nested enhanced for as an index loop, and back",
+    "Explain why changing the for-each variable doesn't change the array, but changing row[c] does",
   ],
   blocks: [
     {
@@ -372,7 +361,7 @@ for (int value : values) {
 }
 ~~~
 
-2D 版本：外層每次拿到的是 **一個 row 的參考**（型別是 \`int[]\`），內層每次拿到的是 **一個 int 的複本**。
+In 2D, the outer loop gets **a reference to one row** each time (type \`int[]\`), and the inner loop gets **a copy of one int** each time.
 
 ~~~java
 for (int[] row : matrix) {
@@ -382,11 +371,11 @@ for (int[] row : matrix) {
 }
 ~~~`,
     },
-    { type: "viz-link", vizIndex: 0, label: "在右邊選「enhanced for」，看 row 和 value 每一步指向哪裡" },
+    { type: "viz-link", vizIndex: 0, label: "Pick \"Enhanced for\" and watch what row and value refer to at each step" },
     {
       type: "predict",
       id: "pf103-bug",
-      question: "這就是 QA 回報的 bug。執行後印出什麼？",
+      question: "This is the bug QA reported. What does it print?",
       code: `int[][] img = {{10, 20}, {30, 40}};
 for (int[] row : img) {
     for (int v : row) {
@@ -394,31 +383,31 @@ for (int[] row : img) {
     }
 }
 System.out.println(img[0][0]);`,
-      options: ["10", "20", "編譯錯誤", "ArrayIndexOutOfBoundsException"],
+      options: ["10", "20", "Compile error", "ArrayIndexOutOfBoundsException"],
       answer: 0,
-      explain: "`v` 是陣列元素的 **複本**（primitive int）。改 `v` 只改到區域變數，陣列本身沒變。但 `row` 是指向真正內層陣列的參考，所以寫 `row[c] += 10` 就會改到陣列。",
+      explain: "`v` is a **copy** of the element (a primitive int). Changing `v` changes only the local variable; the array is untouched. But `row` is a reference to the real inner array, so `row[c] += 10` does change the array.",
     },
     {
       type: "callout",
       tone: "info",
-      md: "規則：for-each 適合 **讀取**。需要 **修改** 元素，或需要知道 index 時，用一般的 index for loop（或至少內層用 index：`for (int c = 0; c < row.length; c++) row[c] += 10;`）。",
+      md: "Rule of thumb: for-each is for **reading**. When you need to **change** elements or need the index, use a regular index loop (at least for the inner loop: `for (int c = 0; c < row.length; c++) row[c] += 10;`).",
     },
     {
       type: "markdown",
-      md: `## 這張 ticket 要你做的事
+      md: `## Your task
 
-在 \`Exposure.java\` 實作：
+In \`Exposure.java\`, implement:
 
-1. \`total(int[][] img)\`：用 **enhanced for** 算出所有像素總和。
-2. \`addToAll(int[][] img, int delta)\`：把每個像素加上 \`delta\`，**直接修改傳進來的陣列**（不用回傳）。
-3. \`countAbove(int[][] img, int threshold)\`：數有幾個像素 **大於** threshold。
+1. \`total(int[][] img)\`: use **enhanced for** to add up all pixels.
+2. \`addToAll(int[][] img, int delta)\`: add \`delta\` to every pixel, **changing the array that was passed in** (no return value).
+3. \`countAbove(int[][] img, int threshold)\`: count how many pixels are **greater than** threshold.
 
-這些方法要能處理 jagged array。`,
+All of them must handle jagged arrays.`,
     },
   ],
-  visualizations: [{ type: "traversal", title: "Enhanced for 視覺化", modes: ["enhanced-for", "row-major"], rows: 3, cols: 3 }],
+  visualizations: [{ type: "traversal", title: "Enhanced for", modes: ["enhanced-for", "row-major"], rows: 3, cols: 3 }],
   task: {
-    instructions: "實作 `total`、`addToAll`、`countAbove`。`addToAll` 要真的改到陣列！",
+    instructions: "Implement `total`, `addToAll` and `countAbove`. `addToAll` must really change the array!",
     mainClass: "Exposure",
     testClass: "ExposureTest",
     files: [
@@ -428,16 +417,16 @@ System.out.println(img[0][0]);`,
 
 public class Exposure {
 
-    /** 用 enhanced for 回傳所有像素總和 */
+    /** Returns the sum of all pixels, using enhanced for */
     public static int total(int[][] img) {
         int sum = 0;
         // TODO
         return sum;
     }
 
-    /** 每個像素加上 delta（直接修改 img） */
+    /** Adds delta to every pixel (changes img itself) */
     public static void addToAll(int[][] img, int delta) {
-        // 這是前一位工程師寫的，有 bug：
+        // Written by the previous engineer. It has a bug:
         for (int[] row : img) {
             for (int v : row) {
                 v += delta;
@@ -445,7 +434,7 @@ public class Exposure {
         }
     }
 
-    /** 有幾個像素 > threshold */
+    /** How many pixels are > threshold */
     public static int countAbove(int[][] img, int threshold) {
         // TODO
         return 0;
@@ -479,7 +468,7 @@ public class ExposureTest {
     static void test3_addToAllModifiesArray() {
         int[][] img = {{10, 20}, {30, 40}};
         Exposure.addToAll(img, 10);
-        Check.equal(new int[][]{{20, 30}, {40, 50}}, img, "addToAll 後的陣列");
+        Check.equal(new int[][]{{20, 30}, {40, 50}}, img, "array after addToAll");
     }
 
     static void test4_addToAllNegativeJagged() {
@@ -490,23 +479,23 @@ public class ExposureTest {
 
     static void test5_countAbove() {
         int[][] img = {{10, 50}, {45, 46}, {100}};
-        Check.equal(3, Exposure.countAbove(img, 45), "countAbove 45（等於 45 不算）");
+        Check.equal(3, Exposure.countAbove(img, 45), "countAbove 45 (exactly 45 does not count)");
     }
 }
 `,
       },
     ],
     testLabels: {
-      test1_total: "total（2×3）",
-      test2_totalJagged: "total（jagged）",
-      test3_addToAllModifiesArray: "addToAll 真的改到陣列",
-      test4_addToAllNegativeJagged: "addToAll 負數 + jagged",
-      test5_countAbove: "countAbove（嚴格大於）",
+      test1_total: "total (2×3)",
+      test2_totalJagged: "total (jagged)",
+      test3_addToAllModifiesArray: "addToAll really changes the array",
+      test4_addToAllNegativeJagged: "addToAll with a negative delta + jagged",
+      test5_countAbove: "countAbove (strictly greater)",
     },
     hints: [
-      "`total` 可以直接用兩層 for-each：`for (int[] row : img) for (int v : row) sum += v;`",
-      "`addToAll` 的 bug：`v` 只是複本。外層用 for-each 拿到 `row` 沒問題，但內層要用 index：`row[c] += delta`。",
-      "`countAbove` 要用 `>`，不是 `>=`。",
+      "`total` can use two for-each loops: `for (int[] row : img) for (int v : row) sum += v;`",
+      "The `addToAll` bug: `v` is just a copy. Getting `row` with a for-each is fine, but the inner loop needs an index: `row[c] += delta`.",
+      "`countAbove` uses `>`, not `>=`.",
     ],
   },
 };
@@ -514,24 +503,24 @@ public class ExposureTest {
 const pf104: Ticket = {
   id: "PF-104",
   slug: "matrix-algorithms",
-  title: "旋轉功能準備：對角線與轉置 (Transpose)",
+  title: "Getting ready for rotate: diagonals and transpose",
   xp: 150,
   dependsOn: ["PF-103"],
-  briefing: `產品經理想在下個 sprint 加「旋轉 90°」。旋轉的第一步是 **轉置 (transpose)**：把 row 變成 column。
+  briefing: `The product manager wants "Rotate 90°" soon. The first step of a rotation is the **transpose**: rows become columns.
 
-另外，影像分析團隊需要算對角線的亮度。這張 ticket 你會實作這些矩陣演算法，並且比較它們的時間複雜度。`,
+The image-analysis team also needs the brightness along the diagonals. In this ticket you'll implement these matrix algorithms and compare their time complexity.`,
   objectives: [
-    "實作對角線總和與轉置",
-    "說明 O(1)、O(N)、O(R·C) 的差別",
-    "說明轉置需要 O(R·C) 的額外空間",
-    "處理非正方形矩陣",
+    "Implement diagonal sums and the transpose",
+    "Explain the difference between O(1), O(N) and O(R·C)",
+    "Explain why a transpose needs O(R·C) extra space",
+    "Handle non-square matrices",
   ],
   blocks: [
     {
       type: "markdown",
-      md: `## 對角線只需要一層迴圈
+      md: `## A diagonal needs only one loop
 
-N×N 矩陣的 **主對角線** 是 \`m[i][i]\`，**副對角線** 是 \`m[i][N - 1 - i]\`。
+In an N×N matrix the **main diagonal** is \`m[i][i]\` and the **anti-diagonal** is \`m[i][N - 1 - i]\`.
 
 ~~~java
 int sum = 0;
@@ -540,41 +529,41 @@ for (int i = 0; i < m.length; i++) {
 }
 ~~~
 
-只走了 N 格，所以是 **O(N)**；如果掃描每一格再判斷 \`r == c\`，就變成 **O(N²)**，做了很多白工。`,
+It visits only N cells, so it is **O(N)**. Scanning every cell and checking \`r == c\` would be **O(N²)**, a lot of wasted work.`,
     },
-    { type: "viz-link", vizIndex: 0, label: "在右邊比較「主對角線」和「整個矩陣總和」的存取次數" },
+    { type: "viz-link", vizIndex: 0, label: "Compare the number of reads for \"Main diagonal\" and \"Max\"" },
     {
       type: "predict",
       id: "pf104-complexity",
-      question: "對一個 R×C 的矩陣做轉置 (transpose)，時間和額外空間複雜度是？",
-      options: ["時間 O(R)、空間 O(1)", "時間 O(R·C)、空間 O(R·C)", "時間 O(1)、空間 O(R·C)", "時間 O(R·C)、空間 O(1)"],
+      question: "What are the time and extra-space complexity of transposing an R×C matrix?",
+      options: ["Time O(R), space O(1)", "Time O(R·C), space O(R·C)", "Time O(1), space O(R·C)", "Time O(R·C), space O(1)"],
       answer: 1,
-      explain: "每個元素都要被複製一次 → O(R·C) 時間；結果是一個新的 C×R 陣列 → O(R·C) 額外空間。（正方形矩陣可以原地轉置，但那是進階題。）",
+      explain: "Every element is copied once → O(R·C) time; the result is a new C×R array → O(R·C) extra space. (A square matrix can be transposed in place, but that is an advanced exercise.)",
     },
     {
       type: "markdown",
       md: `## Transpose
 
-轉置後 \`t[c][r] = m[r][c]\`。如果 m 是 R×C，t 就是 **C×R**：
+After transposing, \`t[c][r] = m[r][c]\`. If m is R×C, t is **C×R**:
 
 ~~~java
 int[][] t = new int[m[0].length][m.length];
 ~~~
 
-## 這張 ticket 要你做的事
+## Your task
 
-在 \`MatrixTools.java\` 實作：
+In \`MatrixTools.java\`, implement:
 
-1. \`mainDiagonalSum(int[][] m)\`：主對角線總和（m 是 N×N）。
-2. \`antiDiagonalSum(int[][] m)\`：副對角線總和（m 是 N×N）。
-3. \`transpose(int[][] m)\`：回傳 **新的** C×R 陣列，不可以修改 m。`,
+1. \`mainDiagonalSum(int[][] m)\`: the sum of the main diagonal (m is N×N).
+2. \`antiDiagonalSum(int[][] m)\`: the sum of the anti-diagonal (m is N×N).
+3. \`transpose(int[][] m)\`: return a **new** C×R array; do not change m.`,
     },
   ],
   visualizations: [
     { type: "matrix-algo", title: "Matrix Algorithm Lab", algorithms: ["main-diagonal", "anti-diagonal", "row-sum", "column-sum", "max", "transpose"] },
   ],
   task: {
-    instructions: "實作 `mainDiagonalSum`、`antiDiagonalSum`、`transpose`。轉置要支援非正方形矩陣。",
+    instructions: "Implement `mainDiagonalSum`, `antiDiagonalSum` and `transpose`. The transpose must work for non-square matrices.",
     mainClass: "MatrixTools",
     testClass: "MatrixToolsTest",
     files: [
@@ -584,19 +573,19 @@ int[][] t = new int[m[0].length][m.length];
 
 public class MatrixTools {
 
-    /** m 是 N x N：回傳 m[0][0] + m[1][1] + ... */
+    /** m is N x N: returns m[0][0] + m[1][1] + ... */
     public static int mainDiagonalSum(int[][] m) {
-        // TODO: 只需要一層迴圈
+        // TODO: one loop is enough
         return 0;
     }
 
-    /** m 是 N x N：回傳 m[0][N-1] + m[1][N-2] + ... */
+    /** m is N x N: returns m[0][N-1] + m[1][N-2] + ... */
     public static int antiDiagonalSum(int[][] m) {
         // TODO
         return 0;
     }
 
-    /** 回傳 m 的轉置（新的陣列）。m 是 R x C，結果是 C x R。 */
+    /** Returns the transpose of m (a new array). m is R x C, the result is C x R. */
     public static int[][] transpose(int[][] m) {
         // TODO
         return m;
@@ -626,50 +615,50 @@ public class MatrixToolsTest {
     static final int[][] M3 = {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}};
 
     static void test1_mainDiagonal() {
-        Check.equal(15, MatrixTools.mainDiagonalSum(Check.copy(M3)), "3x3 主對角線");
-        Check.equal(34, MatrixTools.mainDiagonalSum(new int[][]{{1, 2, 3, 4}, {5, 6, 7, 8}, {9, 10, 11, 12}, {13, 14, 15, 16}}), "4x4 主對角線");
+        Check.equal(15, MatrixTools.mainDiagonalSum(Check.copy(M3)), "3x3 main diagonal");
+        Check.equal(34, MatrixTools.mainDiagonalSum(new int[][]{{1, 2, 3, 4}, {5, 6, 7, 8}, {9, 10, 11, 12}, {13, 14, 15, 16}}), "4x4 main diagonal");
     }
 
     static void test2_antiDiagonal() {
-        Check.equal(15, MatrixTools.antiDiagonalSum(Check.copy(M3)), "3x3 副對角線");
-        Check.equal(5, MatrixTools.antiDiagonalSum(new int[][]{{1, 2}, {3, 4}}), "2x2 副對角線");
+        Check.equal(15, MatrixTools.antiDiagonalSum(Check.copy(M3)), "3x3 anti-diagonal");
+        Check.equal(5, MatrixTools.antiDiagonalSum(new int[][]{{1, 2}, {3, 4}}), "2x2 anti-diagonal");
     }
 
     static void test3_singleCell() {
-        Check.equal(7, MatrixTools.mainDiagonalSum(new int[][]{{7}}), "1x1 主對角線");
-        Check.equal(7, MatrixTools.antiDiagonalSum(new int[][]{{7}}), "1x1 副對角線");
+        Check.equal(7, MatrixTools.mainDiagonalSum(new int[][]{{7}}), "1x1 main diagonal");
+        Check.equal(7, MatrixTools.antiDiagonalSum(new int[][]{{7}}), "1x1 anti-diagonal");
     }
 
     static void test4_transposeSquare() {
-        Check.equal(new int[][]{{1, 4, 7}, {2, 5, 8}, {3, 6, 9}}, MatrixTools.transpose(Check.copy(M3)), "3x3 轉置");
+        Check.equal(new int[][]{{1, 4, 7}, {2, 5, 8}, {3, 6, 9}}, MatrixTools.transpose(Check.copy(M3)), "3x3 transpose");
     }
 
     static void test5_transposeWide() {
-        Check.equal(new int[][]{{1, 4}, {2, 5}, {3, 6}}, MatrixTools.transpose(new int[][]{{1, 2, 3}, {4, 5, 6}}), "2x3 轉置成 3x2");
+        Check.equal(new int[][]{{1, 4}, {2, 5}, {3, 6}}, MatrixTools.transpose(new int[][]{{1, 2, 3}, {4, 5, 6}}), "2x3 transposes to 3x2");
     }
 
     static void test6_doesNotModifyInput() {
         int[][] m = {{1, 2}, {3, 4}};
         int[][] t = MatrixTools.transpose(m);
-        Check.notSame(m, t, "transpose 應該回傳新的陣列，而不是原本的 m");
-        Check.equal(new int[][]{{1, 2}, {3, 4}}, m, "原本的 m 不應該被修改");
+        Check.notSame(m, t, "transpose should return a new array, not m itself");
+        Check.equal(new int[][]{{1, 2}, {3, 4}}, m, "the original m must not change");
     }
 }
 `,
       },
     ],
     testLabels: {
-      test1_mainDiagonal: "主對角線（3×3、4×4）",
-      test2_antiDiagonal: "副對角線（3×3、2×2）",
-      test3_singleCell: "1×1 矩陣",
-      test4_transposeSquare: "轉置 3×3",
-      test5_transposeWide: "轉置非正方形 2×3 → 3×2",
-      test6_doesNotModifyInput: "不修改輸入、回傳新陣列",
+      test1_mainDiagonal: "Main diagonal (3×3, 4×4)",
+      test2_antiDiagonal: "Anti-diagonal (3×3, 2×2)",
+      test3_singleCell: "1×1 matrix",
+      test4_transposeSquare: "Transpose 3×3",
+      test5_transposeWide: "Transpose non-square 2×3 → 3×2",
+      test6_doesNotModifyInput: "Returns a new array, input unchanged",
     },
     hints: [
-      "主對角線：`for (int i = 0; i < m.length; i++) sum += m[i][i];`",
-      "副對角線的 column 是 `m.length - 1 - i`。",
-      "轉置：先 `new int[m[0].length][m.length]`，再用兩層迴圈 `t[c][r] = m[r][c]`。",
+      "Main diagonal: `for (int i = 0; i < m.length; i++) sum += m[i][i];`",
+      "On the anti-diagonal, the column is `m.length - 1 - i`.",
+      "Transpose: first `new int[m[0].length][m.length]`, then two loops with `t[c][r] = m[r][c]`.",
     ],
   },
 };
@@ -677,38 +666,38 @@ public class MatrixToolsTest {
 const pf105: Ticket = {
   id: "PF-105",
   slug: "brightness-filter",
-  title: "第一個濾鏡上線：亮度調整 (Brightness)",
+  title: "Ship the first filter: brightness",
   xp: 200,
   dependsOn: ["PF-104"],
-  briefing: `恭喜你通過 onboarding！🚀 這是你第一張 **會出現在產品上** 的 ticket。
+  briefing: `You made it through onboarding! 🚀 This is your first ticket that **ships in the product**.
 
-Mini Photoshop 的亮度滑桿會呼叫你寫的 \`Filters.brighten\`。你的 Java 程式算出來的結果，會直接顯示在右邊的編輯器裡。`,
+Mini Photoshop's brightness slider calls the \`Filters.brighten\` you write. Whatever your Java code computes is shown directly in the image editor.`,
   objectives: [
-    "理解灰階影像就是 int[][]，每個值是 0–255 的亮度",
-    "用像素檢查器 (pixel inspector) 對照座標和陣列元素",
-    "實作逐像素運算 (pixel-wise operation) 並 clamp 到 0–255",
-    "回傳新陣列，不修改原始影像",
+    "See a grayscale image as an int[][] where each value is a brightness from 0 to 255",
+    "Use the pixel inspector to match coordinates with array elements",
+    "Implement a pixel-wise operation and clamp the result to 0–255",
+    "Return a new array without changing the original image",
   ],
   blocks: [
     {
       type: "markdown",
-      md: `## 影像 = 2D 陣列
+      md: `## Image = 2D array
 
-灰階影像可以用 \`int[][] image\` 表示：
+A grayscale image can be stored as \`int[][] image\`:
 
-- \`image.length\` 是 **高度**（幾列），\`image[0].length\` 是 **寬度**（幾欄）。
-- \`image[r][c]\` 是第 r 列、第 c 欄的像素，**0 = 黑、255 = 白**。
+- \`image.length\` is the **height** (number of rows), \`image[0].length\` is the **width** (number of columns).
+- \`image[r][c]\` is the pixel in row r, column c: **0 = black, 255 = white**.
 
-在右邊的影像上移動滑鼠，可以看到每個像素的 \`(row, col)\` 和亮度。點一下還可以改它的值。`,
+Move the mouse over the image to see each pixel's \`(row, col)\` and brightness. Click to change its value.`,
     },
-    { type: "viz-link", vizIndex: 0, label: "打開右邊的 Mini Photoshop，看看像素和陣列的對應" },
+    { type: "viz-link", vizIndex: 0, label: "Open Mini Photoshop to see how pixels map to the array" },
     {
       type: "predict",
       id: "pf105-clamp",
-      question: "一個像素是 250，亮度 +20。如果不做任何處理直接存回去，會發生什麼問題？",
-      options: ["沒問題，就是 270", "超出 0–255 的合法範圍，顯示會出錯", "Java 會自動變成 255", "編譯錯誤"],
+      question: "A pixel is 250 and brightness goes +20. What goes wrong if you store the result as is?",
+      options: ["Nothing, it is just 270", "It is outside the valid 0–255 range, so it displays wrong", "Java turns it into 255 automatically", "Compile error"],
       answer: 1,
-      explain: "`int` 可以存 270，Java 不會幫你限制範圍。但像素只能是 0–255，所以我們要自己 **clamp**：小於 0 變 0，大於 255 變 255。",
+      explain: "An `int` can hold 270, and Java won't limit it for you. But a pixel must be 0–255, so we **clamp** it ourselves: below 0 becomes 0, above 255 becomes 255.",
     },
     {
       type: "markdown",
@@ -722,27 +711,27 @@ static int clamp(int v) {
 }
 ~~~
 
-（也可以寫成 \`Math.max(0, Math.min(255, v))\`。）
+(You can also write \`Math.max(0, Math.min(255, v))\`.)
 
-## 這張 ticket 要你做的事
+## Your task
 
-在 \`Filters.java\` 實作 \`brighten(int[][] img, int delta)\`：
+In \`Filters.java\`, implement \`brighten(int[][] img, int delta)\`:
 
-1. 建立一個 **新的** 同樣大小的陣列。
-2. 每個像素 = \`clamp(img[r][c] + delta)\`。
-3. 不可以修改 \`img\`。
+1. Create a **new** array of the same size.
+2. Each pixel = \`clamp(img[r][c] + delta)\`.
+3. Do not change \`img\`.
 
-測試通過後，按右邊的 **用我的 Java 套用**，你的程式就會處理真的影像！`,
+Once the tests pass, press **Apply brighten with my Java** and your code processes a real image!`,
     },
     {
       type: "callout",
       tone: "info",
-      md: "右邊影像下方會標示結果的來源：**「由你的 Java 程式計算」** 才代表是你的 `brighten` 算出來的。Mini Photoshop 不會用 JavaScript 偷偷幫你算。",
+      md: "The label under the image tells you where the result came from: only **\"Computed by your Java code\"** means your `brighten` produced it. Mini Photoshop never secretly computes it in JavaScript.",
     },
   ],
   visualizations: [{ type: "image-lab", title: "Mini Photoshop", filter: "brighten" }],
   task: {
-    instructions: "實作 `clamp` 和 `brighten`，然後在右邊用你的 Java 程式處理影像。",
+    instructions: "Implement `clamp` and `brighten`, then process an image with your Java code.",
     mainClass: "Filters",
     testClass: "FiltersTest",
     files: [
@@ -750,15 +739,15 @@ static int clamp(int v) {
         path: "Filters.java",
         content: `public class Filters {
 
-    /** 把 v 限制在 0..255 */
+    /** Limits v to 0..255 */
     public static int clamp(int v) {
         // TODO
         return v;
     }
 
     /**
-     * 回傳一張新的影像：每個像素 = clamp(原本的值 + delta)。
-     * 不可以修改 img。
+     * Returns a new image: each pixel = clamp(original value + delta).
+     * Must not change img.
      */
     public static int[][] brighten(int[][] img, int delta) {
         // TODO
@@ -798,36 +787,36 @@ public class FiltersTest {
 
     static void test3_clampHigh() {
         int[][] out = Filters.brighten(new int[][]{{250, 255, 240}}, 20);
-        Check.equal(new int[][]{{255, 255, 255}}, out, "超過 255 要 clamp");
+        Check.equal(new int[][]{{255, 255, 255}}, out, "above 255 must clamp");
     }
 
     static void test4_clampLow() {
         int[][] out = Filters.brighten(new int[][]{{10}, {0}, {200}}, -50);
-        Check.equal(new int[][]{{0}, {0}, {150}}, out, "低於 0 要 clamp（負的 delta）");
+        Check.equal(new int[][]{{0}, {0}, {150}}, out, "below 0 must clamp (negative delta)");
     }
 
     static void test5_doesNotModifyInput() {
         int[][] img = {{1, 2}, {3, 4}};
         int[][] out = Filters.brighten(img, 10);
-        Check.notSame(img, out, "brighten 應該回傳新的陣列");
-        Check.notSame(img[0], out[0], "每一列也要是新的陣列（不要共用 row）");
-        Check.equal(new int[][]{{1, 2}, {3, 4}}, img, "原始影像不應該被修改");
+        Check.notSame(img, out, "brighten should return a new array");
+        Check.notSame(img[0], out[0], "each row must be a new array too (no shared rows)");
+        Check.equal(new int[][]{{1, 2}, {3, 4}}, img, "the original image must not change");
     }
 }
 `,
       },
     ],
     testLabels: {
-      test1_clamp: "clamp 邊界值",
-      test2_brightenBasic: "brighten 基本情況",
-      test3_clampHigh: "超過 255 要 clamp",
-      test4_clampLow: "低於 0 要 clamp",
-      test5_doesNotModifyInput: "不修改原始影像",
+      test1_clamp: "clamp at the edges",
+      test2_brightenBasic: "brighten, basic case",
+      test3_clampHigh: "above 255 must clamp",
+      test4_clampLow: "Clamps below 0",
+      test5_doesNotModifyInput: "Original image unchanged",
     },
     hints: [
-      "先寫好 `clamp`，`brighten` 裡每個像素都呼叫它。",
-      "新陣列：`int[][] out = new int[img.length][];`，每一列再 `out[r] = new int[img[r].length];`（這樣 jagged 也能處理）。",
-      "如果你寫 `int[][] out = img;`，那只是複製參考（還記得 PF-101 的 aliasing 嗎？）。",
+      "Write `clamp` first, then call it for every pixel in `brighten`.",
+      "New array: `int[][] out = new int[img.length][];`, then for each row `out[r] = new int[img[r].length];` (this handles jagged arrays too).",
+      "Writing `int[][] out = img;` only copies the reference (remember aliasing from PF-101?).",
     ],
   },
 };

@@ -44,7 +44,7 @@ export function LessonBlocks({
             const answered = chosen !== undefined;
             return (
               <div key={i} className="predict" role="group" aria-labelledby={`q-${b.id}`}>
-                <div className="small muted">🔮 先預測再往下（+5 XP）</div>
+                <div className="small muted">🔮 Predict before reading on (+5 XP)</div>
                 <div id={`q-${b.id}`} style={{ fontWeight: 600 }}>{b.question}</div>
                 {b.code && <pre className="console" style={{ color: "var(--text)" }}>{b.code}</pre>}
                 {b.options.map((opt, k) => {
@@ -58,7 +58,7 @@ export function LessonBlocks({
                 })}
                 {answered && (
                   <div className={`callout ${chosen === b.answer ? "" : "warn"}`}>
-                    <strong>{chosen === b.answer ? "答對了！" : "不是這個喔。"}</strong>
+                    <strong>{chosen === b.answer ? "Correct!" : "Not quite."}</strong>
                     <Markdown>{b.explain}</Markdown>
                   </div>
                 )}

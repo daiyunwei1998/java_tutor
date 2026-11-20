@@ -70,7 +70,7 @@ export function Workspace({ sprintId, ticketId }: { sprintId: string; ticketId: 
 
   function merge() {
     updateTicket(key, (t) => ({ ...t, status: "merged", mergedAt: new Date().toISOString() }));
-    setToast(`🎉 PR merged！+${ticket.xp} XP`);
+    setToast(`🎉 PR merged! +${ticket.xp} XP`);
     setTimeout(() => setToast(null), 3500);
   }
 
@@ -88,12 +88,12 @@ export function Workspace({ sprintId, ticketId }: { sprintId: string; ticketId: 
       <div className="briefing">
         <div className="who" aria-hidden>{sprint.project.techLead.avatar}</div>
         <div>
-          <div className="small muted">{sprint.project.techLead.name} · {sprint.project.techLead.role} 指派給你</div>
+          <div className="small muted">{sprint.project.techLead.name} · {sprint.project.techLead.role} assigned you this</div>
           <Markdown>{ticket.briefing}</Markdown>
         </div>
       </div>
-      {locked && <div className="callout warn">🔒 建議先完成 {ticket.dependsOn.join("、")}。你還是可以先看看這張 ticket。</div>}
-      <h3 style={{ marginTop: 0 }}>完成這張 ticket 後你會…</h3>
+      {locked && <div className="callout warn">🔒 Finish {ticket.dependsOn.join(", ")} first. You can still look around this ticket.</div>}
+      <h3 style={{ marginTop: 0 }}>After this ticket you will be able to…</h3>
       <ul className="objectives">
         {ticket.objectives.map((o) => <li key={o}>{o}</li>)}
       </ul>
@@ -116,17 +116,17 @@ export function Workspace({ sprintId, ticketId }: { sprintId: string; ticketId: 
           <span className={`pill ${st.status}`}>{STATUS_LABEL[st.status]}</span>
         </div>
         <ul style={{ paddingLeft: 20, margin: "8px 0" }}>
-          <li>{lt && lt.total > 0 && lt.passed === lt.total ? "✅" : "⬜"} 所有自動測試通過 {lt ? `（目前 ${lt.passed}/${lt.total}）` : ""}</li>
+          <li>{lt && lt.total > 0 && lt.passed === lt.total ? "✅" : "⬜"} All automated tests pass {lt ? `(now ${lt.passed}/${lt.total})` : ""}</li>
           <li>{st.status === "merged" ? "✅" : "⬜"} Merge PR</li>
-          <li>{st.tutorVerified ? "✅" : "⬜"} 老師 code review（測試通過不代表觀念都懂了，老師會再確認）</li>
+          <li>{st.tutorVerified ? "✅" : "⬜"} Teacher code review (passing tests doesn't mean every idea is clear yet, so your teacher checks too)</li>
         </ul>
         {st.status === "in_review" && (
-          <button className="btn ok" onClick={merge}>🚀 Open PR &amp; Merge（+{ticket.xp} XP）</button>
+          <button className="btn ok" onClick={merge}>🚀 Open PR &amp; Merge (+{ticket.xp} XP)</button>
         )}
         {st.status === "merged" && nextTicket && (
-          <Link className="btn primary" href={`/sprints/${sprint.id}/tickets/${nextTicket.id}`}>下一張 ticket：{nextTicket.id} →</Link>
+          <Link className="btn primary" href={`/sprints/${sprint.id}/tickets/${nextTicket.id}`}>Next ticket: {nextTicket.id} →</Link>
         )}
-        {st.status === "merged" && !nextTicket && <div className="callout lead">這個 Sprint 的 ticket 都完成了！🎉 等老師 code review，下一個 Sprint 開始時會出現在工作台。</div>}
+        {st.status === "merged" && !nextTicket && <div className="callout lead">All tickets in this sprint are done! 🎉 Your teacher will review them, and the next sprint will show up on your dashboard.</div>}
       </div>
     );
   }
@@ -149,14 +149,14 @@ export function Workspace({ sprintId, ticketId }: { sprintId: string; ticketId: 
   return (
     <div className="ws">
       <div className="ws-head">
-        <Link href={`/sprints/${sprint.id}`} className="small">← Sprint {sprint.number} 看板</Link>
+        <Link href={`/sprints/${sprint.id}`} className="small">← Sprint {sprint.number} board</Link>
         <span className="ticket-id">{ticket.id}</span>
         <strong style={{ flex: 1, minWidth: 200 }}>{ticket.title}</strong>
         <span className={`pill ${st.status}`}>{STATUS_LABEL[st.status]}</span>
         <span className="small muted">{ticket.xp} XP</span>
       </div>
 
-      <div className="ws-tabs" role="tablist" aria-label="工作區">
+      <div className="ws-tabs" role="tablist" aria-label="Workspace">
         {(["learn", "code", "viz", "tasks"] as MobileTab[]).map((t) => (
           <button key={t} role="tab" className="btn small" aria-selected={mobileTab === t} onClick={() => setMobileTab(t)}>
             {{ learn: "📖 Learn", code: "⌨️ Code", viz: "🔬 Visualize", tasks: "✅ Tasks" }[t]}
@@ -180,22 +180,22 @@ export function Workspace({ sprintId, ticketId }: { sprintId: string; ticketId: 
               >
                 {sideCollapsed ? (
                   <div className="collapsed-strip">
-                    <button className="btn small" onClick={() => { setSideTab("learn"); sidePanel.current?.expand(); }} aria-label="展開說明" title="說明">📖</button>
-                    <button className="btn small" onClick={() => { setSideTab("viz"); sidePanel.current?.expand(); }} aria-label="展開視覺化" title="視覺化">🔬</button>
+                    <button className="btn small" onClick={() => { setSideTab("learn"); sidePanel.current?.expand(); }} aria-label="Show lesson" title="Lesson">📖</button>
+                    <button className="btn small" onClick={() => { setSideTab("viz"); sidePanel.current?.expand(); }} aria-label="Show visualization" title="Visualization">🔬</button>
                   </div>
                 ) : (
                   <div className="side">
-                    <div className="side-tabs" role="tablist" aria-label="左側內容">
-                      <button role="tab" aria-selected={sideTab === "learn"} onClick={() => setSideTab("learn")}>📖 說明與任務</button>
-                      <button role="tab" aria-selected={sideTab === "viz"} onClick={() => setSideTab("viz")}>🔬 視覺化</button>
+                    <div className="side-tabs" role="tablist" aria-label="Side panel">
+                      <button role="tab" aria-selected={sideTab === "learn"} onClick={() => setSideTab("learn")}>📖 Lesson & task</button>
+                      <button role="tab" aria-selected={sideTab === "viz"} onClick={() => setSideTab("viz")}>🔬 Visualize</button>
                       <div className="spacer" />
-                      <button className="btn small ghost" onClick={() => sidePanel.current?.collapse()} aria-label="收合左欄，讓程式碼變寬" title="收合，讓程式碼變寬">⇤</button>
+                      <button className="btn small ghost" onClick={() => sidePanel.current?.collapse()} aria-label="Collapse the side panel to widen the code" title="Collapse to widen the code">⇤</button>
                     </div>
                     <div className="pane">{sideTab === "learn" ? learn : viz}</div>
                   </div>
                 )}
               </Panel>
-              <PanelResizeHandle className="resize-handle" aria-label="調整寬度" />
+              <PanelResizeHandle className="resize-handle" aria-label="Resize" />
               <Panel defaultSize={56} minSize={35} order={2}>
                 <div className="pane">{code}</div>
               </Panel>

@@ -14,34 +14,34 @@ export type Algo = { id: MatrixAlgorithmId; label: string; code: string[]; time:
 
 export const ALGOS: Record<MatrixAlgorithmId, Algo> = {
   "row-sum": {
-    id: "row-sum", label: "每列總和 (row sum)",
+    id: "row-sum", label: "Row sums",
     code: ["int[] sums = new int[m.length];", "for (int r = 0; r < m.length; r++)", "    for (int c = 0; c < m[r].length; c++)", "        sums[r] += m[r][c];"],
-    time: "O(R·C)", space: "O(R)", why: "每一格都要讀一次；結果陣列有 R 格。",
+    time: "O(R·C)", space: "O(R)", why: "Every cell is read once; the result has R slots.",
   },
   "column-sum": {
-    id: "column-sum", label: "每欄總和 (column sum)",
+    id: "column-sum", label: "Column sums",
     code: ["int[] sums = new int[m[0].length];", "for (int c = 0; c < m[0].length; c++)", "    for (int r = 0; r < m.length; r++)", "        sums[c] += m[r][c];"],
-    time: "O(R·C)", space: "O(C)", why: "每一格都要讀一次；結果陣列有 C 格。",
+    time: "O(R·C)", space: "O(C)", why: "Every cell is read once; the result has C slots.",
   },
   "main-diagonal": {
-    id: "main-diagonal", label: "主對角線",
+    id: "main-diagonal", label: "Main diagonal",
     code: ["int sum = 0;", "for (int i = 0; i < m.length; i++)", "    sum += m[i][i];"],
-    time: "O(N)", space: "O(1)", why: "只讀 N 格，不需要掃描整個矩陣。",
+    time: "O(N)", space: "O(1)", why: "Reads only N cells; no need to scan the whole matrix.",
   },
   "anti-diagonal": {
-    id: "anti-diagonal", label: "副對角線",
+    id: "anti-diagonal", label: "Anti-diagonal",
     code: ["int sum = 0;", "int n = m.length;", "for (int i = 0; i < n; i++)", "    sum += m[i][n - 1 - i];"],
-    time: "O(N)", space: "O(1)", why: "只讀 N 格。",
+    time: "O(N)", space: "O(1)", why: "Reads only N cells.",
   },
   max: {
-    id: "max", label: "最大值",
+    id: "max", label: "Max",
     code: ["int max = m[0][0];", "for (int r = 0; r < m.length; r++)", "    for (int c = 0; c < m[r].length; c++)", "        if (m[r][c] > max) max = m[r][c];"],
-    time: "O(R·C)", space: "O(1)", why: "最大值可能在任何一格，所以每格都要看。",
+    time: "O(R·C)", space: "O(1)", why: "The max could be in any cell, so every cell must be checked.",
   },
   transpose: {
-    id: "transpose", label: "轉置 (transpose)",
+    id: "transpose", label: "Transpose",
     code: ["int[][] t = new int[m[0].length][m.length];", "for (int r = 0; r < m.length; r++)", "    for (int c = 0; c < m[0].length; c++)", "        t[c][r] = m[r][c];"],
-    time: "O(R·C)", space: "O(R·C)", why: "每格複製一次；結果是新的 C×R 陣列。",
+    time: "O(R·C)", space: "O(R·C)", why: "Each cell is copied once; the result is a new C×R array.",
   },
 };
 

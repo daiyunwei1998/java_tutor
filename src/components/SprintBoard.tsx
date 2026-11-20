@@ -20,8 +20,16 @@ export function SprintBoard({ sprintId }: { sprintId: string }) {
       </p>
       <h1>{sprint.project.name} <span className="muted" style={{ fontWeight: 400 }}>@ {sprint.project.company}</span></h1>
       <p className="muted">{sprint.project.tagline}</p>
-      <div className="card" style={{ maxWidth: 560 }}>
-        <SprintProgressBar {...prog} />
+      <div className="row" style={{ alignItems: "stretch", flexWrap: "wrap" }}>
+        <div className="card" style={{ flex: "1 1 360px", maxWidth: 560, margin: 0 }}>
+          <SprintProgressBar {...prog} />
+        </div>
+        {sprint.knowledge?.length ? (
+          <Link href={`/sprints/${sprint.id}/knowledge`} className="card k-promo" style={{ flex: "1 1 280px", maxWidth: 420, margin: 0 }}>
+            <strong>📚 Knowledge Space</strong>
+            <div className="small muted">{sprint.knowledge.length} interactive deep dives that go beyond the textbook (optional)</div>
+          </Link>
+        ) : null}
       </div>
 
       <div className="board" style={{ marginTop: 16 }}>
@@ -41,9 +49,9 @@ export function SprintBoard({ sprintId }: { sprintId: string }) {
                     </div>
                     <div style={{ fontWeight: 600, margin: "4px 0" }}>{t.title}</div>
                     <div className="small muted">
-                      {locked && `🔒 先完成 ${t.dependsOn.join("、")}`}
-                      {st.lastTest && `${locked ? " · " : ""}測試 ${st.lastTest.passed}/${st.lastTest.total}`}
-                      {st.status === "merged" && (st.tutorVerified ? " · ✅ 老師已 review" : " · 等待老師 code review")}
+                      {locked && `🔒 Finish ${t.dependsOn.join(", ")} first`}
+                      {st.lastTest && `${locked ? " · " : ""}tests ${st.lastTest.passed}/${st.lastTest.total}`}
+                      {st.status === "merged" && (st.tutorVerified ? " · ✅ reviewed by teacher" : " · waiting for teacher review")}
                     </div>
                   </Link>
                 );
@@ -54,12 +62,12 @@ export function SprintBoard({ sprintId }: { sprintId: string }) {
 
       {sprint.backlog.length > 0 && (
         <>
-          <h2>Backlog：之後會開的 ticket</h2>
+          <h2>Backlog: tickets coming later</h2>
           <div className="grid2">
             {sprint.backlog.map((u) => (
               <div key={u.title} className="card" style={{ opacity: 0.75 }}>
                 <strong>{u.title}</strong>
-                <div className="small muted">{u.note} · 🔒 即將推出</div>
+                <div className="small muted">{u.note} · 🔒 coming soon</div>
               </div>
             ))}
           </div>

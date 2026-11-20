@@ -9,10 +9,10 @@ async function post(path: string, body: unknown): Promise<AiReply> {
     const data = await res.json().catch(() => null);
     if (res.ok && data && typeof data.reply === "string") return { reply: data.reply };
     if (data && data.error_code) return data as AiError;
-    if (res.status === 422) return { error_code: "invalid", message: "訊息太長或格式不對，請縮短一點再試。" };
-    return { error_code: "error", message: "AI 助教暫時無法回應，請稍後再試。如果一直失敗，請聯絡老師。" };
+    if (res.status === 422) return { error_code: "invalid", message: "The message is too long or malformed. Please shorten it and try again." };
+    return { error_code: "error", message: "The AI tutor cannot answer right now. Please try again later. If it keeps failing, contact your teacher." };
   } catch {
-    return { error_code: "offline", message: "連不到後端伺服器（FastAPI）。請確認後端有在執行，或聯絡老師。" };
+    return { error_code: "offline", message: "Cannot reach the server. Check your connection, or contact your teacher." };
   }
 }
 

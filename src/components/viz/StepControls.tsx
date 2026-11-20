@@ -25,34 +25,34 @@ export function useStepper(total: number, resetKey: unknown) {
 
 export function StepControls({ s }: { s: ReturnType<typeof useStepper> }) {
   return (
-    <div className="step-controls" role="group" aria-label="播放控制">
-      <button className="btn small" onClick={() => { s.setPlaying(false); s.setI(0); }} aria-label="重設">⏮ Reset</button>
-      <button className="btn small" onClick={() => s.setI(Math.max(0, s.i - 1))} disabled={s.i === 0} aria-label="上一步">◀ Back</button>
-      <button className="btn small primary" onClick={() => { if (s.i >= s.total) s.setI(0); s.setPlaying(!s.playing); }} aria-label={s.playing ? "暫停" : "播放"}>
+    <div className="step-controls" role="group" aria-label="Playback controls">
+      <button className="btn small" onClick={() => { s.setPlaying(false); s.setI(0); }} aria-label="Reset">⏮ Reset</button>
+      <button className="btn small" onClick={() => s.setI(Math.max(0, s.i - 1))} disabled={s.i === 0} aria-label="Back">◀ Back</button>
+      <button className="btn small primary" onClick={() => { if (s.i >= s.total) s.setI(0); s.setPlaying(!s.playing); }} aria-label={s.playing ? "Pause" : "Play"}>
         {s.playing ? "⏸ Pause" : "▶ Play"}
       </button>
-      <button className="btn small" onClick={() => s.setI(Math.min(s.total, s.i + 1))} disabled={s.i >= s.total} aria-label="下一步">Step ▶</button>
+      <button className="btn small" onClick={() => s.setI(Math.min(s.total, s.i + 1))} disabled={s.i >= s.total} aria-label="Step">Step ▶</button>
       <label className="small muted row" style={{ gap: 4 }}>
-        速度
-        <select value={s.speed} onChange={(e) => s.setSpeed(Number(e.target.value))} aria-label="播放速度">
+        Speed
+        <select value={s.speed} onChange={(e) => s.setSpeed(Number(e.target.value))} aria-label="Playback speed">
           <option value={0.5}>0.5×</option>
           <option value={1}>1×</option>
           <option value={2}>2×</option>
           <option value={4}>4×</option>
         </select>
       </label>
-      <span className="small muted">步驟 {s.i} / {s.total}</span>
+      <span className="small muted">Step {s.i} / {s.total}</span>
     </div>
   );
 }
 
 export function SimBadge() {
-  return <span className="pill sim" title="這是用 TypeScript 模擬上面那段範例程式，不是執行你寫的 Java">模擬示範 · 不是執行你的程式</span>;
+  return <span className="pill sim" title="This simulates the example code above in TypeScript; it does not run your Java">Simulation · not your code</span>;
 }
 
 export function CodeLines({ lines, on }: { lines: string[]; on: number | null }) {
   return (
-    <div className="code-lines" aria-label="範例程式碼">
+    <div className="code-lines" aria-label="Example code">
       {lines.map((l, k) => (
         <div key={k} className={k === on ? "on" : ""} aria-current={k === on ? "step" : undefined}>{l || " "}</div>
       ))}
@@ -62,7 +62,7 @@ export function CodeLines({ lines, on }: { lines: string[]; on: number | null })
 
 export function Vars({ vars, prev }: { vars: Record<string, string | number>; prev?: Record<string, string | number> }) {
   return (
-    <div className="vars" aria-label="變數">
+    <div className="vars" aria-label="Variables">
       {Object.entries(vars).map(([k, v]) => (
         <span key={k} className={`var${prev && prev[k] !== v ? " changed" : ""}`}>{k} = {String(v)}</span>
       ))}

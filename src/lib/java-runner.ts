@@ -87,15 +87,15 @@ function killForTimeout(id: number) {
       ? {
           status: "timeout",
           stdout: "",
-          stderr: "執行超過時間限制，已經強制停止。\n常見原因：迴圈的條件永遠成立（無窮迴圈），例如忘了 r++，或條件寫成 r >= 0。",
+          stderr: "The program ran past the time limit and was stopped.\nCommon cause: a loop condition that is always true (infinite loop), e.g. a missing r++ or a condition like r >= 0.",
         }
-      : { status: "runtime_error", stdout: "", stderr: "編譯花太久，Java 環境已重新啟動。請再按一次（網路慢的時候第一次比較久）。" },
+      : { status: "runtime_error", stdout: "", stderr: "Compiling took too long, so Java was restarted. Please press the button again (the first time is slower on a slow network)." },
   );
   destroy();
   // Fail everything else that was queued behind it.
   for (const [otherId, other] of pending) {
     window.clearTimeout(other.timer);
-    other.resolve({ status: "runtime_error", stdout: "", stderr: "Java 環境重新啟動中，請再按一次。" });
+    other.resolve({ status: "runtime_error", stdout: "", stderr: "Java is restarting. Please press the button again." });
     pending.delete(otherId);
   }
   setState("idle");
@@ -118,7 +118,7 @@ export function warmUp(): Promise<void> {
     frame.setAttribute("aria-hidden", "true");
     frame.style.cssText = "position:fixed;width:1px;height:1px;left:-10px;top:-10px;border:0;opacity:0;pointer-events:none";
     const timer = window.setTimeout(() => {
-      setState("error", "Java 環境載入逾時，請檢查網路後重新整理頁面。");
+      setState("error", "Loading Java timed out. Check your connection and reload the page.");
       reject(new Error("load timeout"));
     }, LOAD_TIMEOUT_MS);
     const handler = (ev: MessageEvent) => {
@@ -133,7 +133,7 @@ export function warmUp(): Promise<void> {
       } else if (ev.data.type === "fatal") {
         window.clearTimeout(timer);
         window.removeEventListener("message", handler);
-        setState("error", "Java 環境無法啟動：" + ev.data.error);
+        setState("error", "Java could not start: " + ev.data.error);
         destroy();
         reject(new Error(ev.data.error));
       }
@@ -152,7 +152,7 @@ export async function runJava(req: RunRequest): Promise<RunResult> {
   try {
     await warmUp();
   } catch {
-    return { status: "runtime_error", stdout: "", stderr: lastError || "Java 環境無法啟動。" };
+    return { status: "runtime_error", stdout: "", stderr: lastError || "Java could not start." };
   }
   const id = nextId++;
   setState("busy");

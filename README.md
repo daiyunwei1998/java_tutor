@@ -1,33 +1,41 @@
 # Java Dev Sprints
 
-專案式 (project-based) 的 Java / AP CSA 學習平台。課程以 **Sprint** 為單位（例如這週 = 2D Arrays），
-每個 Sprint 有自己的小專案和故事（Sprint 1：PixelForge Studio 的 Mini Photoshop）。學生是 **Junior Developer**，
-透過完成 ticket、通過測試、merge PR 推進 Sprint 完成度。
+A project-based Java / AP CSA learning platform. Work is organized in **sprints** (for example, this week = 2D Arrays).
+Each sprint has its own mini project and story (Sprint 1: the Mini Photoshop at PixelForge Studio). Students are
+**Junior Developers**: they move a sprint forward by picking up tickets, passing the tests and merging the PR.
 
-- **Java 在學生的瀏覽器裡編譯和執行**（CheerpJ + Eclipse ecj），不會在伺服器上跑學生程式碼。
-- **AI 導師**（OpenAI）：全站「問 Senior Dev」聊天 + 每個練習的「🤖 AI 協助 Debug」按鈕。
-- **帳號**：預設 `stu`、`test`（密碼和帳號相同，只用來區分帳號）。進度存在資料庫，換電腦也在。
-  要加帳號：在 Vercel 設 `SEED_ACCOUNTS=stu,test,新帳號`，重新部署後自動建立（密碼 = 帳號）。
-- **老師後台** `/admin`（網站上沒有入口，直接打網址）：AI 使用量、各帳號進度、「重設 test」、「把 stu 同步到 test」。
-- 規格檢視與優化建議：[docs/spec-review.md](docs/spec-review.md)
-- 測試：`node --experimental-strip-types tools/verify-content.mjs`（需要 JDK）、`python tools/test_api.py`
+- **Java compiles and runs in the student's browser** (CheerpJ + Eclipse ecj). Student code never runs on the server.
+- **AI mentor** (OpenAI): a site-wide "Ask a Senior Dev" chat, plus an "AI Debug" button on every exercise.
+- **Knowledge Space** per sprint (`/sprints/<id>/knowledge`): supplementary, deeper material that extends the
+  Runestone CSJava book instead of repeating it. Each topic is a short single-page tutorial with an interactive
+  code ↔ memory trace (stack frames, heap objects, reference arrows).
+- **Accounts**: `stu` and `test` by default (password = username; it only tells accounts apart). Progress is stored
+  in the database, so it follows the student to another computer. To add accounts, set
+  `SEED_ACCOUNTS=stu,test,newname` in Vercel and redeploy; they are created automatically (password = username).
+- **Teacher admin** at `/admin` (no link on the site; type the URL): AI usage, progress per account,
+  "Reset test" and "Sync stu → test".
+- Spec review and recommendations: [docs/spec-review.md](docs/spec-review.md)
+- Tests: `node --experimental-strip-types tools/verify-content.mjs` (needs a JDK) and `python tools/test_api.py`
 
-## 部署（Vercel）
-- 一個 Vercel 專案同時跑 Next.js 前端和 FastAPI（`api/index.py` 是 Vercel Python function，`vercel.json` 把 `/api/*` 導到它）。
-- 資料庫：Vercel Marketplace 的 Postgres（Neon）。連上之後 Vercel 會自動設定 `DATABASE_URL`，後端第一次啟動會自動建表。
-- Vercel 專案的環境變數：`OPENAI_API_KEY`、`ADMIN_PASSWORD`（必填），其他選填見 `.env.example`。
-- push 到 `main` 就會自動部署。
+## Deployment (Vercel)
+- One Vercel project serves both the Next.js frontend and FastAPI (`api/index.py` is a Vercel Python function;
+  `vercel.json` routes `/api/*` to it).
+- Database: Postgres (Neon) from the Vercel Marketplace. Connecting it sets `DATABASE_URL`; the backend creates
+  its tables on first start.
+- Environment variables on the Vercel project: `OPENAI_API_KEY` and `ADMIN_PASSWORD` (required). Optional ones are
+  listed in `.env.example`.
+- Pushing to `main` deploys automatically.
 
-## 本機開發
-需要 Node.js 20+、Python 3.10+。在專案根目錄放 `.env`（參考 `.env.example`，不會被 git 追蹤）：
+## Local development
+Requires Node.js 20+ and Python 3.10+. Put a `.env` in the project root (see `.env.example`; it is ignored by git):
 
 ```
 OPENAI_API_KEY=sk-...
-ADMIN_PASSWORD=自己設一個密碼
-# 選填：沒有 DATABASE_URL 時用本機 SQLite（.data/usage.db）
+ADMIN_PASSWORD=choose-a-password
+# Optional: without DATABASE_URL a local SQLite file is used (.data/usage.db)
 ```
 
-Windows 直接雙擊 `start-dev.bat`；或手動：
+On Windows, double-click `start-dev.bat`, or run it by hand:
 ```
 py -m venv .venv
 .venv\Scripts\python -m pip install -r requirements-dev.txt
@@ -35,48 +43,56 @@ py -m venv .venv
 npm install
 npm run dev
 ```
-打開 http://localhost:3000 （老師後台 http://localhost:3000/admin）。API key 只在後端讀取，不會送到瀏覽器。
+Open http://localhost:3000 (teacher admin: http://localhost:3000/admin). The API key is read only by the backend
+and is never sent to the browser.
 
-## 架構
+## Architecture
 ```
-src/content/             課程內容（純資料）：sprint、小專案故事、ticket、起始碼、測試、提示
-src/components/          工作區（兩欄：說明/視覺化 ｜ 程式碼；手機分頁）、程式編輯器、AI 聊天
-src/components/viz/      視覺化元件（依 type 註冊，內容只引用 type + config）
-src/lib/java-runner.ts   瀏覽器端 Java 執行 API
-src/lib/progress.ts      學生進度：存在後端（每個帳號一份），localStorage 只是快取
-public/java-runner.html  在隱藏 iframe 裡跑 CheerpJ；逾時就重建 iframe（無窮迴圈保護）
-public/java/             ecj.jar（Eclipse Java 編譯器）、tutor-runtime.jar（編譯/執行/測試橋接）
-api/index.py             FastAPI：AI、登入、進度同步、admin（用量 / 帳號）、/api/health
-api/_core/               設定、AI 用量紀錄與帳號/進度（Postgres 或 SQLite）、AI 導師 prompt
-runtime-java/            tutor-runtime.jar 的原始碼（Bridge、Check 斷言、Img 影像 I/O）
-tools/                   內容驗證、API smoke test、參考解答
+src/content/             Course content (plain data): sprints, mini-project stories, tickets, starter code, tests, hints, knowledge topics
+src/components/          Workspace (two columns: instructions/visualization | code; tabs on phones), editor, AI chat
+src/components/viz/      Visualization components (registered by type; content refers to type + config only)
+src/components/knowledge/ Knowledge Space page and the code ↔ memory TraceViewer
+src/lib/trace.ts         Generic trace builder (frames, heap arrays/objects, references), reusable for future data structures
+src/lib/java-runner.ts   Browser-side Java execution API
+src/lib/progress.ts      Student progress: stored on the backend per account; localStorage is only a cache
+public/java-runner.html  Runs CheerpJ in a hidden iframe; rebuilds the iframe on timeout (infinite-loop guard)
+public/java/             ecj.jar (Eclipse Java compiler), tutor-runtime.jar (compile/run/test bridge)
+api/index.py             FastAPI: AI, login, progress sync, admin (usage / accounts), /api/health
+api/_core/               Settings, AI usage log, accounts/progress (Postgres or SQLite), AI mentor prompts
+runtime-java/            Source of tutor-runtime.jar (Bridge, Check assertions, Img image I/O)
+tools/                   Content verification, API smoke test, reference solutions
 ```
 
-## 新增一個 Sprint
-1. 複製 `src/content/sprints/s01-2d-arrays/` 成新資料夾（例如 `s02-recursion/`）。
-2. 在 `sprint.ts` 改 `id`、`number`、`topic`、`unit`、`project`（這個 Sprint 的小專案故事），`status: "current"`。
-3. 在 `src/content/registry.ts` 的 `sprints` 加上它，並把上一個 Sprint 改成 `status: "done"`。
-4. 在 `tickets.ts` 寫 ticket（見下一節）。
+## Adding a sprint
+1. Copy `src/content/sprints/s01-2d-arrays/` to a new folder (for example `s02-recursion/`).
+2. In `sprint.ts`, change `id`, `number`, `topic`, `unit` and `project` (this sprint's mini-project story), and set `status: "current"`.
+3. Add it to `sprints` in `src/content/registry.ts` and set the previous sprint to `status: "done"`.
+4. Write the tickets in `tickets.ts` (see the next section) and, optionally, Knowledge Space topics in `knowledge.ts`.
 
-網站名稱在 `src/content/registry.ts` 的 `SITE_NAME`。
+The site name is `SITE_NAME` in `src/content/registry.ts`.
 
-## 新增一張 ticket
-在該 Sprint 的 `tickets.ts` 新增 `Ticket` 資料（說明、預測題、起始碼、唯讀測試檔、提示），
-測試類別裡每個 `static void testXxx()` 方法就是一個測試，用 `tutor.Check` 斷言。
-參考解答放 `tools/solutions/`，跑 `node --experimental-strip-types tools/verify-content.mjs` 驗證。
+## Adding a ticket
+Add a `Ticket` object to the sprint's `tickets.ts` (instructions, prediction questions, starter code, read-only test
+file, hints). Every `static void testXxx()` method in the test class is one test; assert with `tutor.Check`.
+Put the reference solution in `tools/solutions/` and run `node --experimental-strip-types tools/verify-content.mjs`.
 
-## AI 錯誤處理
-| 情況 | 學生看到 |
-|------|---------|
-| OpenAI 額度用完（429 / insufficient_quota，含 monthly hard limit） | 「AI 助教這個月的使用額度已經用完了，請聯絡老師」 |
-| 太頻繁（429 rate limit） | 「請等 30 秒再試，一直出現請聯絡老師」 |
-| 超過每人每日上限 | 「今天的 AI 提問次數已經用完了」 |
-| 沒有 API key / key 無效 | 「AI 助教還沒設定好，請聯絡老師」 |
+## Adding a Knowledge Space topic
+Topics live in the sprint's `knowledge.ts`. A topic is a list of sections: `markdown`, `callout`, `trace` or
+`traversal-lab`. A trace is built with `Tracer` from `src/lib/trace.ts`: mutate the model the way the program would
+(`set`, `newArray`, `newObject`, `setItem`, `setField`, `call`, `ret`, `collect`) and call `step(line, note)` after
+each line. Add `ask` to a step to make the student predict before the result is shown.
 
-所有請求（包含失敗）都會記錄，老師在 `/admin` 看得到。
+## AI error handling
+| Situation | What the student sees |
+|-----------|-----------------------|
+| OpenAI quota used up (429 / insufficient_quota, including the monthly hard limit) | "The AI mentor has used up this month's quota. Please contact your teacher." |
+| Too many requests (429 rate limit) | "Please wait 30 seconds and try again. If this keeps happening, contact your teacher." |
+| Per-student daily limit reached | "You have used all of today's AI questions." |
+| No API key / invalid key | "The AI mentor is not set up yet. Please contact your teacher." |
 
-## 注意
-- CheerpJ 第一次載入需要下載 JVM（之後會快取），並需要連到 `cjrtnc.leaningtech.com`。
-- CheerpJ 免費授權有使用條件，收費教學正式上線前請確認授權。
-- 進度目前存在學生瀏覽器（localStorage），換電腦或清除瀏覽資料會不見。
-- `tools/solutions/` 是參考解答，repo 若公開，學生可能看得到；需要的話把 repo 設成 private。
+Every request (including failures) is logged and visible to the teacher at `/admin`.
+
+## Notes
+- CheerpJ downloads the JVM on first load (cached afterwards) and needs access to `cjrtnc.leaningtech.com`.
+- The free CheerpJ license has conditions; check the license before using it for paid tutoring.
+- `tools/solutions/` contains reference solutions. If the repo is public, students can see them; make the repo private if needed.

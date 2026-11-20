@@ -38,7 +38,7 @@ export function MatrixAlgoViz({ algorithms }: { algorithms: MatrixAlgorithmId[] 
 
       <div className="row" style={{ alignItems: "flex-start", gap: 24 }}>
         <div>
-          <div className="small muted">m（{R}×{C}）</div>
+          <div className="small muted">m ({R}×{C})</div>
           <table className="matrix">
             <tbody>
               {m.map((row, r) => (
@@ -59,7 +59,7 @@ export function MatrixAlgoViz({ algorithms }: { algorithms: MatrixAlgorithmId[] 
         </div>
         {id === "transpose" && (
           <div>
-            <div className="small muted">t（{C}×{R}，新的陣列）</div>
+            <div className="small muted">t ({C}×{R}, a new array)</div>
             <table className="matrix">
               <tbody>
                 {t.map((row, r) => (
@@ -73,14 +73,14 @@ export function MatrixAlgoViz({ algorithms }: { algorithms: MatrixAlgorithmId[] 
 
       <div className="card" style={{ marginTop: 12, padding: 12 }}>
         <div className="row" style={{ justifyContent: "space-between" }}>
-          <span>陣列讀取次數：<strong>{cur?.reads ?? 0}</strong> / {steps.at(-1)?.reads ?? 0}</span>
-          <span>矩陣共有 {R * C} 格</span>
+          <span>Array reads: <strong>{cur?.reads ?? 0}</strong> / {steps.at(-1)?.reads ?? 0}</span>
+          <span>{R * C} cells in the matrix</span>
         </div>
         <div className="small" style={{ marginTop: 6 }}>
-          時間複雜度 <strong>{algo.time}</strong> · 額外空間 <strong>{algo.space}</strong> — {algo.why}
+          Time <strong>{algo.time}</strong> · extra space <strong>{algo.space}</strong> — {algo.why}
         </div>
       </div>
-      <p className="viz-note">比較「主對角線」和「最大值」：一個只讀 N 格，一個每格都要讀。讀取已知位置的單一元素（例如 m[2][3]）是 O(1)。</p>
+      <p className="viz-note">Compare "main diagonal" with "max": one reads only N cells, the other must read every cell. Reading one element at a known position (like m[2][3]) is O(1).</p>
     </div>
   );
 }

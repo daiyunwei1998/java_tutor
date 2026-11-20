@@ -1,3 +1,5 @@
+import type { Trace } from "@/lib/trace";
+
 /**
  * Content model. Projects and tickets are plain data: no React, no executable JS inside content.
  * Visualizations are referenced by registered type name + validated config (see components/viz/registry.tsx).
@@ -60,6 +62,22 @@ export type Ticket = {
   dependsOn: string[];
 };
 
+/** A block on a Knowledge Space page (one topic = one single-column page). */
+export type KnowledgeSection =
+  | { type: "markdown"; md: string }
+  | { type: "callout"; tone: "info" | "warn"; md: string }
+  | { type: "trace"; trace: Trace; caption?: string }
+  | { type: "traversal-lab"; modes: TraversalMode[]; rows: number; cols: number };
+
+/** Supplementary material that goes beyond the textbook; never required for tickets. */
+export type KnowledgeTopic = {
+  id: string;
+  title: string;
+  summary: string;
+  minutes: number;
+  sections: KnowledgeSection[];
+};
+
 /** The story a sprint's tickets live in. Each sprint can have its own fitting mini project. */
 export type MiniProject = {
   name: string; // e.g. "Mini Photoshop"
@@ -85,4 +103,6 @@ export type Sprint = {
   tickets: Ticket[];
   /** Tickets planned for later, shown greyed out on the board. */
   backlog: { title: string; note: string }[];
+  /** Deeper, optional material for this sprint's topic (see KnowledgeTopic). */
+  knowledge?: KnowledgeTopic[];
 };

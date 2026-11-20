@@ -2,17 +2,17 @@
 export type Gray = number[][];
 
 export const SAMPLES: Record<string, { label: string; make: () => Gray }> = {
-  gradient: { label: "漸層", make: () => grid(24, 32, (r, c) => Math.round((c / 31) * 230 + (r / 23) * 20)) },
+  gradient: { label: "Gradient", make: () => grid(24, 32, (r, c) => Math.round((c / 31) * 230 + (r / 23) * 20)) },
   circle: {
-    label: "圓形",
+    label: "Circle",
     make: () => grid(28, 28, (r, c) => {
       const d = Math.hypot(r - 13.5, c - 13.5);
       return d < 9 ? 220 : d < 11 ? 140 : 40;
     }),
   },
-  checker: { label: "棋盤", make: () => grid(24, 24, (r, c) => ((Math.floor(r / 4) + Math.floor(c / 4)) % 2 ? 210 : 60)) },
+  checker: { label: "Checkerboard", make: () => grid(24, 24, (r, c) => ((Math.floor(r / 4) + Math.floor(c / 4)) % 2 ? 210 : 60)) },
   smiley: {
-    label: "笑臉",
+    label: "Smiley",
     make: () => grid(28, 28, (r, c) => {
       const d = Math.hypot(r - 13.5, c - 13.5);
       if (d > 12.5) return 30;
@@ -34,12 +34,12 @@ export function toText(img: Gray): string {
 /** Parses the @@IMG_BEGIN … @@IMG_END block printed by tutor.Img.write. */
 export function parseImgOutput(stdout: string): { img: Gray | null; error?: string } {
   const m = stdout.match(/@@IMG_BEGIN\n([\s\S]*?)\n?@@IMG_END/);
-  if (!m) return { img: null, error: "找不到輸出影像。" };
+  if (!m) return { img: null, error: "No output image found." };
   const lines = m[1].trim().split("\n");
-  if (lines[0].trim() === "null") return { img: null, error: "你的方法回傳了 null。" };
+  if (lines[0].trim() === "null") return { img: null, error: "Your method returned null." };
   const img: Gray = [];
   for (const line of lines.slice(1)) {
-    if (line.trim() === "null") return { img: null, error: "回傳的影像裡有一個 row 是 null。" };
+    if (line.trim() === "null") return { img: null, error: "A row in the returned image is null." };
     img.push(line.trim() === "" ? [] : line.trim().split(" ").map(Number));
   }
   return { img };
@@ -47,9 +47,9 @@ export function parseImgOutput(stdout: string): { img: Gray | null; error?: stri
 
 export function validate(input: Gray, out: Gray): string[] {
   const issues: string[] = [];
-  if (out.length !== input.length) issues.push(`高度不對：預期 ${input.length} 列，得到 ${out.length} 列。`);
+  if (out.length !== input.length) issues.push(`Wrong height: expected ${input.length} rows, got ${out.length}.`);
   out.forEach((row, r) => {
-    if (input[r] && row.length !== input[r].length) issues.push(`第 ${r} 列長度不對：預期 ${input[r].length}，得到 ${row.length}。`);
+    if (input[r] && row.length !== input[r].length) issues.push(`Row ${r} has the wrong length: expected ${input[r].length}, got ${row.length}.`);
   });
   let bad = 0, example = "";
   out.forEach((row, r) => row.forEach((v, c) => {
@@ -58,7 +58,7 @@ export function validate(input: Gray, out: Gray): string[] {
       if (!example) example = `(${r}, ${c}) = ${v}`;
     }
   }));
-  if (bad) issues.push(`有 ${bad} 個像素超出 0–255，例如 ${example}。顯示時會被截斷，記得 clamp！`);
+  if (bad) issues.push(`${bad} pixels are outside 0–255, e.g. ${example}. They get cut off when shown, so remember to clamp!`);
   return issues.slice(0, 4);
 }
 

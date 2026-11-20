@@ -68,12 +68,12 @@ export function ImageLab({ ticket, files }: { ticket: Ticket; files: Record<stri
     });
     setBusy(false);
     if (r.status !== "completed") {
-      setErr(r.status === "compile_error" ? "你的程式有編譯錯誤，先在中間的編輯器修好它。" : r.stderr || "執行失敗");
+      setErr(r.status === "compile_error" ? "Your code has a compile error. Fix it in the editor first." : r.stderr || "Run failed");
       return;
     }
     const parsed = parseImgOutput(r.stdout);
     if (!parsed.img) {
-      setErr(parsed.error ?? "沒有輸出");
+      setErr(parsed.error ?? "No output");
       return;
     }
     setIssues(validate(src, parsed.img));
@@ -101,7 +101,7 @@ export function ImageLab({ ticket, files }: { ticket: Ticket; files: Record<stri
           <button key={k} className={`btn small${k === sampleId ? " primary" : ""}`} onClick={() => { setSampleId(k); setSource(v.make()); }}>{v.label}</button>
         ))}
         <label className="btn small">
-          📁 上傳圖片
+          📁 Upload image
           <input type="file" accept="image/*" className="sr-only" onChange={async (e) => {
             const f = e.target.files?.[0];
             if (f) { setSampleId(""); setSource(await fileToGray(f)); }
@@ -116,13 +116,13 @@ export function ImageLab({ ticket, files }: { ticket: Ticket; files: Record<stri
         onPointerLeave={() => setHover(null)}
         onClick={(e) => setPicked(cellAt(e))}
         role="img"
-        aria-label={`灰階影像 ${shown.length} 列 × ${shown[0]?.length ?? 0} 欄`}
+        aria-label={`Grayscale image, ${shown.length} rows × ${shown[0]?.length ?? 0} columns`}
       />
       <div className="row small" style={{ justifyContent: "space-between", margin: "4px 0 8px" }}>
         <span>
-          {out && showAfter ? <span className="pill java">✓ 由你的 Java 程式計算 · {outFor}</span> : <span className="pill todo">原始影像</span>}
+          {out && showAfter ? <span className="pill java">✓ Computed by your Java code · {outFor}</span> : <span className="pill todo">Original</span>}
         </span>
-        <span className="muted">{shown.length} × {shown[0]?.length ?? 0} 像素</span>
+        <span className="muted">{shown.length} × {shown[0]?.length ?? 0} pixels</span>
       </div>
 
       <div className="card" style={{ padding: 10 }}>
@@ -130,10 +130,10 @@ export function ImageLab({ ticket, files }: { ticket: Ticket; files: Record<stri
         {info && val !== undefined ? (
           <div className="small">
             <code>img[{info.r}][{info.c}] = {val}</code>
-            <span className="muted"> · row {info.r}, col {info.c}{picked ? "（已選取，點別的地方換一個）" : ""}</span>
+            <span className="muted"> · row {info.r}, col {info.c}{picked ? " (selected; click elsewhere to pick another)" : ""}</span>
             {picked && !(out && showAfter) && (
               <div className="row" style={{ marginTop: 6 }}>
-                <label className="small">改成
+                <label className="small">Set to
                   <input type="number" min={0} max={255} value={val} style={{ width: 80, marginLeft: 6 }} onChange={(e) => {
                     const v = Math.max(0, Math.min(255, Number(e.target.value) || 0));
                     setSource(src.map((row, r) => row.map((x, c) => (r === picked.r && c === picked.c ? v : x))));
@@ -144,25 +144,25 @@ export function ImageLab({ ticket, files }: { ticket: Ticket; files: Record<stri
             )}
           </div>
         ) : (
-          <div className="small muted">把滑鼠移到影像上看座標和亮度；點一下可以選取並修改原始影像的像素。</div>
+          <div className="small muted">Hover over the image to see coordinates and brightness; click to select a pixel and change it in the original.</div>
         )}
       </div>
 
       <div className="card" style={{ padding: 10, marginTop: 10 }}>
-        <label className="small">亮度 delta：<strong>{delta > 0 ? "+" : ""}{delta}</strong>
-          <input type="range" min={-120} max={120} value={delta} onChange={(e) => setDelta(Number(e.target.value))} style={{ width: "100%" }} aria-label="亮度 delta" />
+        <label className="small">Brightness delta: <strong>{delta > 0 ? "+" : ""}{delta}</strong>
+          <input type="range" min={-120} max={120} value={delta} onChange={(e) => setDelta(Number(e.target.value))} style={{ width: "100%" }} aria-label="Brightness delta" />
         </label>
         <div className="row" style={{ marginTop: 6 }}>
-          <button className="btn primary" onClick={apply} disabled={busy}>{busy ? "⏳ 你的 Java 正在處理…" : "☕ 用我的 Java 套用 brighten"}</button>
-          <button className="btn" onClick={() => setShowAfter((x) => !x)} disabled={!out}>{showAfter ? "看 Before" : "看 After"}</button>
+          <button className="btn primary" onClick={apply} disabled={busy}>{busy ? "⏳ Your Java is working…" : "☕ Apply brighten with my Java"}</button>
+          <button className="btn" onClick={() => setShowAfter((x) => !x)} disabled={!out}>{showAfter ? "Show before" : "Show after"}</button>
           <button className="btn" onClick={() => { setOut(null); setIssues([]); }} disabled={!out}>Reset</button>
-          <button className="btn" onClick={exportPng}>⬇ 匯出 PNG</button>
+          <button className="btn" onClick={exportPng}>⬇ Export PNG</button>
         </div>
         {err && <div className="console err">{err}</div>}
         {issues.map((x) => <div key={x} className="callout warn small">{x}</div>)}
-        {out && !issues.length && !err && <div className="small" style={{ color: "var(--ok)", marginTop: 6 }}>輸出大小正確，所有像素都在 0–255 之間 👍</div>}
+        {out && !issues.length && !err && <div className="small" style={{ color: "var(--ok)", marginTop: 6 }}>Output size is correct and every pixel is within 0–255 👍</div>}
       </div>
-      <p className="viz-note">「用我的 Java 套用」會編譯並執行你在中間寫的 <code>Filters.brighten</code>。如果你的方法還沒寫好，結果就會和原圖一樣，這是正常的。</p>
+      <p className="viz-note">"Apply with my Java" compiles and runs the <code>Filters.brighten</code> you wrote in the editor. If your method isn't finished yet, the result looks like the original, which is expected.</p>
     </div>
   );
 }

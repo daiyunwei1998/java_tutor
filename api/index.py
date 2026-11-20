@@ -42,11 +42,11 @@ MAX_HISTORY = 12
 
 # Messages students see. Kept here so wording is consistent across chat and debug.
 MSG = {
-    "quota_exhausted": "AI 助教這個月的使用額度已經用完了 🙏 請聯絡老師。在那之前，可以先看提示、重讀錯誤訊息，或把問題記下來上課問。",
-    "rate_limited": "AI 助教現在有點忙，請等 30 秒再試一次。如果一直出現這個訊息，請聯絡老師。",
-    "daily_limit": "你今天的 AI 提問次數已經用完了（每人每天 {limit} 次），明天再來，或先試著自己 debug 看看！有急事請聯絡老師。",
-    "not_configured": "AI 助教還沒設定好（缺少 API key），請聯絡老師。",
-    "error": "AI 助教暫時無法回應，請稍後再試。如果一直失敗，請聯絡老師。",
+    "quota_exhausted": "The AI tutor has used up its usage for this month 🙏 Please contact your teacher. Until then, try the hints, reread the error message, or write your question down for class.",
+    "rate_limited": "The AI tutor is busy right now. Please wait 30 seconds and try again. If this keeps happening, contact your teacher.",
+    "daily_limit": "You have used all your AI questions for today ({limit} per day). Come back tomorrow, or try debugging it yourself first! If it is urgent, contact your teacher.",
+    "not_configured": "The AI tutor is not set up yet (missing API key). Please contact your teacher.",
+    "error": "The AI tutor cannot answer right now. Please try again later. If it keeps failing, contact your teacher.",
 }
 
 _client = None
@@ -122,8 +122,8 @@ def _files_block(files: list[SourceFile]) -> str:
 
 def _ticket_block(t: TicketContext | None) -> str:
     if not t:
-        return "（學生目前不在任何 ticket 頁面。）"
-    return f"目前的 ticket：{t.id}「{t.title}」\n任務說明：\n{t.task[:6000]}"
+        return "(The student is not on a ticket page right now.)"
+    return f"Current ticket: {t.id} \"{t.title}\"\nTask:\n{t.task[:6000]}"
 
 
 def _call_openai(kind: str, student: Student, ticket_id: str | None, messages: list[dict]):
@@ -171,7 +171,7 @@ def _call_openai(kind: str, student: Student, ticket_id: str | None, messages: l
     usage.record(student_id=student.id, student_name=student.name, kind=kind, ticket_id=ticket_id,
                  model=resp.model, prompt_tokens=getattr(u, "prompt_tokens", 0) or 0,
                  completion_tokens=getattr(u, "completion_tokens", 0) or 0, status="ok")
-    reply = (resp.choices[0].message.content or "").strip() or "（AI 沒有回覆內容，請換個方式再問一次。）"
+    reply = (resp.choices[0].message.content or "").strip() or "(The AI gave an empty answer. Please ask again in a different way.)"
     return reply, None
 
 
@@ -187,7 +187,7 @@ def health():
 def ai_chat(req: ChatRequest):
     system = MENTOR_BASE.format(name=req.student.name) + "\n\n" + _ticket_block(req.ticket)
     if req.files:
-        system += "\n\n學生目前編輯器裡的程式碼（含行號）：\n" + _files_block(req.files)
+        system += "\n\nThe student's code in the editor (with line numbers):\n" + _files_block(req.files)
     history = [{"role": m.role, "content": m.content[:MAX_MESSAGE_CHARS * 2]} for m in req.messages[-MAX_HISTORY:]]
     reply, err = _call_openai("chat", req.student, req.ticket.id if req.ticket else None,
                               [{"role": "system", "content": system}, *history])
@@ -197,23 +197,23 @@ def ai_chat(req: ChatRequest):
 @app.post("/api/ai/debug")
 def ai_debug(req: DebugRequest):
     system = MENTOR_BASE.format(name=req.student.name) + "\n\n" + DEBUG_INSTRUCTIONS
-    user = [_ticket_block(req.ticket), "學生的程式碼：\n" + _files_block(req.files)]
+    user = [_ticket_block(req.ticket), "The student's code:\n" + _files_block(req.files)]
     if req.result:
         r = req.result
-        lines = [f"最近一次執行狀態：{r.status}"]
+        lines = [f"Last run status: {r.status}"]
         if r.stderr:
-            lines.append("編譯器 / 錯誤輸出：\n" + r.stderr[:6000])
+            lines.append("Compiler / error output:\n" + r.stderr[:6000])
         if r.stdout:
-            lines.append("標準輸出：\n" + r.stdout[:3000])
+            lines.append("Standard output:\n" + r.stdout[:3000])
         if r.tests:
-            lines.append("測試結果：\n" + "\n".join(
+            lines.append("Test results:\n" + "\n".join(
                 f"- {'PASS' if t.get('passed') else 'FAIL'} {t.get('name')}: {str(t.get('message', ''))[:400]}"
                 for t in r.tests))
         user.append("\n".join(lines))
     else:
-        user.append("（學生還沒有執行過程式。）")
+        user.append("(The student has not run the code yet.)")
     if req.question.strip():
-        user.append("學生補充的問題：" + req.question.strip())
+        user.append("The student adds: " + req.question.strip())
     reply, err = _call_openai("debug", req.student, req.ticket.id,
                               [{"role": "system", "content": system}, {"role": "user", "content": "\n\n".join(user)}])
     return err or {"reply": reply}
@@ -238,7 +238,7 @@ def _require_user(authorization: str | None) -> str:
     token = authorization.removeprefix("Bearer ").strip() if authorization else None
     user = accounts.check_token(token)
     if not user:
-        raise HTTPException(401, "請重新登入")
+        raise HTTPException(401, "Please log in again.")
     return user
 
 
@@ -246,7 +246,7 @@ def _require_user(authorization: str | None) -> str:
 def login(req: LoginRequest):
     token = accounts.login(req.username, req.password)
     if not token:
-        raise HTTPException(401, "帳號或密碼不對")
+        raise HTTPException(401, "Wrong username or password.")
     return {"token": token, "username": req.username.strip().lower()}
 
 
@@ -261,7 +261,7 @@ def put_progress(req: ProgressPut, authorization: str | None = Header(default=No
     import json
 
     if len(json.dumps(req.data)) > MAX_PROGRESS_BYTES:
-        raise HTTPException(413, "進度資料太大")
+        raise HTTPException(413, "Progress data is too large.")
     return accounts.put_progress(user, req.data, req.base_rev)
 
 
@@ -269,9 +269,9 @@ def put_progress(req: ProgressPut, authorization: str | None = Header(default=No
 
 def _require_admin(x_admin_password: str | None) -> None:
     if not settings.admin_password:
-        raise HTTPException(503, "請先在 .env 設定 ADMIN_PASSWORD 才能使用 admin 頁面。")
+        raise HTTPException(503, "Set ADMIN_PASSWORD in the environment to use the admin page.")
     if not x_admin_password or not secrets.compare_digest(x_admin_password, settings.admin_password):
-        raise HTTPException(401, "密碼錯誤")
+        raise HTTPException(401, "Wrong password.")
 
 
 class SyncRequest(BaseModel):
@@ -289,7 +289,7 @@ def admin_accounts(x_admin_password: str | None = Header(default=None)):
 def admin_reset(username: str, x_admin_password: str | None = Header(default=None)):
     _require_admin(x_admin_password)
     if not accounts.exists(username):
-        raise HTTPException(404, "沒有這個帳號")
+        raise HTTPException(404, "No such account.")
     accounts.reset(username)
     return {"ok": True, "accounts": accounts.list_accounts()}
 
@@ -298,7 +298,7 @@ def admin_reset(username: str, x_admin_password: str | None = Header(default=Non
 def admin_sync(req: SyncRequest, x_admin_password: str | None = Header(default=None)):
     _require_admin(x_admin_password)
     if req.source == req.target or not accounts.exists(req.source) or not accounts.exists(req.target):
-        raise HTTPException(400, "帳號不對")
+        raise HTTPException(400, "Invalid accounts.")
     accounts.copy(req.source, req.target)
     return {"ok": True, "accounts": accounts.list_accounts()}
 

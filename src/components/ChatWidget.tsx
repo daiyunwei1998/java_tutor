@@ -57,33 +57,33 @@ export function ChatWidget() {
 
   if (!open) {
     return (
-      <button className="btn primary chat-fab" onClick={() => setOpen(true)} aria-label="打開 AI 導師聊天">
-        💬 問 Senior Dev
+      <button className="btn primary chat-fab" onClick={() => setOpen(true)} aria-label="Open AI mentor chat">
+        💬 Ask Senior Dev
       </button>
     );
   }
 
   return (
-    <section className="chat-panel" aria-label="AI 導師聊天">
+    <section className="chat-panel" aria-label="AI mentor chat">
       <div className="chat-head">
         <span style={{ fontSize: 22 }} aria-hidden>🧑‍🏫</span>
         <div style={{ flex: 1 }}>
-          <strong>Senior Dev（AI 導師）</strong>
-          <div className="small muted">{info ? `正在看：${info.ticket.id} ${info.ticket.title}` : "可以問任何 Java 問題"}</div>
+          <strong>Senior Dev (AI mentor)</strong>
+          <div className="small muted">{info ? `Looking at: ${info.ticket.id} ${info.ticket.title}` : "Ask any Java question"}</div>
         </div>
-        <button className="btn small ghost" onClick={() => setMsgs([])} title="清除對話">清除</button>
-        <button className="btn small ghost" onClick={() => setOpen(false)} aria-label="關閉">✕</button>
+        <button className="btn small ghost" onClick={() => setMsgs([])} title="Clear chat">Clear</button>
+        <button className="btn small ghost" onClick={() => setOpen(false)} aria-label="Close">✕</button>
       </div>
       <div className="chat-log" ref={logRef} aria-live="polite">
         {msgs.length === 0 && (
           <div className="bubble assistant">
-            嗨 {profile.name}！我是團隊的 Senior Dev。卡住的時候可以問我，例如：
+            Hi {profile.name}! I'm the team's Senior Dev. Ask me when you're stuck, for example:
             <ul style={{ margin: "6px 0 0", paddingLeft: 18 }}>
-              <li>這個錯誤訊息是什麼意思？</li>
-              <li>為什麼我的迴圈會 out of bounds？</li>
-              <li>row-major 跟 column-major 差在哪？</li>
+              <li>What does this error message mean?</li>
+              <li>Why does my loop go out of bounds?</li>
+              <li>What's the difference between row-major and column-major?</li>
             </ul>
-            <div className="small muted" style={{ marginTop: 6 }}>我會引導你自己找到答案，不會直接給完整解答 😉</div>
+            <div className="small muted" style={{ marginTop: 6 }}>I'll guide you to the answer instead of handing you the full solution 😉</div>
           </div>
         )}
         {msgs.map((m, i) =>
@@ -95,11 +95,11 @@ export function ChatWidget() {
             <div key={i} className="bubble assistant"><Markdown>{m.content}</Markdown></div>
           ),
         )}
-        {busy && <div className="bubble assistant muted">思考中…</div>}
+        {busy && <div className="bubble assistant muted">Thinking…</div>}
       </div>
       {info && (
         <label className="small muted" style={{ padding: "0 12px" }}>
-          <input type="checkbox" checked={includeCode} onChange={(e) => setIncludeCode(e.target.checked)} /> 附上我目前的程式碼
+          <input type="checkbox" checked={includeCode} onChange={(e) => setIncludeCode(e.target.checked)} /> Include my current code
         </label>
       )}
       <form
@@ -119,10 +119,10 @@ export function ChatWidget() {
               send();
             }
           }}
-          placeholder="輸入問題（Enter 送出，Shift+Enter 換行）"
-          aria-label="輸入問題"
+          placeholder="Type a question (Enter to send, Shift+Enter for a new line)"
+          aria-label="Your question"
         />
-        <button className="btn primary" type="submit" disabled={busy || !text.trim()}>送出</button>
+        <button className="btn primary" type="submit" disabled={busy || !text.trim()}>Send</button>
       </form>
     </section>
   );
