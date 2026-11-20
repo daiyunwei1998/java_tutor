@@ -54,7 +54,7 @@ export function ImageLab({ ticket, files }: { ticket: Ticket; files: Record<stri
     const dataName = `input-${id}.txt`;
     const harness = `public class PreviewHarness {
     public static void main(String[] args) throws Exception {
-        int[][] img = tutor.Img.read("/str/data/${dataName}");
+        int[][] img = tutor.Img.read("/files/data/${dataName}");
         tutor.Img.write(Filters.brighten(img, ${Math.round(delta)}));
     }
 }

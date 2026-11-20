@@ -33,6 +33,19 @@ public final class Bridge {
      *                      for ecj to read), in which case we compile at Java 8 language level against that jar.
      *                      Empty = use the running JDK (local testing).
      */
+    /** Writes a UTF-8 text file (creating parent folders). Used by the browser runner for student sources. */
+    public static boolean writeFile(String path, String content) {
+        try {
+            File f = new File(path);
+            File parent = f.getParentFile();
+            if (parent != null) parent.mkdirs();
+            java.nio.file.Files.write(f.toPath(), content.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
     public static String compile(String srcDir, String outDir, String files, String extraClasspath, String bootClasspath) {
         StringWriter out = new StringWriter();
         StringWriter err = new StringWriter();

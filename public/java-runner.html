@@ -33,16 +33,16 @@
 
   async function handle(req) {
     const Bridge = await getBridge();
-    const dir = `/str/run${req.id}/`;
+    const dir = `/files/src${req.id}/`;
     const out = `/files/run${req.id}/`;
     const names = [];
     for (const f of req.files) {
       if (!/^[A-Za-z0-9_\/]+\.java$/.test(f.path)) throw new Error("bad path " + f.path);
-      cheerpOSAddStringFile(dir + f.path, new TextEncoder().encode(f.content));
+      if (!(await Bridge.writeFile(dir + f.path, f.content))) throw new Error("cannot write " + f.path);
       names.push(f.path);
     }
     for (const extra of req.dataFiles || []) {
-      cheerpOSAddStringFile("/str/data/" + extra.name, new TextEncoder().encode(extra.content));
+      if (!(await Bridge.writeFile("/files/data/" + extra.name, extra.content))) throw new Error("cannot write " + extra.name);
     }
     const t0 = performance.now();
     const compiled = JSON.parse(await Bridge.compile(dir, out, names.join(" "), "/app/java/tutor-runtime.jar", "/app/java/jdk-api.jar"));
