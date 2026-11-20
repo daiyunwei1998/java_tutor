@@ -4,8 +4,8 @@ import { AppShell } from "@/components/AppShell";
 import { THEME_INIT_SCRIPT } from "@/lib/theme";
 
 export const metadata: Metadata = {
-  title: "PixelForge Dev HQ · Java Tutor",
-  description: "Project-based Java learning: students work as Junior Developers on real-feeling tickets.",
+  title: "Java Dev Sprints",
+  description: "Project-based Java learning in weekly sprints: students work as Junior Developers on real-feeling tickets.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

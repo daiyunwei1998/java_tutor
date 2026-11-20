@@ -1,15 +1,21 @@
 // Checks every ticket: starter code compiles and runs, starter fails some tests, reference solution passes all.
 // Usage: node --experimental-strip-types tools/verify-content.mjs   (from repo root, needs a JDK)
 import { execFileSync } from "node:child_process";
-import { mkdirSync, writeFileSync, rmSync, copyFileSync } from "node:fs";
+import { mkdirSync, writeFileSync, rmSync, copyFileSync, readdirSync, existsSync } from "node:fs";
 import { join, resolve } from "node:path";
 const root = resolve(import.meta.dirname, "..");
-const { sprint1Tickets } = await import(join(root, "src/content/pixelforge/tickets-sprint1.ts"));
+// Every sprint folder has a tickets.ts exporting `tickets` (see src/content/registry.ts).
+const sprintDir = join(root, "src/content/sprints");
+const allTickets = [];
+for (const d of readdirSync(sprintDir)) {
+  const f = join(sprintDir, d, "tickets.ts");
+  if (existsSync(f)) allTickets.push(...(await import(f)).tickets);
+}
 const jars = join(root, "public/java");
 const cp = `${jars}/tutor-runtime.jar:${jars}/ecj.jar`;
 const bridge = (...a) => JSON.parse(execFileSync("java", ["-Dstdout.encoding=UTF-8", "-cp", cp, "tutor.Bridge", ...a], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim().split("\n").pop());
 let failed = false;
-for (const t of sprint1Tickets) {
+for (const t of allTickets) {
   for (const variant of ["starter", "solution"]) {
     const dir = join("/tmp", "verify", t.id, variant) + "/";
     rmSync(dir, { recursive: true, force: true }); mkdirSync(dir + "src", { recursive: true });

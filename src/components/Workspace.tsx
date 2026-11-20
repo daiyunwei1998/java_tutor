@@ -15,20 +15,21 @@ import { VizPanel } from "./viz/VizPanel";
 
 type MobileTab = "learn" | "code" | "viz" | "tasks";
 
-export function Workspace({ projectId, ticketId }: { projectId: string; ticketId: string }) {
-  const { project, ticket } = getTicket(projectId, ticketId)!;
-  const key = ticketKey(projectId, ticketId);
+export function Workspace({ sprintId, ticketId }: { sprintId: string; ticketId: string }) {
+  const { sprint, ticket } = getTicket(sprintId, ticketId)!;
+  const key = ticketKey(sprintId, ticketId);
   const store = useStore();
   const st = getTicketState(store, key);
   const { setInfo } = useWorkspace();
   const [result, setResult] = useState<RunResult | null>(null);
   const [vizIndex, setVizIndex] = useState(0);
   const [mobileTab, setMobileTab] = useState<MobileTab>("learn");
-  const [vizCollapsed, setVizCollapsed] = useState(false);
+  const [sideTab, setSideTab] = useState<"learn" | "viz">("learn");
+  const [sideCollapsed, setSideCollapsed] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
-  const vizPanel = useRef<ImperativePanelHandle>(null);
-  const idx = project.tickets.findIndex((t) => t.id === ticket.id);
-  const nextTicket = project.tickets[idx + 1];
+  const sidePanel = useRef<ImperativePanelHandle>(null);
+  const idx = sprint.tickets.findIndex((t) => t.id === ticket.id);
+  const nextTicket = sprint.tickets[idx + 1];
 
   const files: Record<string, string> = Object.fromEntries(
     ticket.task.files.filter((f) => !f.readOnly).map((f) => [f.path, st.files[f.path] ?? f.content]),
@@ -76,17 +77,18 @@ export function Workspace({ projectId, ticketId }: { projectId: string; ticketId
   function openViz(i: number) {
     setVizIndex(i);
     setMobileTab("viz");
-    vizPanel.current?.expand();
+    setSideTab("viz");
+    sidePanel.current?.expand();
   }
 
-  const locked = isLocked(store, project, ticket);
+  const locked = isLocked(store, sprint, ticket);
 
   const learn = (
     <div className="pane-pad">
       <div className="briefing">
-        <div className="who" aria-hidden>{project.techLead.avatar}</div>
+        <div className="who" aria-hidden>{sprint.project.techLead.avatar}</div>
         <div>
-          <div className="small muted">{project.techLead.name} · {project.techLead.role} 指派給你</div>
+          <div className="small muted">{sprint.project.techLead.name} · {sprint.project.techLead.role} 指派給你</div>
           <Markdown>{ticket.briefing}</Markdown>
         </div>
       </div>
@@ -122,9 +124,9 @@ export function Workspace({ projectId, ticketId }: { projectId: string; ticketId
           <button className="btn ok" onClick={merge}>🚀 Open PR &amp; Merge（+{ticket.xp} XP）</button>
         )}
         {st.status === "merged" && nextTicket && (
-          <Link className="btn primary" href={`/projects/${project.id}/tickets/${nextTicket.id}`}>下一張 ticket：{nextTicket.id} →</Link>
+          <Link className="btn primary" href={`/sprints/${sprint.id}/tickets/${nextTicket.id}`}>下一張 ticket：{nextTicket.id} →</Link>
         )}
-        {st.status === "merged" && !nextTicket && <div className="callout lead">Sprint 1 完成！🎉 Sprint 2 的濾鏡 ticket 即將推出。</div>}
+        {st.status === "merged" && !nextTicket && <div className="callout lead">這個 Sprint 的 ticket 都完成了！🎉 等老師 code review，下一個 Sprint 開始時會出現在工作台。</div>}
       </div>
     );
   }
@@ -147,7 +149,7 @@ export function Workspace({ projectId, ticketId }: { projectId: string; ticketId
   return (
     <div className="ws">
       <div className="ws-head">
-        <Link href={`/projects/${project.id}`} className="small">← {project.title} 看板</Link>
+        <Link href={`/sprints/${sprint.id}`} className="small">← Sprint {sprint.number} 看板</Link>
         <span className="ticket-id">{ticket.id}</span>
         <strong style={{ flex: 1, minWidth: 200 }}>{ticket.title}</strong>
         <span className={`pill ${st.status}`}>{STATUS_LABEL[st.status]}</span>
@@ -165,43 +167,37 @@ export function Workspace({ projectId, ticketId }: { projectId: string; ticketId
       <div className="ws-body">
         <MediaSwitch
           desktop={
-            <PanelGroup direction="horizontal" autoSaveId="ws-layout">
-              <Panel defaultSize={30} minSize={18} order={1}>
-                <div className="pane">{learn}</div>
-              </Panel>
-              <PanelResizeHandle className="resize-handle" aria-label="調整寬度" />
-              <Panel defaultSize={38} minSize={25} order={2}>
-                <div className="pane">{code}</div>
-              </Panel>
-              <PanelResizeHandle className="resize-handle" aria-label="調整寬度" />
+            <PanelGroup direction="horizontal" autoSaveId="ws-layout-2col">
               <Panel
-                ref={vizPanel}
-                defaultSize={32}
-                minSize={20}
+                ref={sidePanel}
+                defaultSize={44}
+                minSize={28}
                 collapsible
                 collapsedSize={3}
-                order={3}
-                onCollapse={() => setVizCollapsed(true)}
-                onExpand={() => setVizCollapsed(false)}
+                order={1}
+                onCollapse={() => setSideCollapsed(true)}
+                onExpand={() => setSideCollapsed(false)}
               >
-                {vizCollapsed ? (
+                {sideCollapsed ? (
                   <div className="collapsed-strip">
-                    <button className="btn small" onClick={() => vizPanel.current?.expand()} aria-label="展開視覺化面板">🔬</button>
+                    <button className="btn small" onClick={() => { setSideTab("learn"); sidePanel.current?.expand(); }} aria-label="展開說明" title="說明">📖</button>
+                    <button className="btn small" onClick={() => { setSideTab("viz"); sidePanel.current?.expand(); }} aria-label="展開視覺化" title="視覺化">🔬</button>
                   </div>
                 ) : (
-                  <div className="pane" style={{ position: "relative" }}>
-                    <button
-                      className="btn small ghost"
-                      style={{ position: "absolute", right: 6, top: 6, zIndex: 2 }}
-                      onClick={() => vizPanel.current?.collapse()}
-                      aria-label="收合視覺化面板"
-                      title="收合"
-                    >
-                      ⇥
-                    </button>
-                    {viz}
+                  <div className="side">
+                    <div className="side-tabs" role="tablist" aria-label="左側內容">
+                      <button role="tab" aria-selected={sideTab === "learn"} onClick={() => setSideTab("learn")}>📖 說明與任務</button>
+                      <button role="tab" aria-selected={sideTab === "viz"} onClick={() => setSideTab("viz")}>🔬 視覺化</button>
+                      <div className="spacer" />
+                      <button className="btn small ghost" onClick={() => sidePanel.current?.collapse()} aria-label="收合左欄，讓程式碼變寬" title="收合，讓程式碼變寬">⇤</button>
+                    </div>
+                    <div className="pane">{sideTab === "learn" ? learn : viz}</div>
                   </div>
                 )}
+              </Panel>
+              <PanelResizeHandle className="resize-handle" aria-label="調整寬度" />
+              <Panel defaultSize={56} minSize={35} order={2}>
+                <div className="pane">{code}</div>
               </Panel>
             </PanelGroup>
           }
@@ -220,7 +216,7 @@ export function Workspace({ projectId, ticketId }: { projectId: string; ticketId
   );
 }
 
-/** Three resizable columns on desktop, tabs on phones/tablets in portrait. */
+/** Two resizable columns on desktop (left: lesson / visualization tabs, right: code), tabs on phones. */
 function MediaSwitch({ desktop, mobile }: { desktop: React.ReactNode; mobile: React.ReactNode }) {
   const [isMobile, setIsMobile] = useState<boolean | null>(null);
   useEffect(() => {

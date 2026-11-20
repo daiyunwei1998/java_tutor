@@ -54,5 +54,35 @@ def test_all():
     assert d["by_student"][0]["name"] == "小明" and d["last_quota_exhausted"], d
     print("ALL OK", d["month"], d["failures"])
 
+def test_accounts():
+    assert client.post("/api/auth/login", json={"username": "stu", "password": "wrong"}).status_code == 401
+    stu = client.post("/api/auth/login", json={"username": "STU", "password": "stu"}).json()["token"]
+    test = client.post("/api/auth/login", json={"username": "test", "password": "test"}).json()["token"]
+    hs, ht = {"Authorization": f"Bearer {stu}"}, {"Authorization": f"Bearer {test}"}
+    assert client.get("/api/progress").status_code == 401
+    assert client.get("/api/progress", headers={"Authorization": "Bearer x.y"}).status_code == 401
+    p = client.get("/api/progress", headers=hs).json()
+    assert p["rev"] == 0 and p["data"] == {"tickets": {}}, p
+    data = {"tickets": {"a/PF-101": {"status": "merged"}}}
+    r = client.put("/api/progress", headers=hs, json={"data": data, "base_rev": 0}).json()
+    assert r == {"conflict": False, "rev": 1, "updated_at": r["updated_at"]}, r
+    r = client.put("/api/progress", headers=hs, json={"data": {"tickets": {}}, "base_rev": 0}).json()
+    assert r["conflict"] and r["data"] == data and r["rev"] == 1, r  # stale write refused
+    h = {"X-Admin-Password": "pw"}
+    assert client.post("/api/admin/accounts/sync", json={"source": "stu", "target": "test"}).status_code == 401
+    r = client.post("/api/admin/accounts/sync", headers=h, json={"source": "stu", "target": "test"})
+    assert r.status_code == 200, r.text
+    assert client.get("/api/progress", headers=ht).json()["data"] == data
+    accs = {a["username"]: a for a in client.get("/api/admin/accounts", headers=h).json()["accounts"]}
+    assert accs["test"]["merged"] == 1 and accs["stu"]["merged"] == 1, accs
+    r = client.post("/api/admin/accounts/test/reset", headers=h)
+    assert r.status_code == 200
+    t = client.get("/api/progress", headers=ht).json()
+    assert t["data"] == {"tickets": {}} and t["rev"] == 2, t
+    assert client.get("/api/progress", headers=hs).json()["data"] == data  # stu untouched
+    assert client.post("/api/admin/accounts/nobody/reset", headers=h).status_code == 404
+    print("ACCOUNTS OK")
+
 if __name__ == "__main__":
     test_all()
+    test_accounts()

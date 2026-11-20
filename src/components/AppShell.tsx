@@ -3,14 +3,14 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { projects } from "@/content/registry";
-import { levelOf, setProfile, ticketKey, useStore, xpOf } from "@/lib/progress";
+import { currentSprint, SITE_NAME, sprints } from "@/content/registry";
+import { levelOf, login, logout, ticketKey, useStore, xpOf } from "@/lib/progress";
 import { ChatWidget } from "./ChatWidget";
 import { ThemeToggle } from "./ThemeToggle";
 import { WorkspaceProvider } from "./WorkspaceContext";
 
 export const xpByKey: Record<string, number> = Object.fromEntries(
-  projects.flatMap((p) => p.tickets.map((t) => [ticketKey(p.id, t.id), t.xp])),
+  sprints.flatMap((p) => p.tickets.map((t) => [ticketKey(p.id, t.id), t.xp])),
 );
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -19,16 +19,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const isAdmin = path.startsWith("/admin");
   const xp = xpOf(store, xpByKey);
   const level = levelOf(xp);
+  const cur = currentSprint();
 
   return (
     <WorkspaceProvider>
       <header className="topbar">
         <Link href="/" className="brand">
-          <span aria-hidden>🧩</span> <span className="brand-text">PixelForge Dev HQ</span>
+          <span aria-hidden>☕</span> <span className="brand-text">{SITE_NAME}</span>
         </Link>
         <nav className="topnav" aria-label="主選單">
           <Link href="/" className={path === "/" ? "active" : ""}>我的工作台</Link>
-          <Link href="/projects/mini-photoshop" className={path.startsWith("/projects") ? "active" : ""}>專案看板</Link>
+          {cur && <Link href={`/sprints/${cur.id}`} className={path.startsWith("/sprints") ? "active" : ""}>Sprint 看板</Link>}
         </nav>
         <div className="spacer" />
         <ThemeToggle />
@@ -38,37 +39,44 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <span className="level-text">
               <strong style={{ color: "var(--text)" }}>{store.profile.name}</strong> · {level.title} · {xp} XP
             </span>
+            <button className="btn small ghost" onClick={logout} title="登出（換帳號）">登出</button>
           </div>
         )}
       </header>
       <main>{children}</main>
-      {store && !store.profile && !isAdmin && <Onboarding />}
+      {store && !store.auth && !isAdmin && <Login />}
       {!isAdmin && store?.profile && <ChatWidget />}
     </WorkspaceProvider>
   );
 }
 
-function Onboarding() {
-  const [name, setName] = useState("");
+function Login() {
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [err, setErr] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
   return (
-    <div className="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="onb-title">
+    <div className="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="login-title">
       <form
         className="card modal"
-        onSubmit={(e) => {
+        onSubmit={async (e) => {
           e.preventDefault();
-          if (name.trim()) setProfile(name);
+          setBusy(true);
+          setErr(await login(username, password));
+          setBusy(false);
         }}
       >
         <div style={{ fontSize: 34 }} aria-hidden>👋</div>
-        <h1 id="onb-title">歡迎加入 PixelForge Studio</h1>
-        <p className="muted">
-          從今天起，你是我們團隊的 <strong>Junior Developer</strong>。你會接到真正的 ticket、寫 Java、跑測試，最後把功能 merge 進產品。
-        </p>
-        <label htmlFor="onb-name" className="small muted">你的名字（會顯示在工作台，也讓老師看到誰在問 AI）</label>
-        <div className="row" style={{ marginTop: 6 }}>
-          <input id="onb-name" type="text" value={name} onChange={(e) => setName(e.target.value)} maxLength={40} autoFocus style={{ flex: 1 }} placeholder="例如：小明" />
-          <button className="btn primary" type="submit" disabled={!name.trim()}>報到 🚀</button>
-        </div>
+        <h1 id="login-title">歡迎回來，Junior Developer</h1>
+        <p className="muted">登入你的帳號，進度會存在雲端，換電腦也接得上。</p>
+        <label htmlFor="login-user" className="small muted">帳號</label>
+        <input id="login-user" type="text" value={username} onChange={(e) => setUsername(e.target.value)} autoComplete="username" autoCapitalize="none" autoFocus style={{ width: "100%", marginTop: 4 }} />
+        <label htmlFor="login-pw" className="small muted" style={{ display: "block", marginTop: 10 }}>密碼</label>
+        <input id="login-pw" type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" style={{ width: "100%", marginTop: 4 }} />
+        {err && <div className="callout warn" role="alert">{err}</div>}
+        <button className="btn primary" type="submit" disabled={!username.trim() || !password || busy} style={{ marginTop: 14, width: "100%" }}>
+          {busy ? "登入中…" : "登入 🚀"}
+        </button>
       </form>
     </div>
   );

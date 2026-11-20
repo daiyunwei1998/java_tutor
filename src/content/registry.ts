@@ -1,15 +1,25 @@
-import type { Project, Ticket } from "./types";
-import { pixelforge } from "./pixelforge/project";
+import type { Sprint, Ticket } from "./types";
+import { sprint2dArrays } from "./sprints/s01-2d-arrays/sprint";
 
-/** All projects available on the platform. Add new units by adding a project here; layouts never import content directly. */
-export const projects: Project[] = [pixelforge];
+/** Site name shown in the top bar and browser tab. Sprint-specific stories live in each sprint's `project`. */
+export const SITE_NAME = "Java Dev Sprints";
 
-export function getProject(id: string): Project | undefined {
-  return projects.find((p) => p.id === id);
+/**
+ * All sprints, in order. To assign a new week: add a folder under src/content/sprints/, import it here,
+ * set it to status "current" and the previous one to "done".
+ */
+export const sprints: Sprint[] = [sprint2dArrays];
+
+export function getSprint(id: string): Sprint | undefined {
+  return sprints.find((s) => s.id === id);
 }
 
-export function getTicket(projectId: string, ticketId: string): { project: Project; ticket: Ticket } | undefined {
-  const project = getProject(projectId);
-  const ticket = project?.tickets.find((t) => t.id === ticketId);
-  return project && ticket ? { project, ticket } : undefined;
+export function currentSprint(): Sprint | undefined {
+  return sprints.find((s) => s.status === "current") ?? sprints.find((s) => s.status !== "upcoming");
+}
+
+export function getTicket(sprintId: string, ticketId: string): { sprint: Sprint; ticket: Ticket } | undefined {
+  const sprint = getSprint(sprintId);
+  const ticket = sprint?.tickets.find((t) => t.id === ticketId);
+  return sprint && ticket ? { sprint, ticket } : undefined;
 }

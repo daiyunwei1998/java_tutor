@@ -1,11 +1,14 @@
-# PixelForge Dev HQ — Java Tutor
+# Java Dev Sprints
 
-專案式 (project-based) 的 Java / AP CSA 學習平台。學生是 PixelForge Studio 的 **Junior Developer**，
-透過完成 ticket、通過測試、merge PR，一步步做出 Mini Photoshop。第一個專案是 Unit 9：2D Arrays。
+專案式 (project-based) 的 Java / AP CSA 學習平台。課程以 **Sprint** 為單位（例如這週 = 2D Arrays），
+每個 Sprint 有自己的小專案和故事（Sprint 1：PixelForge Studio 的 Mini Photoshop）。學生是 **Junior Developer**，
+透過完成 ticket、通過測試、merge PR 推進 Sprint 完成度。
 
 - **Java 在學生的瀏覽器裡編譯和執行**（CheerpJ + Eclipse ecj），不會在伺服器上跑學生程式碼。
 - **AI 導師**（OpenAI）：全站「問 Senior Dev」聊天 + 每個練習的「🤖 AI 協助 Debug」按鈕。
-- **老師後台** `/admin`：AI 使用量（每位學生、每天、估計花費、429 額度用完警示）。
+- **帳號**：預設 `stu`、`test`（密碼和帳號相同，只用來區分帳號）。進度存在資料庫，換電腦也在。
+  要加帳號：在 Vercel 設 `SEED_ACCOUNTS=stu,test,新帳號`，重新部署後自動建立（密碼 = 帳號）。
+- **老師後台** `/admin`（網站上沒有入口，直接打網址）：AI 使用量、各帳號進度、「重設 test」、「把 stu 同步到 test」。
 - 規格檢視與優化建議：[docs/spec-review.md](docs/spec-review.md)
 - 測試：`node --experimental-strip-types tools/verify-content.mjs`（需要 JDK）、`python tools/test_api.py`
 
@@ -36,21 +39,29 @@ npm run dev
 
 ## 架構
 ```
-src/content/             課程內容（純資料）：專案、ticket、起始碼、測試、提示
-src/components/          工作區（三欄 / 手機分頁）、程式編輯器、AI 聊天
+src/content/             課程內容（純資料）：sprint、小專案故事、ticket、起始碼、測試、提示
+src/components/          工作區（兩欄：說明/視覺化 ｜ 程式碼；手機分頁）、程式編輯器、AI 聊天
 src/components/viz/      視覺化元件（依 type 註冊，內容只引用 type + config）
 src/lib/java-runner.ts   瀏覽器端 Java 執行 API
-src/lib/progress.ts      學生進度（目前存在 localStorage）
+src/lib/progress.ts      學生進度：存在後端（每個帳號一份），localStorage 只是快取
 public/java-runner.html  在隱藏 iframe 裡跑 CheerpJ；逾時就重建 iframe（無窮迴圈保護）
 public/java/             ecj.jar（Eclipse Java 編譯器）、tutor-runtime.jar（編譯/執行/測試橋接）
-api/index.py             FastAPI：/api/ai/chat、/api/ai/debug、/api/admin/usage、/api/health
-api/_core/               設定、AI 用量紀錄（Postgres 或 SQLite）、AI 導師 prompt
+api/index.py             FastAPI：AI、登入、進度同步、admin（用量 / 帳號）、/api/health
+api/_core/               設定、AI 用量紀錄與帳號/進度（Postgres 或 SQLite）、AI 導師 prompt
 runtime-java/            tutor-runtime.jar 的原始碼（Bridge、Check 斷言、Img 影像 I/O）
 tools/                   內容驗證、API smoke test、參考解答
 ```
 
+## 新增一個 Sprint
+1. 複製 `src/content/sprints/s01-2d-arrays/` 成新資料夾（例如 `s02-recursion/`）。
+2. 在 `sprint.ts` 改 `id`、`number`、`topic`、`unit`、`project`（這個 Sprint 的小專案故事），`status: "current"`。
+3. 在 `src/content/registry.ts` 的 `sprints` 加上它，並把上一個 Sprint 改成 `status: "done"`。
+4. 在 `tickets.ts` 寫 ticket（見下一節）。
+
+網站名稱在 `src/content/registry.ts` 的 `SITE_NAME`。
+
 ## 新增一張 ticket
-在 `src/content/pixelforge/` 新增 `Ticket` 資料（說明、預測題、起始碼、唯讀測試檔、提示），
+在該 Sprint 的 `tickets.ts` 新增 `Ticket` 資料（說明、預測題、起始碼、唯讀測試檔、提示），
 測試類別裡每個 `static void testXxx()` 方法就是一個測試，用 `tutor.Check` 斷言。
 參考解答放 `tools/solutions/`，跑 `node --experimental-strip-types tools/verify-content.mjs` 驗證。
 

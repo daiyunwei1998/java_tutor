@@ -49,7 +49,6 @@ export type Ticket = {
   id: string; // e.g. PF-101
   slug: string;
   title: string;
-  sprint: string;
   xp: number;
   /** Message from the tech lead that frames the task as real work. */
   briefing: string;
@@ -61,15 +60,29 @@ export type Ticket = {
   dependsOn: string[];
 };
 
-export type Project = {
-  id: string;
-  title: string;
-  company: string;
+/** The story a sprint's tickets live in. Each sprint can have its own fitting mini project. */
+export type MiniProject = {
+  name: string; // e.g. "Mini Photoshop"
+  company: string; // fictional team, e.g. "PixelForge Studio"
   tagline: string;
   description: string;
-  course: string;
-  unit: string;
   techLead: { name: string; role: string; avatar: string };
+};
+
+/**
+ * A sprint is the unit the teacher assigns (e.g. one week = 2D arrays).
+ * To add one: create src/content/sprints/<id>/{sprint,tickets}.ts and list it in src/content/registry.ts.
+ */
+export type Sprint = {
+  id: string; // URL slug, e.g. "2d-arrays"
+  number: number; // Sprint 1, 2, …
+  topic: string; // e.g. "2D Arrays"
+  unit: string; // e.g. "AP CSA Unit 9"
+  /** current = assigned now; done = earlier sprints (still open for review); upcoming = shown as coming soon. */
+  status: "current" | "done" | "upcoming";
+  dates?: string; // e.g. "11/24 – 11/30"
+  project: MiniProject;
   tickets: Ticket[];
-  upcoming: { title: string; note: string }[];
+  /** Tickets planned for later, shown greyed out on the board. */
+  backlog: { title: string; note: string }[];
 };

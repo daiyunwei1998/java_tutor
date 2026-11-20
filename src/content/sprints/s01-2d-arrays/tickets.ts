@@ -1,4 +1,4 @@
-import type { Ticket } from "../types";
+import type { Ticket } from "../../types";
 
 /*
  * Sprint 1 of the PixelForge "Mini Photoshop" project = AP CSA Unit 9 (2D arrays), lessons 1–4,
@@ -10,7 +10,6 @@ const pf101: Ticket = {
   id: "PF-101",
   slug: "image-buffer-memory",
   title: "Image buffer 健康檢查：2D 陣列與記憶體",
-  sprint: "Sprint 1 · Onboarding",
   xp: 100,
   dependsOn: [],
   briefing: `歡迎加入 **PixelForge Studio**！🎉 我們在做一個在瀏覽器裡跑的 Mini Photoshop。
@@ -191,7 +190,6 @@ const pf102: Ticket = {
   id: "PF-102",
   slug: "row-column-major",
   title: "直方圖統計：Row-major 與 Column-major 走訪",
-  sprint: "Sprint 1 · Onboarding",
   xp: 120,
   dependsOn: ["PF-101"],
   briefing: `設計師想在 Mini Photoshop 加一個「亮度分布」面板：要知道 **每一列 (row)** 和 **每一欄 (column)** 的亮度總和。
@@ -352,7 +350,6 @@ const pf103: Ticket = {
   id: "PF-103",
   slug: "enhanced-for",
   title: "曝光調整：Enhanced for 的陷阱",
-  sprint: "Sprint 1 · Onboarding",
   xp: 120,
   dependsOn: ["PF-102"],
   briefing: `QA 回報一個 bug：「曝光 +10」按鈕按下去，影像完全沒變 🐛
@@ -518,7 +515,6 @@ const pf104: Ticket = {
   id: "PF-104",
   slug: "matrix-algorithms",
   title: "旋轉功能準備：對角線與轉置 (Transpose)",
-  sprint: "Sprint 1 · Onboarding",
   xp: 150,
   dependsOn: ["PF-103"],
   briefing: `產品經理想在下個 sprint 加「旋轉 90°」。旋轉的第一步是 **轉置 (transpose)**：把 row 變成 column。
@@ -682,7 +678,6 @@ const pf105: Ticket = {
   id: "PF-105",
   slug: "brightness-filter",
   title: "第一個濾鏡上線：亮度調整 (Brightness)",
-  sprint: "Sprint 1 · Feature",
   xp: 200,
   dependsOn: ["PF-104"],
   briefing: `恭喜你通過 onboarding！🚀 這是你第一張 **會出現在產品上** 的 ticket。
@@ -837,4 +832,4 @@ public class FiltersTest {
   },
 };
 
-export const sprint1Tickets: Ticket[] = [pf101, pf102, pf103, pf104, pf105];
+export const tickets: Ticket[] = [pf101, pf102, pf103, pf104, pf105];

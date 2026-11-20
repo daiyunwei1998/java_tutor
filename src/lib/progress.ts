@@ -3,7 +3,8 @@
 import { useSyncExternalStore } from "react";
 
 /**
- * Student progress, kept in localStorage for the MVP (one device per student).
+ * Student progress. The server (FastAPI + Postgres) is the source of truth per account ("stu", "test", ...);
+ * localStorage is a cache so the page works instantly and survives a flaky connection.
  * Statuses follow the spec: viewed → attempted → passed automated tests → (tutor verified, later).
  */
 export type TicketStatus = "todo" | "in_progress" | "in_review" | "merged";
@@ -21,9 +22,11 @@ export type TicketState = {
 
 export type Profile = { id: string; name: string; createdAt: string };
 
-type Store = { version: 1; profile: Profile | null; tickets: Record<string, TicketState> };
+export type Auth = { username: string; token: string; rev: number; dirty: boolean };
 
-const KEY = "java-tutor.v1";
+export type Store = { version: 1; profile: Profile | null; tickets: Record<string, TicketState>; auth?: Auth | null };
+
+const KEY = "java-tutor.v2";
 const EMPTY: Store = { version: 1, profile: null, tickets: {} };
 const listeners = new Set<() => void>();
 let cache: Store | null = null;
@@ -39,7 +42,12 @@ function read(): Store {
   return cache!;
 }
 
-function write(next: Store) {
+function write(next: Store, opts: { local?: boolean } = {}) {
+  if (!opts.local && next.auth) {
+    next = { ...next, auth: { ...next.auth, dirty: true } };
+    editSeq++;
+    schedulePush();
+  }
   cache = next;
   try {
     window.localStorage.setItem(KEY, JSON.stringify(next));
@@ -70,7 +78,7 @@ export function useStore(): Store | null {
   return useSyncExternalStore(subscribe, read, () => null);
 }
 
-export const ticketKey = (projectId: string, ticketId: string) => `${projectId}/${ticketId}`;
+export const ticketKey = (sprintId: string, ticketId: string) => `${sprintId}/${ticketId}`;
 
 const blank = (): TicketState => ({ status: "todo", attempts: 0, files: {}, predictions: {}, hintsShown: 0 });
 
@@ -83,18 +91,112 @@ export function updateTicket(key: string, fn: (t: TicketState) => TicketState) {
   write({ ...s, tickets: { ...s.tickets, [key]: fn(s.tickets[key] ?? blank()) } });
 }
 
-export function setProfile(name: string) {
+// ---------- accounts + server sync ----------
+
+let editSeq = 0;
+let pushTimer: ReturnType<typeof setTimeout> | null = null;
+let pushing = false;
+
+function schedulePush(delay = 800) {
+  if (typeof window === "undefined") return;
+  if (pushTimer) clearTimeout(pushTimer);
+  pushTimer = setTimeout(push, delay);
+}
+
+function applyServer(username: string, token: string, data: { tickets?: Record<string, TicketState> }, rev: number) {
+  write(
+    {
+      version: 1,
+      profile: { id: username, name: username, createdAt: read().profile?.createdAt ?? new Date().toISOString() },
+      tickets: data?.tickets ?? {},
+      auth: { username, token, rev, dirty: false },
+    },
+    { local: true },
+  );
+}
+
+async function push() {
   const s = read();
-  const id = s.profile?.id ?? (crypto.randomUUID?.() ?? `s-${Date.now()}-${Math.random().toString(36).slice(2)}`);
-  write({ ...s, profile: { id, name: name.trim().slice(0, 40), createdAt: s.profile?.createdAt ?? new Date().toISOString() } });
+  if (!s.auth || !s.auth.dirty) return;
+  if (pushing) return schedulePush(500);
+  pushing = true;
+  const seq = editSeq;
+  const { username, token, rev } = s.auth;
+  try {
+    const res = await fetch("/api/progress", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ data: { tickets: s.tickets }, base_rev: rev }),
+    });
+    if (res.status === 401) return logout();
+    if (!res.ok) throw new Error(String(res.status));
+    const body = await res.json();
+    const now = read();
+    if (!now.auth || now.auth.username !== username) return;
+    if (body.conflict) {
+      // The teacher reset/synced this account (or another device saved first): the server copy wins.
+      applyServer(username, token, body.data, body.rev);
+    } else {
+      const stillDirty = editSeq !== seq;
+      write({ ...now, auth: { ...now.auth, rev: body.rev, dirty: stillDirty } }, { local: true });
+      if (stillDirty) schedulePush(300);
+    }
+  } catch {
+    schedulePush(5000); // offline: keep the local copy and retry
+  } finally {
+    pushing = false;
+  }
 }
 
-export function resetAll() {
-  write({ ...EMPTY, profile: read().profile });
+/** Fetches the server copy; used on load and when the tab gets focus. Local unsaved edits are pushed instead. */
+export async function pull() {
+  const s = read();
+  if (!s.auth) return;
+  if (s.auth.dirty) return schedulePush(0);
+  const { username, token } = s.auth;
+  try {
+    const res = await fetch("/api/progress", { headers: { Authorization: `Bearer ${token}` } });
+    if (res.status === 401) return logout();
+    if (!res.ok) return;
+    const body = await res.json();
+    const now = read();
+    if (now.auth?.username === username && !now.auth.dirty && body.rev !== now.auth.rev) {
+      applyServer(username, token, body.data, body.rev);
+    }
+  } catch {
+    /* offline: keep using the cache */
+  }
 }
 
-export function exportProgress(): string {
-  return JSON.stringify(read(), null, 2);
+export async function login(username: string, password: string): Promise<string | null> {
+  try {
+    const res = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password }),
+    });
+    const body = await res.json().catch(() => null);
+    if (!res.ok) return body?.detail ?? `登入失敗（${res.status}）`;
+    const prog = await fetch("/api/progress", { headers: { Authorization: `Bearer ${body.token}` } }).then((r) => r.json());
+    applyServer(body.username, body.token, prog.data, prog.rev);
+    return null;
+  } catch {
+    return "連不到伺服器，請檢查網路後再試一次。";
+  }
+}
+
+export function logout() {
+  if (pushTimer) clearTimeout(pushTimer);
+  write(EMPTY, { local: true });
+}
+
+if (typeof window !== "undefined") {
+  setTimeout(pull, 0);
+  window.addEventListener("focus", () => pull());
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") pull();
+    else push();
+  });
 }
 
 /** XP and level: purely motivational. */

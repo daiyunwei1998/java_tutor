@@ -6,6 +6,7 @@ browser (CheerpJ), never here.
 """
 from __future__ import annotations
 
+import os
 import secrets
 from typing import Literal
 
@@ -20,7 +21,7 @@ from pathlib import Path
 # Vercel runs this file as a standalone Python function; make the sibling _core package importable.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from _core import usage  # noqa: E402
+from _core import accounts, usage  # noqa: E402
 from _core.config import settings  # noqa: E402
 from _core.prompts import DEBUG_INSTRUCTIONS, MENTOR_BASE, number_lines  # noqa: E402
 
@@ -28,10 +29,12 @@ app = FastAPI(title="Java Tutor API", version="0.1.0")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
-    allow_methods=["GET", "POST"],
+    allow_methods=["GET", "POST", "PUT"],
     allow_headers=["*"],
 )
 usage.init(settings.database_url, settings.db_path)
+accounts.init(os.getenv("AUTH_SECRET") or settings.admin_password or settings.database_url or "local-dev",
+              [a.strip().lower() for a in os.getenv("SEED_ACCOUNTS", "stu,test").split(",") if a.strip()])
 
 MAX_CODE_CHARS = 12_000
 MAX_MESSAGE_CHARS = 2_000
@@ -216,12 +219,93 @@ def ai_debug(req: DebugRequest):
     return err or {"reply": reply}
 
 
-@app.get("/api/admin/usage")
-def admin_usage(x_admin_password: str | None = Header(default=None), days: int = 30):
+# ---------- accounts + progress ----------
+
+class LoginRequest(BaseModel):
+    username: str = Field(min_length=1, max_length=40)
+    password: str = Field(min_length=1, max_length=100)
+
+
+class ProgressPut(BaseModel):
+    data: dict
+    base_rev: int = Field(ge=0)
+
+
+MAX_PROGRESS_BYTES = 1_000_000
+
+
+def _require_user(authorization: str | None) -> str:
+    token = authorization.removeprefix("Bearer ").strip() if authorization else None
+    user = accounts.check_token(token)
+    if not user:
+        raise HTTPException(401, "請重新登入")
+    return user
+
+
+@app.post("/api/auth/login")
+def login(req: LoginRequest):
+    token = accounts.login(req.username, req.password)
+    if not token:
+        raise HTTPException(401, "帳號或密碼不對")
+    return {"token": token, "username": req.username.strip().lower()}
+
+
+@app.get("/api/progress")
+def get_progress(authorization: str | None = Header(default=None)):
+    return accounts.get_progress(_require_user(authorization))
+
+
+@app.put("/api/progress")
+def put_progress(req: ProgressPut, authorization: str | None = Header(default=None)):
+    user = _require_user(authorization)
+    import json
+
+    if len(json.dumps(req.data)) > MAX_PROGRESS_BYTES:
+        raise HTTPException(413, "進度資料太大")
+    return accounts.put_progress(user, req.data, req.base_rev)
+
+
+# ---------- admin ----------
+
+def _require_admin(x_admin_password: str | None) -> None:
     if not settings.admin_password:
         raise HTTPException(503, "請先在 .env 設定 ADMIN_PASSWORD 才能使用 admin 頁面。")
     if not x_admin_password or not secrets.compare_digest(x_admin_password, settings.admin_password):
         raise HTTPException(401, "密碼錯誤")
+
+
+class SyncRequest(BaseModel):
+    source: str = Field(min_length=1, max_length=40)
+    target: str = Field(min_length=1, max_length=40)
+
+
+@app.get("/api/admin/accounts")
+def admin_accounts(x_admin_password: str | None = Header(default=None)):
+    _require_admin(x_admin_password)
+    return {"accounts": accounts.list_accounts()}
+
+
+@app.post("/api/admin/accounts/{username}/reset")
+def admin_reset(username: str, x_admin_password: str | None = Header(default=None)):
+    _require_admin(x_admin_password)
+    if not accounts.exists(username):
+        raise HTTPException(404, "沒有這個帳號")
+    accounts.reset(username)
+    return {"ok": True, "accounts": accounts.list_accounts()}
+
+
+@app.post("/api/admin/accounts/sync")
+def admin_sync(req: SyncRequest, x_admin_password: str | None = Header(default=None)):
+    _require_admin(x_admin_password)
+    if req.source == req.target or not accounts.exists(req.source) or not accounts.exists(req.target):
+        raise HTTPException(400, "帳號不對")
+    accounts.copy(req.source, req.target)
+    return {"ok": True, "accounts": accounts.list_accounts()}
+
+
+@app.get("/api/admin/usage")
+def admin_usage(x_admin_password: str | None = Header(default=None), days: int = 30):
+    _require_admin(x_admin_password)
     data = usage.summary(settings.price_input_per_1m, settings.price_output_per_1m, days=max(1, min(days, 365)))
     data["config"] = {
         "model": settings.openai_model,

@@ -22,6 +22,8 @@ const STATUS_TEXT: Record<string, string> = {
   error: "其他錯誤",
 };
 
+type Account = { username: string; updated_at: string | null; merged: number; in_review: number; in_progress: number };
+
 const fmt = (iso: string | null) => (iso ? new Date(iso).toLocaleString("zh-TW", { hour12: false }) : "—");
 const n = (x: number) => x.toLocaleString("en-US");
 
@@ -30,6 +32,30 @@ export default function AdminPage() {
   const [data, setData] = useState<Usage | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [confirm, setConfirm] = useState<null | "reset" | "sync">(null);
+  const [accMsg, setAccMsg] = useState<string | null>(null);
+
+  async function accountAction(kind: "reset" | "sync") {
+    if (confirm !== kind) {
+      setConfirm(kind);
+      setAccMsg(null);
+      return;
+    }
+    setConfirm(null);
+    const res = await fetch(kind === "reset" ? "/api/admin/accounts/test/reset" : "/api/admin/accounts/sync", {
+      method: "POST",
+      headers: { "X-Admin-Password": pw, "Content-Type": "application/json" },
+      body: kind === "sync" ? JSON.stringify({ source: "stu", target: "test" }) : undefined,
+    });
+    const body = await res.json().catch(() => null);
+    if (!res.ok) {
+      setAccMsg(`失敗：${body?.detail ?? res.status}`);
+      return;
+    }
+    setAccounts(body.accounts);
+    setAccMsg(kind === "reset" ? "✅ test 的進度已清空。" : "✅ 已把 stu 的進度複製到 test。");
+  }
 
   async function load(password: string) {
     setLoading(true);
@@ -45,6 +71,8 @@ export default function AdminPage() {
       }
       sessionStorage.setItem("jt.admin", password);
       setData(body);
+      const acc = await fetch("/api/admin/accounts", { headers: { "X-Admin-Password": password } }).then((r) => r.json());
+      setAccounts(acc.accounts ?? []);
     } catch {
       setErr("連不到後端（FastAPI）。請確認後端有在執行。");
     } finally {
@@ -115,6 +143,37 @@ export default function AdminPage() {
         </div>
       </div>
 
+      <h2>學生帳號</h2>
+      <div className="card table-scroll">
+        <table className="data">
+          <thead>
+            <tr><th>帳號</th><th>已 merge</th><th>測試通過</th><th>進行中</th><th>最後同步</th></tr>
+          </thead>
+          <tbody>
+            {accounts.map((a) => (
+              <tr key={a.username}>
+                <td><strong>{a.username}</strong></td>
+                <td>{a.merged}</td>
+                <td>{a.in_review}</td>
+                <td>{a.in_progress}</td>
+                <td className="small">{fmt(a.updated_at)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <div className="row" style={{ marginTop: 12, flexWrap: "wrap" }}>
+          <button className={`btn${confirm === "reset" ? " primary" : ""}`} onClick={() => accountAction("reset")}>
+            {confirm === "reset" ? "確定清空 test 的進度？再按一次" : "↺ 重設 test"}
+          </button>
+          <button className={`btn${confirm === "sync" ? " primary" : ""}`} onClick={() => accountAction("sync")}>
+            {confirm === "sync" ? "確定用 stu 覆蓋 test？再按一次" : "⇢ 把 stu 同步到 test"}
+          </button>
+          {confirm && <button className="btn ghost" onClick={() => setConfirm(null)}>取消</button>}
+          {accMsg && <span className="small" role="status">{accMsg}</span>}
+        </div>
+        <p className="small muted" style={{ marginBottom: 0 }}>test 帳號開著的分頁會在下次切回來時自動拿到新進度。stu 的進度不會被改動。</p>
+      </div>
+
       <h2>每日請求數（近 {data.window_days} 天）</h2>
       <div className="card">
         {data.by_day.length === 0 ? (
@@ -177,7 +236,7 @@ export default function AdminPage() {
           </tbody>
         </table>
       </div>
-      <p className="small muted">學生的名字是學生自己在第一次進入網站時輸入的（目前沒有帳號系統）。</p>
+      <p className="small muted">「學生」欄是登入的帳號名稱。</p>
     </div>
   );
 }
