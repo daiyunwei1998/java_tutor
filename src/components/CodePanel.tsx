@@ -8,6 +8,7 @@ import type { Ticket } from "@/content/types";
 import { askDebug, isAiError } from "@/lib/ai";
 import { onRunnerState, parseDiagnostics, type RunResult, type RunnerState, runJava, warmUp } from "@/lib/java-runner";
 import { useStore } from "@/lib/progress";
+import { useResolvedTheme } from "@/lib/theme";
 import { Markdown } from "./Markdown";
 
 export function CodePanel({
@@ -30,6 +31,7 @@ export function CodePanel({
   onShowHint: () => void;
 }) {
   const store = useStore();
+  const theme = useResolvedTheme();
   const task = ticket.task;
   const [active, setActive] = useState(task.files[0].path);
   const [runner, setRunner] = useState<{ s: RunnerState; err: string }>({ s: "idle", err: "" });
@@ -105,7 +107,7 @@ export function CodePanel({
           editable={!activeFile.readOnly}
           readOnly={activeFile.readOnly}
           extensions={extensions}
-          theme={typeof window !== "undefined" && window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "dark" : "light"}
+          theme={theme}
           onChange={(v) => !activeFile.readOnly && onChangeFile(active, v)}
           basicSetup={{ tabSize: 4, indentOnInput: true }}
           aria-label={`程式碼編輯器：${active}`}

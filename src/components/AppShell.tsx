@@ -6,6 +6,7 @@ import { useState } from "react";
 import { projects } from "@/content/registry";
 import { levelOf, setProfile, ticketKey, useStore, xpOf } from "@/lib/progress";
 import { ChatWidget } from "./ChatWidget";
+import { ThemeToggle } from "./ThemeToggle";
 import { WorkspaceProvider } from "./WorkspaceContext";
 
 export const xpByKey: Record<string, number> = Object.fromEntries(
@@ -28,9 +29,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <nav className="topnav" aria-label="主選單">
           <Link href="/" className={path === "/" ? "active" : ""}>我的工作台</Link>
           <Link href="/projects/mini-photoshop" className={path.startsWith("/projects") ? "active" : ""}>專案看板</Link>
-          <Link href="/admin" className={isAdmin ? "active" : ""}>老師後台</Link>
         </nav>
         <div className="spacer" />
+        <ThemeToggle />
         {store?.profile && !isAdmin && (
           <div className="badge-level" title={`${xp} XP`}>
             <span className="avatar" aria-hidden>{store.profile.name.slice(0, 1).toUpperCase()}</span>
