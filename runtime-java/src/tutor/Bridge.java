@@ -84,7 +84,7 @@ public final class Bridge {
             cap.err.print(userStackTrace(e.getCause()));
         } catch (NoSuchMethodException e) {
             status = "runtime_error";
-            cap.err.print("找不到 public static void main(String[] args)：" + mainClass);
+            cap.err.print("Cannot find public static void main(String[] args) in " + mainClass);
         } catch (Throwable t) {
             status = "runtime_error";
             cap.err.print(userStackTrace(t));
@@ -241,7 +241,7 @@ public final class Bridge {
             } catch (java.io.UnsupportedEncodingException e) {
                 s = toString();
             }
-            return truncated ? s + "\n…（輸出超過 64KB，已截斷）" : s;
+            return truncated ? s + "\n… (output over 64 KB, truncated)" : s;
         }
     }
 

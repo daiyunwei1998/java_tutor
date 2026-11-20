@@ -7,12 +7,13 @@ import { CodeLines, SimBadge, StepControls, useStepper, Vars } from "./StepContr
 
 const MODE_LABEL: Record<TraversalMode, string> = { "row-major": "Row-major", "column-major": "Column-major", "enhanced-for": "Enhanced for" };
 
-export function TraversalViz({ modes, rows: r0, cols: c0 }: { modes: TraversalMode[]; rows: number; cols: number }) {
+/** showMemory adds the (imagined) contiguous-memory + cache model; used in the Knowledge Space, not in tickets. */
+export function TraversalViz({ modes, rows: r0, cols: c0, showMemory = false }: { modes: TraversalMode[]; rows: number; cols: number; showMemory?: boolean }) {
   const [mode, setMode] = useState<TraversalMode>(modes[0]);
   const [rows, setRows] = useState(r0);
   const [cols, setCols] = useState(c0);
   const [layout, setLayout] = useState<"row" | "col">("row");
-  const [showMem, setShowMem] = useState(mode !== "enhanced-for");
+  const [showMem, setShowMem] = useState(true);
   const m = useMemo(() => Array.from({ length: rows }, (_, r) => Array.from({ length: cols }, (_, c) => r * cols + c + 1)), [rows, cols]);
   const steps = useMemo(() => traversalSteps(mode, m), [mode, m]);
   const s = useStepper(steps.length, `${mode}-${rows}-${cols}`);
@@ -34,10 +35,10 @@ export function TraversalViz({ modes, rows: r0, cols: c0 }: { modes: TraversalMo
           <button key={md} className={`btn small${md === mode ? " primary" : ""}`} onClick={() => setMode(md)}>{MODE_LABEL[md]}</button>
         ))}
         <label className="small muted row" style={{ gap: 4 }}>
-          大小
-          <select value={rows} onChange={(e) => setRows(Number(e.target.value))} aria-label="列數">{[2, 3, 4, 5].map((n) => <option key={n}>{n}</option>)}</select>
+          Size
+          <select value={rows} onChange={(e) => setRows(Number(e.target.value))} aria-label="Rows">{[2, 3, 4, 5].map((n) => <option key={n}>{n}</option>)}</select>
           ×
-          <select value={cols} onChange={(e) => setCols(Number(e.target.value))} aria-label="欄數">{[2, 3, 4, 5, 6].map((n) => <option key={n}>{n}</option>)}</select>
+          <select value={cols} onChange={(e) => setCols(Number(e.target.value))} aria-label="Columns">{[2, 3, 4, 5, 6].map((n) => <option key={n}>{n}</option>)}</select>
         </label>
       </div>
       <SimBadge />
@@ -45,7 +46,7 @@ export function TraversalViz({ modes, rows: r0, cols: c0 }: { modes: TraversalMo
       <StepControls s={s} />
       <Vars vars={cur?.vars ?? { sum: 0 }} prev={prev?.vars} />
 
-      <table className="matrix" aria-label="矩陣 m">
+      <table className="matrix" aria-label="Matrix m">
         <thead>
           <tr><th />{Array.from({ length: cols }, (_, c) => <th key={c} scope="col">c={c}</th>)}</tr>
         </thead>
@@ -56,7 +57,7 @@ export function TraversalViz({ modes, rows: r0, cols: c0 }: { modes: TraversalMo
               {row.map((v, c) => {
                 const isCur = cur?.r === r && cur?.c === c;
                 return (
-                  <td key={c} className={isCur ? "current" : visited.has(`${r},${c}`) ? "visited" : ""} aria-label={`m[${r}][${c}] = ${v}${isCur ? "，目前" : ""}`}>
+                  <td key={c} className={isCur ? "current" : visited.has(`${r},${c}`) ? "visited" : ""} aria-label={`m[${r}][${c}] = ${v}${isCur ? ", current" : ""}`}>
                     {v}
                   </td>
                 );
@@ -67,26 +68,26 @@ export function TraversalViz({ modes, rows: r0, cols: c0 }: { modes: TraversalMo
       </table>
       {mode === "enhanced-for" && cur && (
         <p className="small">
-          <code>row</code> 現在指向 <code>m[{cur.r}]</code> 這個 inner array（虛線框）。
-          {cur.c >= 0 && <> <code>value</code> 是 <code>m[{cur.r}][{cur.c}]</code> 的 <strong>複本</strong>：改 value 不會改到陣列。</>}
+          <code>row</code> now refers to the inner array <code>m[{cur.r}]</code> (dashed box).
+          {cur.c >= 0 && <> <code>value</code> is a <strong>copy</strong> of <code>m[{cur.r}][{cur.c}]</code>: changing value does not change the array.</>}
         </p>
       )}
-      <p className="small muted">走訪順序：{steps.filter((x) => x.c >= 0).slice(0, s.i).map((x) => m[x.r][x.c]).join(" → ") || "—"}</p>
+      <p className="small muted">Visit order: {steps.filter((x) => x.c >= 0).slice(0, s.i).map((x) => m[x.r][x.c]).join(" → ") || "—"}</p>
 
-      {mode !== "enhanced-for" && (
+      {showMemory && mode !== "enhanced-for" && (
         <details open={showMem} onToggle={(e) => setShowMem((e.target as HTMLDetailsElement).open)} style={{ marginTop: 10 }}>
-          <summary><strong>假想的連續記憶體模型 & cache</strong></summary>
+          <summary><strong>Imagined contiguous memory & cache</strong></summary>
           <div className="callout warn small">
-            這是 <strong>假設</strong> 矩陣存成一整塊連續記憶體時的樣子，用來理解 locality。Java 的 <code>int[][]</code> 其實是「陣列的陣列」，不保證是一整塊連續記憶體。
+            This <strong>assumes</strong> the matrix is stored as one contiguous block, to explain locality. A Java <code>int[][]</code> is really an array of arrays and is not guaranteed to be one block.
           </div>
           <div className="row small">
-            儲存方式：
-            <button className={`btn small${layout === "row" ? " primary" : ""}`} onClick={() => setLayout("row")}>row-major 存放</button>
-            <button className={`btn small${layout === "col" ? " primary" : ""}`} onClick={() => setLayout("col")}>column-major 存放</button>
+            Storage order:
+            <button className={`btn small${layout === "row" ? " primary" : ""}`} onClick={() => setLayout("row")}>row-major storage</button>
+            <button className={`btn small${layout === "col" ? " primary" : ""}`} onClick={() => setLayout("col")}>column-major storage</button>
             <code>offset = {layout === "row" ? "r * cols + c" : "c * rows + r"}</code>
             {cur && cur.c >= 0 && <code>= {curOffset}</code>}
           </div>
-          <div className="mem-strip" aria-label="連續記憶體">
+          <div className="mem-strip" aria-label="Contiguous memory">
             {Array.from({ length: rows * cols }, (_, off) => {
               const r = layout === "row" ? Math.floor(off / cols) : off % rows;
               const c = layout === "row" ? off % cols : Math.floor(off / rows);
@@ -98,10 +99,10 @@ export function TraversalViz({ modes, rows: r0, cols: c0 }: { modes: TraversalMo
             })}
           </div>
           <p className="small">
-            模擬 cache（1 條 cache line = 4 個 int，淺藍色是目前在 cache 裡的那一段）：到目前為止 <strong>{sim.misses}</strong> 次 miss / {doneAccesses} 次存取。
-            整個走完：<strong>{full.misses}</strong> 次 miss。
+            Simulated cache (1 cache line = 4 ints; the light-blue run is what is in cache now): so far <strong>{sim.misses}</strong> misses / {doneAccesses} accesses.
+            Whole traversal: <strong>{full.misses}</strong> misses.
           </p>
-          <p className="viz-note">試試看：走訪順序和存放順序一致時，miss 比較少（連續讀取）；不一致時，每一步都跳很遠。真實的效能還取決於 JVM、硬體和 benchmark 方法。</p>
+          <p className="viz-note">Try it: when the visit order matches the storage order there are fewer misses (sequential reads); when they differ, every step jumps far away. Real performance also depends on the JVM, the hardware and how you benchmark.</p>
         </details>
       )}
     </div>

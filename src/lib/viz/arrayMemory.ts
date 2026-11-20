@@ -28,7 +28,7 @@ export const PRESETS: Record<ArrayMemoryPresetId, Preset> = {
       { kind: "newInner", target: { var: "a", index: 1 }, values: [4] },
       { kind: "newInner", target: { var: "a", index: 2 }, values: [5, 6] },
     ],
-    note: "每個 inner array 都是獨立的物件，所以長度可以不同。",
+    note: "Each inner array is a separate object, so the rows can have different lengths.",
   },
   rectangular: {
     id: "rectangular",
@@ -38,7 +38,7 @@ export const PRESETS: Record<ArrayMemoryPresetId, Preset> = {
       { kind: "newRect", var: "a", rows: [[0, 0, 0], [0, 0, 0]] },
       { kind: "write", var: "a", r: 1, c: 2, value: 7 },
     ],
-    note: "new int[2][3] 一次建立 1 個 outer array + 2 個 inner array（共 3 個物件），int 預設值是 0。",
+    note: "new int[2][3] creates 1 outer array + 2 inner arrays (3 objects in total); ints start at 0.",
   },
   alias: {
     id: "alias",
@@ -49,18 +49,18 @@ export const PRESETS: Record<ArrayMemoryPresetId, Preset> = {
       { kind: "alias", var: "b", from: "a" },
       { kind: "write", var: "b", r: 0, c: 0, value: 9 },
     ],
-    note: "b = a 只複製參考。a 和 b 指向同一個物件，透過 b 修改，a 也看得到。",
+    note: "b = a copies only the reference. a and b point to the same object, so a change through b is visible through a.",
   },
   "shared-row": {
     id: "shared-row",
-    label: "共用 row",
+    label: "Shared row",
     lines: ["int[][] a = {{1, 2}, {3, 4}, {5, 6}};", "a[2] = a[0];", "a[2][1] = 8;"],
     ops: [
       { kind: "newRect", var: "a", rows: [[1, 2], [3, 4], [5, 6]] },
       { kind: "assignRow", target: { var: "a", index: 2 }, from: { var: "a", index: 0 } },
       { kind: "write", var: "a", r: 2, c: 1, value: 8 },
     ],
-    note: "a[2] = a[0] 之後兩個 row 指向同一個 inner array。原本的 {5, 6} 沒有人參考了，之後會被 garbage collector 回收。",
+    note: "After a[2] = a[0], two rows point to the same inner array. Nothing refers to the old {5, 6} any more, so the garbage collector will reclaim it.",
   },
   "null-row": {
     id: "null-row",
@@ -71,7 +71,7 @@ export const PRESETS: Record<ArrayMemoryPresetId, Preset> = {
       { kind: "newInner", target: { var: "a", index: 0 }, values: [1, 2] },
       { kind: "newInner", target: { var: "a", index: 2 }, values: [3] },
     ],
-    note: "a[1] 從來沒被指定，所以還是 null。讀 a[1].length 或 a[1][0] 會丟出 NullPointerException。",
+    note: "a[1] was never assigned, so it is still null. Reading a[1].length or a[1][0] throws a NullPointerException.",
   },
 };
 
@@ -92,7 +92,7 @@ export function simulate(preset: Preset, steps: number): MemState {
   };
   const outerOf = (v: string) => {
     const id = s.vars[v];
-    if (!id) throw new Error(`${v} 是 null`);
+    if (!id) throw new Error(`${v} is null`);
     return s.objects[id];
   };
   for (const op of preset.ops.slice(0, steps)) {

@@ -43,12 +43,12 @@ export function traversalSteps(mode: TraversalMode, m: number[][]): TStep[] {
   } else {
     for (let r = 0; r < rows; r++) {
       if (mode === "enhanced-for") {
-        steps.push({ r, c: -1, line: 0, vars: { row: `m[${r}]（參考）`, sum }, access: access });
+        steps.push({ r, c: -1, line: 0, vars: { row: `m[${r}] (reference)`, sum }, access: access });
       }
       for (let c = 0; c < m[r].length; c++) {
         sum += m[r][c];
         const vars: Record<string, string | number> =
-          mode === "enhanced-for" ? { row: `m[${r}]（參考）`, value: m[r][c], sum } : { r, c, "m[r][c]": m[r][c], sum };
+          mode === "enhanced-for" ? { row: `m[${r}] (reference)`, value: m[r][c], sum } : { r, c, "m[r][c]": m[r][c], sum };
         steps.push({ r, c, line: 2, vars, access: ++access });
       }
     }

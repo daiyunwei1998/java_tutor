@@ -51,9 +51,9 @@ export function ArrayMemoryViz({ presets }: { presets: ArrayMemoryPresetId[] }) 
 
       <div>
         <div>
-          <div className="small muted">邏輯檢視：{mainVar ?? "（尚未宣告）"}</div>
+          <div className="small muted">Logical view: {mainVar ?? "(not declared yet)"}</div>
           {outer ? (
-            <table className="matrix" aria-label="邏輯陣列">
+            <table className="matrix" aria-label="Logical array">
               <tbody>
                 {outer.slots.map((slot, r) => {
                   const inner = typeof slot === "string" ? state.objects[slot] : null;
@@ -82,16 +82,16 @@ export function ArrayMemoryViz({ presets }: { presets: ArrayMemoryPresetId[] }) 
               </tbody>
             </table>
           ) : (
-            <p className="small muted">按 Step ▶ 開始建立陣列。</p>
+            <p className="small muted">Press Step ▶ to start building the array.</p>
           )}
           {sel?.kind === "cell" && (
-            <p className="small">選取 <code>{mainVar}[{sel.r}][{sel.c}]</code>：先透過 outer array 第 {sel.r} 格的參考找到 inner array，再取第 {sel.c} 格。</p>
+            <p className="small">Selected <code>{mainVar}[{sel.r}][{sel.c}]</code>: follow the reference in slot {sel.r} of the outer array to the inner array, then take slot {sel.c}.</p>
           )}
         </div>
 
         <div style={{ overflowX: "auto", marginTop: 12 }}>
-          <div className="small muted">記憶體 / 物件圖（模擬位址）</div>
-          <svg className="svg-mem" width={width} height={height} role="img" aria-label="物件與參考的示意圖">
+          <div className="small muted">Memory / object diagram (made-up addresses)</div>
+          <svg className="svg-mem" width={width} height={height} role="img" aria-label="Objects and references diagram">
             <defs>
               <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
                 <path d="M0,0 L10,5 L0,10 z" fill="currentColor" style={{ color: "var(--muted)" }} />
@@ -104,7 +104,7 @@ export function ArrayMemoryViz({ presets }: { presets: ArrayMemoryPresetId[] }) 
               const ty = target && outerPos[target] ? outerPos[target].y + CELL / 2 : vy + 15;
               return (
                 <g key={v}>
-                  <text x={10} y={vy - 6} className="label">變數 {v}</text>
+                  <text x={10} y={vy - 6} className="label">variable {v}</text>
                   <rect x={10} y={vy} width={56} height={30} rx={5} className="box" />
                   <text x={38} y={vy + 19} textAnchor="middle" fontSize={11}>{target ? state.objects[target].addr : "null"}</text>
                   {target && <path className="arrow" d={`M66,${vy + 15} C90,${vy + 15} 90,${ty} ${outerX - 2},${ty}`} markerEnd="url(#arr)" />}
@@ -161,7 +161,7 @@ export function ArrayMemoryViz({ presets }: { presets: ArrayMemoryPresetId[] }) 
         </div>
       </div>
       <div className="callout">{preset.note}</div>
-      <p className="viz-note">點左邊的格子，會在右邊標出對應的 inner array 元素；點 outer array 的格子，會標出它指向的物件。位址是教學用的假位址，不是真的 JVM 位址。</p>
+      <p className="viz-note">Click a cell on the left to highlight the matching inner-array element on the right; click an outer-array slot to see the object it points to. Addresses are made up for teaching, not real JVM addresses.</p>
     </div>
   );
 }

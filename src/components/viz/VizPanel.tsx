@@ -28,7 +28,7 @@ export function VizPanel({ ticket, index, onIndex, files }: { ticket: Ticket; in
   const v = list[Math.min(index, list.length - 1)];
   return (
     <div>
-      <div className="viz-tabs" role="tablist" aria-label="視覺化">
+      <div className="viz-tabs" role="tablist" aria-label="Visualizations">
         <span aria-hidden>🔬</span>
         {list.map((x, i) => (
           <button key={i} role="tab" aria-selected={i === index} className={`btn small${i === index ? " primary" : " ghost"}`} onClick={() => onIndex(i)}>
@@ -36,7 +36,7 @@ export function VizPanel({ ticket, index, onIndex, files }: { ticket: Ticket; in
           </button>
         ))}
       </div>
-      <div className="viz">{v ? renderViz(v, ticket, files) : <p className="muted">這張 ticket 沒有視覺化。</p>}</div>
+      <div className="viz">{v ? renderViz(v, ticket, files) : <p className="muted">This ticket has no visualization.</p>}</div>
     </div>
   );
 }

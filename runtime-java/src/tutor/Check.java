@@ -14,39 +14,39 @@ public final class Check {
 
     public static void equal(int expected, int actual, String what) {
         if (expected != actual) {
-            throw new AssertionError(what + "：預期 " + expected + "，實際得到 " + actual);
+            throw new AssertionError(what + ": expected " + expected + ", but got " + actual);
         }
     }
 
     public static void equal(long expected, long actual, String what) {
         if (expected != actual) {
-            throw new AssertionError(what + "：預期 " + expected + "，實際得到 " + actual);
+            throw new AssertionError(what + ": expected " + expected + ", but got " + actual);
         }
     }
 
     public static void equal(double expected, double actual, double tolerance, String what) {
         if (Math.abs(expected - actual) > tolerance) {
-            throw new AssertionError(what + "：預期 " + expected + "，實際得到 " + actual);
+            throw new AssertionError(what + ": expected " + expected + ", but got " + actual);
         }
     }
 
     public static void equal(Object expected, Object actual, String what) {
         if (expected == null ? actual != null : !expected.equals(actual)) {
-            throw new AssertionError(what + "：預期 " + expected + "，實際得到 " + actual);
+            throw new AssertionError(what + ": expected " + expected + ", but got " + actual);
         }
     }
 
     public static void equal(int[] expected, int[] actual, String what) {
         if (!Arrays.equals(expected, actual)) {
-            throw new AssertionError(what + "：預期 " + Arrays.toString(expected)
-                    + "，實際得到 " + Arrays.toString(actual));
+            throw new AssertionError(what + ": expected " + Arrays.toString(expected)
+                    + ", but got " + Arrays.toString(actual));
         }
     }
 
     public static void equal(int[][] expected, int[][] actual, String what) {
         if (!Arrays.deepEquals(expected, actual)) {
-            throw new AssertionError(what + "：\n  預期 " + Arrays.deepToString(expected)
-                    + "\n  實際 " + Arrays.deepToString(actual));
+            throw new AssertionError(what + ":\n  expected " + Arrays.deepToString(expected)
+                    + "\n  but got  " + Arrays.deepToString(actual));
         }
     }
 
