@@ -15,7 +15,7 @@ for (const t of sprint1Tickets) {
     rmSync(dir, { recursive: true, force: true }); mkdirSync(dir + "src", { recursive: true });
     for (const f of t.task.files) writeFileSync(dir + "src/" + f.path, f.content);
     if (variant === "solution") copyFileSync(join(root, "tools/solutions", t.task.mainClass + ".java"), dir + "src/" + t.task.mainClass + ".java");
-    const comp = bridge("compile", dir + "src/", dir + "out/", t.task.files.map((f) => f.path).join(" "), `${jars}/tutor-runtime.jar`);
+    const comp = bridge("compile", dir + "src/", dir + "out/", t.task.files.map((f) => f.path).join(" "), `${jars}/tutor-runtime.jar`, `${jars}/jdk-api.jar`);
     if (!comp.ok) { console.log(t.id, variant, "COMPILE FAIL", comp.diagnostics); failed = true; continue; }
     const tests = bridge("test", dir + "out/", t.task.testClass).tests;
     const passed = tests.filter((x) => x.passed).length;

@@ -25,10 +25,24 @@ public final class Bridge {
 
     /** Compiles the given space-separated source files (relative to srcDir) into outDir with ecj. */
     public static String compile(String srcDir, String outDir, String files, String extraClasspath) {
+        return compile(srcDir, outDir, files, extraClasspath, "");
+    }
+
+    /**
+     * @param bootClasspath jar with the JDK API classes. Needed in the browser (CheerpJ has no jrt:/ module image
+     *                      for ecj to read), in which case we compile at Java 8 language level against that jar.
+     *                      Empty = use the running JDK (local testing).
+     */
+    public static String compile(String srcDir, String outDir, String files, String extraClasspath, String bootClasspath) {
         StringWriter out = new StringWriter();
         StringWriter err = new StringWriter();
-        List<String> args = new ArrayList<>(Arrays.asList(
-                "-11", "-g", "-encoding", "UTF-8", "-nowarn", "-d", outDir,
+        List<String> args = new ArrayList<>();
+        if (bootClasspath != null && !bootClasspath.isEmpty()) {
+            args.addAll(Arrays.asList("-8", "-bootclasspath", bootClasspath));
+        } else {
+            args.add("-11");
+        }
+        args.addAll(Arrays.asList("-g", "-encoding", "UTF-8", "-nowarn", "-d", outDir,
                 "-cp", extraClasspath == null ? "" : extraClasspath));
         for (String f : files.trim().split("\\s+")) {
             if (!f.isEmpty()) args.add(srcDir + f);
@@ -222,7 +236,7 @@ public final class Bridge {
     public static void main(String[] args) {
         PrintStream real = System.out;
         switch (args[0]) {
-            case "compile": real.println(compile(args[1], args[2], args[3], args.length > 4 ? args[4] : "")); break;
+            case "compile": real.println(compile(args[1], args[2], args[3], args.length > 4 ? args[4] : "", args.length > 5 ? args[5] : "")); break;
             case "run": real.println(run(args[1], args[2])); break;
             case "test": real.println(runTests(args[1], args[2])); break;
             default: real.println("usage: compile|run|test");

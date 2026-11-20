@@ -45,7 +45,7 @@
       cheerpOSAddStringFile("/str/data/" + extra.name, new TextEncoder().encode(extra.content));
     }
     const t0 = performance.now();
-    const compiled = JSON.parse(await Bridge.compile(dir, out, names.join(" "), "/app/java/tutor-runtime.jar"));
+    const compiled = JSON.parse(await Bridge.compile(dir, out, names.join(" "), "/app/java/tutor-runtime.jar", "/app/java/jdk-api.jar"));
     const compileMs = Math.round(performance.now() - t0);
     if (!compiled.ok) {
       return { status: "compile_error", stdout: "", stderr: compiled.diagnostics, compileMs };
