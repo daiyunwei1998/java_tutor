@@ -42,7 +42,7 @@ public final class Bridge {
         } else {
             args.add("-11");
         }
-        args.addAll(Arrays.asList("-g", "-encoding", "UTF-8", "-nowarn", "-d", outDir,
+        args.addAll(Arrays.asList("-g", "-proc:none", "-encoding", "UTF-8", "-nowarn", "-d", outDir,
                 "-cp", extraClasspath == null ? "" : extraClasspath));
         for (String f : files.trim().split("\\s+")) {
             if (!f.isEmpty()) args.add(srcDir + f);
