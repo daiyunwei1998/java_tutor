@@ -33,6 +33,7 @@ const pending = new Map<number, { resolve: (r: RunResult) => void; timer: number
 const stateListeners = new Set<(s: RunnerState, err: string) => void>();
 // First load downloads the JVM (~tens of MB, cached afterwards).
 const LOAD_TIMEOUT_MS = 180_000;
+const COMPILE_TIMEOUT_MS = 120_000;
 
 function setState(s: RunnerState, err = "") {
   state = s;
@@ -54,7 +55,14 @@ function onMessage(ev: MessageEvent) {
   if (msg.type === "started") {
     const p = pending.get(msg.id);
     if (p) {
-      // The execution timeout starts when the code actually starts (not while waiting for the JVM).
+      // Compiling: generous guard only (the first compile also loads the compiler and JDK classes).
+      window.clearTimeout(p.timer);
+      p.timer = window.setTimeout(() => killForTimeout(msg.id), COMPILE_TIMEOUT_MS);
+    }
+  } else if (msg.type === "running") {
+    const p = pending.get(msg.id);
+    if (p) {
+      // The execution time limit starts when student code actually starts running.
       window.clearTimeout(p.timer);
       p.started = true;
       p.timer = window.setTimeout(() => killForTimeout(msg.id), p.timeoutMs);
@@ -74,11 +82,15 @@ function killForTimeout(id: number) {
   const p = pending.get(id);
   if (!p) return;
   pending.delete(id);
-  p.resolve({
-    status: "timeout",
-    stdout: "",
-    stderr: "執行超過時間限制，已經強制停止。\n常見原因：迴圈的條件永遠成立（無窮迴圈），例如忘了 r++，或條件寫成 r >= 0。",
-  });
+  p.resolve(
+    p.started
+      ? {
+          status: "timeout",
+          stdout: "",
+          stderr: "執行超過時間限制，已經強制停止。\n常見原因：迴圈的條件永遠成立（無窮迴圈），例如忘了 r++，或條件寫成 r >= 0。",
+        }
+      : { status: "runtime_error", stdout: "", stderr: "編譯花太久，Java 環境已重新啟動。請再按一次（網路慢的時候第一次比較久）。" },
+  );
   destroy();
   // Fail everything else that was queued behind it.
   for (const [otherId, other] of pending) {

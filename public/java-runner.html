@@ -50,6 +50,8 @@
     if (!compiled.ok) {
       return { status: "compile_error", stdout: "", stderr: compiled.diagnostics, compileMs };
     }
+    // Execution time limit starts now (compiling can be slow the first time, so it is not counted).
+    post({ type: "running", id: req.id });
     const t1 = performance.now();
     const result = req.mode === "test"
       ? JSON.parse(await Bridge.runTests(out, req.testClass))
