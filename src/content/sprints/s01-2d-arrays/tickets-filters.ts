@@ -35,6 +35,7 @@ int blue  = blueChannel[r][c];
 
 The same \`[r][c]\` indexes all three arrays. So one nested loop over the shape of the image is enough to visit every pixel in all three channels.`,
     },
+    { type: "viz-link", vizIndex: 0, label: "See it with a real photo: split it into its red, green and blue arrays, then compute average and luma for any pixel" },
     {
       type: "predict",
       id: "pf201-avg",
@@ -63,7 +64,7 @@ int gray = (299 * red + 587 * green + 114 * blue) / 1000;
 
 The weights add up to 1000, so a white pixel (255, 255, 255) stays 255.`,
     },
-    { type: "viz-link", vizIndex: 0, label: "Open Mini Photoshop on the right and compare average vs luma on a color image" },
+    { type: "viz-link", vizIndex: 1, label: "Open Mini Photoshop on the right and compare average vs luma on a color image" },
     {
       type: "predict",
       id: "pf201-shape",
@@ -85,7 +86,10 @@ In \`Grayscale.java\` implement:
 Both \`average\` and \`luma\` must throw \`IllegalArgumentException\` when the three channels do not all have the same shape. Do not modify the channels.`,
     },
   ],
-  visualizations: [{ type: "filter-lab", title: "Mini Photoshop", filter: "grayscale" }],
+  visualizations: [
+    { type: "concept", title: "Concept: RGB → gray", concept: "rgb-grayscale" },
+    { type: "filter-lab", title: "Mini Photoshop", filter: "grayscale" },
+  ],
   task: {
     instructions: "Implement `sameShape`, `average` and `luma`. Reject channels with different shapes.",
     mainClass: "Grayscale",
@@ -235,7 +239,8 @@ For an image with \`rows\` rows and \`cols\` columns:
 
 Writing the formula as "where does this output pixel come from" means you visit each output cell exactly once, and you never have to worry about overwriting something you still need.`,
     },
-    { type: "viz-link", vizIndex: 0, label: "Open Mini Photoshop and try both flips on the smiley with your Java code" },
+    { type: "viz-link", vizIndex: 0, label: "Step through where every output pixel comes from, and watch the in-place swap stop at the middle" },
+    { type: "viz-link", vizIndex: 1, label: "Open Mini Photoshop and try both flips on the smiley with your Java code" },
     {
       type: "predict",
       id: "pf202-swap",
@@ -276,7 +281,10 @@ In \`Flip.java\` implement:
 Images are rectangular for this ticket.`,
     },
   ],
-  visualizations: [{ type: "filter-lab", title: "Mini Photoshop", filter: "flip" }],
+  visualizations: [
+    { type: "concept", title: "Concept: index mapping", concept: "flip-mapping" },
+    { type: "filter-lab", title: "Mini Photoshop", filter: "flip" },
+  ],
   task: {
     instructions: "Implement `flipHorizontal`, `flipVertical` (both return new images) and `mirrorInPlace` (modifies the image).",
     mainClass: "Flip",
@@ -432,6 +440,7 @@ nr >= 0 && nr < img.length && nc >= 0 && nc < img[nr].length
 
 The order matters: \`&&\` stops at the first \`false\`, so \`img[nr]\` is only read once we know \`nr\` is a valid row.`,
     },
+    { type: "viz-link", vizIndex: 0, label: "Step through the blur cell by cell: which neighbors exist, the sum, the count and the average" },
     {
       type: "predict",
       id: "pf203-corner",
@@ -440,7 +449,7 @@ The order matters: \`&&\` stops at the first \`false\`, so \`img[nr]\` is only r
       answer: 2,
       explain: "Rows -1, 0, 1 and columns -1, 0, 1: only rows 0–1 and columns 0–1 exist, so 2 × 2 = 4 cells. An edge pixel (not a corner) has 6, and an interior pixel has all 9.",
     },
-    { type: "viz-link", vizIndex: 0, label: "Open Mini Photoshop and blur the checkerboard a few times" },
+    { type: "viz-link", vizIndex: 1, label: "Open Mini Photoshop and blur the checkerboard a few times" },
     {
       type: "predict",
       id: "pf203-inplace",
@@ -460,7 +469,10 @@ In \`Blur.java\` implement:
 3. \`boxBlur(int[][] img)\`: a **new** image where every pixel is \`average3x3(img, r, c)\`. Do not modify \`img\`.`,
     },
   ],
-  visualizations: [{ type: "filter-lab", title: "Mini Photoshop", filter: "blur" }],
+  visualizations: [
+    { type: "concept", title: "Concept: 3×3 average", concept: "box-blur" },
+    { type: "filter-lab", title: "Mini Photoshop", filter: "blur" },
+  ],
   task: {
     instructions: "Implement `inBounds`, `average3x3` and `boxBlur`. Edge and corner pixels average only the neighbors that exist.",
     mainClass: "Blur",
@@ -618,6 +630,7 @@ sum += kernel[i][j] * img[r - 1 + i][c - 1 + j];   // i and j go from 0 to 2
 
 \`GX\` responds to brightness that changes from left to right (a vertical edge). \`GY\` responds to changes from top to bottom (a horizontal edge).`,
     },
+    { type: "viz-link", vizIndex: 0, label: "Slide the kernels over real pixel values and see every multiplication, then the edges of a whole photo" },
     {
       type: "predict",
       id: "pf204-flat",
@@ -650,7 +663,7 @@ The kernel needs a full 3×3 neighborhood, which border pixels do not have. For 
       answer: 2,
       explain: "Interior rows are 1..3 (3 rows) and interior columns are 1..4 (4 columns), so 3 × 4 = 12. In general (rows - 2) × (cols - 2).",
     },
-    { type: "viz-link", vizIndex: 0, label: "Open Mini Photoshop and run your edge detector on the circle" },
+    { type: "viz-link", vizIndex: 1, label: "Open Mini Photoshop and run your edge detector on the circle" },
     {
       type: "markdown",
       md: `## Your task
@@ -662,7 +675,10 @@ In \`Edges.java\` implement:
 3. \`edges(int[][] img)\`: a **new** image of the same size. Border pixels are 0, every other pixel is \`magnitude(applyKernel(img, r, c, GX), applyKernel(img, r, c, GY))\`.`,
     },
   ],
-  visualizations: [{ type: "filter-lab", title: "Mini Photoshop", filter: "edges" }],
+  visualizations: [
+    { type: "concept", title: "Concept: Sobel kernels", concept: "sobel" },
+    { type: "filter-lab", title: "Mini Photoshop", filter: "edges" },
+  ],
   task: {
     instructions: "Implement `applyKernel`, `magnitude` and `edges`. Border pixels of the result are 0.",
     mainClass: "Edges",
@@ -847,6 +863,7 @@ Ops.darkenInPlace(out, amount);
 return out;
 ~~~`,
     },
+    { type: "viz-link", vizIndex: 0, label: "Follow one pixel through every frame of the history, frames[k][r][c]" },
     {
       type: "predict",
       id: "pf205-shallow",
@@ -882,7 +899,7 @@ int[][][] frames = new int[steps.length + 1][][];
       answer: 3,
       explain: "frames[2] is the image after step 2 (4 rows × 6 columns), frames[2][3] is its row 3, and a row has 6 pixels.",
     },
-    { type: "viz-link", vizIndex: 0, label: "Open Mini Photoshop and run your own preset" },
+    { type: "viz-link", vizIndex: 1, label: "Open Mini Photoshop and run your own preset" },
     {
       type: "markdown",
       md: `## Your task
@@ -895,7 +912,10 @@ In \`Pipeline.java\` (the helpers \`name\` and \`amount\` that read a step are a
 4. \`history(int[][] img, String[] steps)\`: the input copy plus the image after every step.`,
     },
   ],
-  visualizations: [{ type: "filter-lab", title: "Mini Photoshop", filter: "pipeline" }],
+  visualizations: [
+    { type: "concept", title: "Concept: frames", concept: "pipeline-frames" },
+    { type: "filter-lab", title: "Mini Photoshop", filter: "pipeline" },
+  ],
   task: {
     instructions: "Implement `copy`, `applyStep`, `run` and `history`. The input image must never change, even with `darken` steps.",
     mainClass: "Pipeline",
