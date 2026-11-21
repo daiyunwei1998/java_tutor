@@ -64,7 +64,7 @@ int gray = (299 * red + 587 * green + 114 * blue) / 1000;
 
 The weights add up to 1000, so a white pixel (255, 255, 255) stays 255.`,
     },
-    { type: "viz-link", vizIndex: 1, label: "Open Mini Photoshop on the right and compare average vs luma on a color image" },
+    { type: "viz-link", vizIndex: 1, label: "compare average vs luma on a color image" },
     {
       type: "predict",
       id: "pf201-shape",
@@ -240,7 +240,7 @@ For an image with \`rows\` rows and \`cols\` columns:
 Writing the formula as "where does this output pixel come from" means you visit each output cell exactly once, and you never have to worry about overwriting something you still need.`,
     },
     { type: "viz-link", vizIndex: 0, label: "Step through where every output pixel comes from, and watch the in-place swap stop at the middle" },
-    { type: "viz-link", vizIndex: 1, label: "Open Mini Photoshop and try both flips on the smiley with your Java code" },
+    { type: "viz-link", vizIndex: 1, label: "try both flips on the smiley" },
     {
       type: "predict",
       id: "pf202-swap",
@@ -449,7 +449,7 @@ The order matters: \`&&\` stops at the first \`false\`, so \`img[nr]\` is only r
       answer: 2,
       explain: "Rows -1, 0, 1 and columns -1, 0, 1: only rows 0–1 and columns 0–1 exist, so 2 × 2 = 4 cells. An edge pixel (not a corner) has 6, and an interior pixel has all 9.",
     },
-    { type: "viz-link", vizIndex: 1, label: "Open Mini Photoshop and blur the checkerboard a few times" },
+    { type: "viz-link", vizIndex: 1, label: "blur the checkerboard a few times" },
     {
       type: "predict",
       id: "pf203-inplace",
@@ -663,7 +663,7 @@ The kernel needs a full 3×3 neighborhood, which border pixels do not have. For 
       answer: 2,
       explain: "Interior rows are 1..3 (3 rows) and interior columns are 1..4 (4 columns), so 3 × 4 = 12. In general (rows - 2) × (cols - 2).",
     },
-    { type: "viz-link", vizIndex: 1, label: "Open Mini Photoshop and run your edge detector on the circle" },
+    { type: "viz-link", vizIndex: 1, label: "run your edge detector on the circle" },
     {
       type: "markdown",
       md: `## Your task
@@ -899,7 +899,7 @@ int[][][] frames = new int[steps.length + 1][][];
       answer: 3,
       explain: "frames[2] is the image after step 2 (4 rows × 6 columns), frames[2][3] is its row 3, and a row has 6 pixels.",
     },
-    { type: "viz-link", vizIndex: 1, label: "Open Mini Photoshop and run your own preset" },
+    { type: "viz-link", vizIndex: 1, label: "run your own preset" },
     {
       type: "markdown",
       md: `## Your task

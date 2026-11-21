@@ -8,8 +8,13 @@ import { ImageLab } from "./ImageLab";
 import { MatrixAlgoViz } from "./MatrixAlgoViz";
 import { TraversalViz } from "./TraversalViz";
 
+/** Visualizations that run the student's own Java on an image. They live in the code panel's output area, next to Run main. */
+export function isPreviewViz(v: VizConfig): boolean {
+  return v.type === "image-lab" || v.type === "filter-lab";
+}
+
 /** Visualization registry: content refers to visualizations by type + config only. */
-function renderViz(v: VizConfig, ticket: Ticket, files: Record<string, string>) {
+export function renderViz(v: VizConfig, ticket: Ticket, files: Record<string, string>) {
   switch (v.type) {
     case "array-memory":
       return <ArrayMemoryViz presets={v.presets} />;
