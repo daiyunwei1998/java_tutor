@@ -11,6 +11,11 @@ const pf101: Ticket = {
   slug: "image-buffer-memory",
   title: "Image buffer health check: 2D arrays and memory",
   xp: 100,
+  learningGoal: {
+    level: "easy",
+    goal: "See an int[][] as an outer array of references to separate row arrays, so jagged and null rows make sense.",
+    techniques: ["arr.length vs arr[r].length", "Outer array of row references", "Jagged arrays", "Guarding against null rows"],
+  },
   briefing: `Welcome to **PixelForge Studio**! 🎉 We're building a Mini Photoshop that runs in the browser.
 
 In our code, every image is an \`int[][]\` (we call it an *image buffer*). Last week someone passed a buffer with a \`null\` row into a filter and the whole app crashed 😅
@@ -190,6 +195,11 @@ const pf102: Ticket = {
   slug: "row-column-major",
   title: "Brightness stats: row-major and column-major traversal",
   xp: 120,
+  learningGoal: {
+    level: "easy",
+    goal: "Choose the loop order on purpose: row-major for per-row results, column-major for per-column results.",
+    techniques: ["Nested for loops over r and c", "Row-major traversal", "Column-major traversal", "Non-square and empty arrays"],
+  },
   briefing: `The designers want a "brightness profile" panel in Mini Photoshop: the total brightness of **every row** and **every column**.
 
 In this ticket you'll learn the two orders for visiting a 2D array, and when each one is the natural choice.`,
@@ -338,6 +348,11 @@ const pf103: Ticket = {
   slug: "enhanced-for",
   title: "Exposure fix: the enhanced for trap",
   xp: 120,
+  learningGoal: {
+    level: "easy",
+    goal: "Avoid the enhanced-for trap: the loop variable is a copy, so writing to an array needs row[c] or an index loop.",
+    techniques: ["Nested enhanced for", "Value copy vs element write", "Changing an array in place", "Counting with a condition"],
+  },
   briefing: `QA reported a bug: pressing "Exposure +10" doesn't change the image at all 🐛
 
 The previous engineer used an enhanced for loop to change the pixel values. In this ticket you'll figure out why that has no effect, then write a version that works.`,
@@ -502,6 +517,11 @@ const pf104: Ticket = {
   slug: "matrix-algorithms",
   title: "Getting ready for rotate: diagonals and transpose",
   xp: 150,
+  learningGoal: {
+    level: "easy",
+    goal: "Loop with one index when the shape allows it (diagonals), and build a new array with swapped dimensions (transpose).",
+    techniques: ["Diagonal access [i][i] and [i][n-1-i]", "Single loop vs nested loop cost", "Allocating new int[cols][rows]", "Non-square matrices"],
+  },
   briefing: `The product manager wants "Rotate 90°" soon. The first step of a rotation is the **transpose**: rows become columns.
 
 The image-analysis team also needs the brightness along the diagonals. In this ticket you'll implement these matrix algorithms and compare their time complexity.`,
@@ -664,6 +684,11 @@ const pf105: Ticket = {
   slug: "brightness-filter",
   title: "Ship the first filter: brightness",
   xp: 200,
+  learningGoal: {
+    level: "easy",
+    goal: "Apply a pixel-wise operation into a new array and keep every value in range.",
+    techniques: ["Pixel-wise map over every cell", "Clamping to 0-255", "Returning a new array", "Leaving the input unchanged"],
+  },
   briefing: `You made it through onboarding! 🚀 This is your first ticket that **ships in the product**.
 
 Mini Photoshop's brightness slider calls the \`Filters.brighten\` you write. Whatever your Java code computes is shown directly in the image editor.`,

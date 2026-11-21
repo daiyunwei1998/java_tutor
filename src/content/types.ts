@@ -54,11 +54,22 @@ export type CodeTask = {
   hints: string[];
 };
 
+/** Why a ticket exists: the one skill it is designed to teach, for planning and trimming a sprint. */
+export type LearningGoal = {
+  level: "easy" | "medium" | "hard";
+  /** One sentence: what the student should be able to do after this ticket. */
+  goal: string;
+  /** Key techniques the ticket practices, most important first. */
+  techniques: string[];
+};
+
 export type Ticket = {
   id: string; // e.g. PF-101
   slug: string;
   title: string;
   xp: number;
+  /** Teacher-only: what this ticket is designed to teach. Shown in /admin, never in the student UI. */
+  learningGoal: LearningGoal;
   /** Message from the tech lead that frames the task as real work. */
   briefing: string;
   objectives: string[];

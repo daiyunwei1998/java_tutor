@@ -11,6 +11,11 @@ const pf201: Ticket = {
   slug: "grayscale",
   title: "Grayscale conversion: three channels into one image",
   xp: 150,
+  learningGoal: {
+    level: "easy",
+    goal: "Walk several same-shape 2D arrays in lockstep with one pair of indices, after checking their shapes match.",
+    techniques: ["Lockstep traversal of three arrays", "Shape validation (rows and every row length)", "Throwing IllegalArgumentException", "Integer weighted average"],
+  },
   briefing: `Users keep uploading **color** photos, but every filter we have works on grayscale \`int[][]\` images.
 
 A color image is stored as three separate channels: \`red\`, \`green\` and \`blue\`. Each one is an \`int[][]\` of the same size, with values 0–255. Your job: combine the three channels into a single grayscale image so the rest of the pipeline can use it.`,
@@ -216,6 +221,11 @@ const pf202: Ticket = {
   slug: "flip",
   title: "Flip horizontal and vertical",
   xp: 150,
+  learningGoal: {
+    level: "medium",
+    goal: "Map every output position to an input position with index arithmetic, and swap in place only up to the middle.",
+    techniques: ["Mirror index w - 1 - c", "In-place swap from both ends", "Stopping a swap loop at the middle", "New rows instead of shared rows"],
+  },
   briefing: `Design asked for the most requested feature after brightness: **Flip**. The toolbar will have "Flip horizontal" (mirror left ↔ right) and "Flip vertical" (upside down).
 
 There is also an old in-place mirror used by the thumbnail generator that was never finished. Please write that one too, it saves memory on big images.`,
@@ -405,6 +415,11 @@ const pf203: Ticket = {
   slug: "box-blur",
   title: "Box blur: 3×3 neighborhoods and bounds checks",
   xp: 200,
+  learningGoal: {
+    level: "medium",
+    goal: "Visit a cell's 3x3 neighborhood with offset loops and a bounds check, reading the old image and writing a new one.",
+    techniques: ["Offset loops dr, dc from -1 to 1", "Bounds check for edges and corners", "Averaging only existing neighbors", "Separate input and output arrays"],
+  },
   briefing: `Next up: the **Blur** button. The simplest blur replaces every pixel with the average of the 3×3 square around it.
 
 Last time someone tried this, the app crashed on the first pixel with \`ArrayIndexOutOfBoundsException\` 💥 because the corner pixel has no neighbor above it or to its left. This time, handle the edges properly.`,
@@ -595,6 +610,11 @@ const pf204: Ticket = {
   slug: "sobel-edges",
   title: "Edge detection with Sobel kernels",
   xp: 250,
+  learningGoal: {
+    level: "medium",
+    goal: "Line up a small kernel array with a neighborhood: kernel [i][j] sits over image [r-1+i][c-1+j].",
+    techniques: ["Kernel as a 2D array of weights", "Two coordinate systems at once", "Combining two results with clamping", "Skipping the border on purpose"],
+  },
   briefing: `Marketing wants a "Sketch" effect that turns photos into line drawings. Under the hood that is **edge detection**: find the places where brightness changes quickly.
 
 The Sobel operator does this with two small 3×3 **kernels**, and a kernel is just another \`int[][]\`. You already know how to visit a 3×3 neighborhood from the blur ticket. Now you will weight each neighbor instead of averaging them.`,
@@ -831,6 +851,11 @@ const pf205: Ticket = {
   slug: "filter-pipeline",
   title: "Bonus: filter pipeline",
   xp: 300,
+  learningGoal: {
+    level: "medium",
+    goal: "Chain operations where each output feeds the next, protected by a deep copy. Mostly method and API design, not new 2D array skills.",
+    techniques: ["Deep copy of a 2D array", "Chaining steps through a method", "Dispatching on a step name", "int[][][] as a list of images"],
+  },
   briefing: `Power users want **presets**: a list of steps like \`invert\`, \`threshold 128\`, \`darken 40\` applied one after the other, plus a history panel that shows the image after every step.
 
 A teammate already wrote the basic operations in \`Ops.java\` (read-only). Careful: \`darkenInPlace\` is legacy code that **modifies the image you pass in**. The pipeline must never damage the user's original image or the history.`,
@@ -1111,6 +1136,11 @@ const pf206: Ticket = {
   slug: "selection-tools",
   title: "Selection tools: crop, fill and rotate in place",
   xp: 250,
+  learningGoal: {
+    level: "hard",
+    goal: "Write loops whose bounds start or stop partway: sub-rectangles, clipped ranges and triangle loops for in-place transforms.",
+    techniques: ["Partial loop bounds for a sub-rectangle", "Translating image to output coordinates", "Clipping with Math.max and Math.min", "Triangle loops (c < r) for in-place transpose", "Rotate in place = transpose + mirror"],
+  },
   briefing: `Users keep asking for the **selection tools** every editor has: drag a box and **Crop** to it, or **Fill** it with one color to hide a license plate. And remember PF-104? The transpose was the first step towards **Rotate 90°**. Now we ship it, and on big photos it must work **in place**, without a second copy of the image.
 
 None of these loops run over the whole image from \`0\` to the end. They start and stop partway, and for the rotation the inner loop even depends on the outer one. Getting those bounds right is this ticket.`,

@@ -11,6 +11,11 @@ const pf207: Ticket = {
   slug: "life-texture",
   title: "Living textures: a cell simulation with 8 neighbors",
   xp: 250,
+  learningGoal: {
+    level: "medium",
+    goal: "Count the 8 neighbors of each cell and compute a whole new generation from the old grid (double buffering).",
+    techniques: ["8-neighbor offset loops skipping the center", "Out-of-bounds treated as dead", "Double buffering: read old, write new", "Running several generations"],
+  },
   briefing: `The design team wants an animated **"Living texture"** background for the editor's start screen. It is a black-and-white grid where every cell is alive (\`1\`) or dead (\`0\`), and the whole grid changes one **generation** at a time following three tiny rules. Simple rules, surprisingly lively patterns.
 
 You already looked at the 8 pixels around a pixel in the box blur (PF-203). This time the neighbors decide whether a cell lives or dies, and there is a trap: every cell must look at the **old** grid, even after you have computed new values for its neighbors.`,
@@ -269,6 +274,11 @@ const pf208: Ticket = {
   slug: "spiral-reveal",
   title: "Spiral reveal: a transition with shrinking boundaries",
   xp: 250,
+  learningGoal: {
+    level: "hard",
+    goal: "Traverse with four shrinking boundaries, including backwards loops, and stop exactly when the boundaries cross.",
+    techniques: ["Four boundary variables top/bottom/left/right", "Backwards loops (c--, r--)", "Shrinking boundaries after each side", "Leftover middle row or column on non-square arrays"],
+  },
   briefing: `The slideshow feature needs a new transition: the next photo **spirals in** from the outside. The first pixel to appear is the top-left corner, then the reveal runs clockwise along the edge, and ring by ring it winds into the middle.
 
 To animate it, the front end needs the pixels in **spiral order**. You cannot get that with one pair of nested loops. Instead you keep four boundaries, \`top\`, \`bottom\`, \`left\` and \`right\`, walk along them, and move each one inwards after you used it.`,
@@ -490,6 +500,11 @@ const pf209: Ticket = {
   slug: "smooth-blur-weights",
   title: "Smooth blur: weights from a triangle-shaped array",
   xp: 250,
+  learningGoal: {
+    level: "medium",
+    goal: "Build a jagged array row by row, where each row has its own length and is computed from the row above.",
+    techniques: ["Allocating rows one at a time", "Each row from the previous row", "Traversing with tri[r].length", "Building a 2D array from a 1D array"],
+  },
   briefing: `The box blur from PF-203 gives all 9 pixels **the same weight**, and the designers say it looks blocky. A smooth blur lets the center pixel count the most and the far corners the least. The classic weights are \`1 2 1\`, \`1 4 6 4 1\`, \`1 6 15 20 15 6 1\` …, and they all come from **Pascal's triangle**.
 
 Your job: build the triangle as a **jagged** array (every row has a different length), and turn one of its rows into a 2D blur kernel.`,

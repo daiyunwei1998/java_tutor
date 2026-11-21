@@ -139,6 +139,7 @@ export default function AdminPage() {
         </div>
         <div className="row">
           <Link className="btn" href="/admin/notes">📝 Notes</Link>
+          <Link className="btn" href="/admin/tickets">🎯 Ticket guide</Link>
           <button className="btn" onClick={() => load(pw)} disabled={loading}>↻ Refresh</button>
           <button className="btn ghost" onClick={() => { sessionStorage.removeItem("jt.admin"); setData(null); setPw(""); }}>Log out</button>
         </div>
