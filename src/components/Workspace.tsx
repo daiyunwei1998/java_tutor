@@ -27,6 +27,7 @@ export function Workspace({ sprintId, ticketId }: { sprintId: string; ticketId: 
   const [sideTab, setSideTab] = useState<"learn" | "viz">("learn");
   const [sideCollapsed, setSideCollapsed] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [layout, setLayout] = useLayout();
   const sidePanel = useRef<ImperativePanelHandle>(null);
   const idx = sprint.tickets.findIndex((t) => t.id === ticket.id);
   const nextTicket = sprint.tickets[idx + 1];
@@ -138,6 +139,7 @@ export function Workspace({ sprintId, ticketId }: { sprintId: string; ticketId: 
       onResult={onResult}
       hintsShown={st.hintsShown}
       onShowHint={() => updateTicket(key, (t) => ({ ...t, hintsShown: t.hintsShown + 1 }))}
+      split={!isMobileNow()}
     />
   );
 
@@ -151,6 +153,10 @@ export function Workspace({ sprintId, ticketId }: { sprintId: string; ticketId: 
         <strong style={{ flex: 1, minWidth: 200 }}>{ticket.title}</strong>
         <span className={`pill ${st.status}`}>{STATUS_LABEL[st.status]}</span>
         <span className="small muted">{ticket.xp} XP</span>
+        <span className="layout-tools">
+          <button className="btn small ghost" onClick={() => setLayout({ ...layout, swap: !layout.swap })} title={layout.swap ? "Put the lesson on the left" : "Put the code on the left"} aria-label="Swap the lesson and code sides">⇄ Swap sides</button>
+          <button className="btn small ghost" onClick={() => setLayout({ swap: false, v: layout.v + 1 }, true)} title="Reset all panel sizes" aria-label="Reset layout">↺ Layout</button>
+        </span>
       </div>
 
       <div className="ws-tabs" role="tablist" aria-label="Workspace">
@@ -164,14 +170,21 @@ export function Workspace({ sprintId, ticketId }: { sprintId: string; ticketId: 
       <div className="ws-body">
         <MediaSwitch
           desktop={
-            <PanelGroup direction="horizontal" autoSaveId="ws-layout-2col">
+            <PanelGroup key={`${layout.swap}-${layout.v}`} direction="horizontal" autoSaveId={layout.swap ? "ws-layout-2col-swap" : "ws-layout-2col"}>
+              {layout.swap ? (
+                <>
+              <Panel id="code" defaultSize={56} minSize={35} order={layout.swap ? 1 : 2}>
+                <div className="pane">{code}</div>
+              </Panel>
+              <PanelResizeHandle className="resize-handle" aria-label="Resize" />
               <Panel
                 ref={sidePanel}
                 defaultSize={44}
                 minSize={28}
                 collapsible
                 collapsedSize={3}
-                order={1}
+                id="side"
+                order={layout.swap ? 2 : 1}
                 onCollapse={() => setSideCollapsed(true)}
                 onExpand={() => setSideCollapsed(false)}
               >
@@ -186,16 +199,49 @@ export function Workspace({ sprintId, ticketId }: { sprintId: string; ticketId: 
                       <button role="tab" aria-selected={sideTab === "learn"} onClick={() => setSideTab("learn")}>📖 Lesson & task</button>
                       <button role="tab" aria-selected={sideTab === "viz"} onClick={() => setSideTab("viz")}>🔬 Visualize</button>
                       <div className="spacer" />
-                      <button className="btn small ghost" onClick={() => sidePanel.current?.collapse()} aria-label="Collapse the side panel to widen the code" title="Collapse to widen the code">⇤</button>
+                      <button className="btn small ghost" onClick={() => sidePanel.current?.collapse()} aria-label="Collapse the side panel to widen the code" title="Collapse to widen the code">{layout.swap ? "⇥" : "⇤"}</button>
+                    </div>
+                    <div className="pane">{sideTab === "learn" ? learn : viz}</div>
+                  </div>
+                )}
+              </Panel>
+                </>
+              ) : (
+                <>
+              <Panel
+                ref={sidePanel}
+                defaultSize={44}
+                minSize={28}
+                collapsible
+                collapsedSize={3}
+                id="side"
+                order={layout.swap ? 2 : 1}
+                onCollapse={() => setSideCollapsed(true)}
+                onExpand={() => setSideCollapsed(false)}
+              >
+                {sideCollapsed ? (
+                  <div className="collapsed-strip">
+                    <button className="btn small" onClick={() => { setSideTab("learn"); sidePanel.current?.expand(); }} aria-label="Show lesson" title="Lesson">📖</button>
+                    <button className="btn small" onClick={() => { setSideTab("viz"); sidePanel.current?.expand(); }} aria-label="Show visualization" title="Visualization">🔬</button>
+                  </div>
+                ) : (
+                  <div className="side">
+                    <div className="side-tabs" role="tablist" aria-label="Side panel">
+                      <button role="tab" aria-selected={sideTab === "learn"} onClick={() => setSideTab("learn")}>📖 Lesson & task</button>
+                      <button role="tab" aria-selected={sideTab === "viz"} onClick={() => setSideTab("viz")}>🔬 Visualize</button>
+                      <div className="spacer" />
+                      <button className="btn small ghost" onClick={() => sidePanel.current?.collapse()} aria-label="Collapse the side panel to widen the code" title="Collapse to widen the code">{layout.swap ? "⇥" : "⇤"}</button>
                     </div>
                     <div className="pane">{sideTab === "learn" ? learn : viz}</div>
                   </div>
                 )}
               </Panel>
               <PanelResizeHandle className="resize-handle" aria-label="Resize" />
-              <Panel defaultSize={56} minSize={35} order={2}>
+              <Panel id="code" defaultSize={56} minSize={35} order={layout.swap ? 1 : 2}>
                 <div className="pane">{code}</div>
               </Panel>
+                </>
+              )}
             </PanelGroup>
           }
           mobile={
@@ -225,4 +271,32 @@ function MediaSwitch({ desktop, mobile }: { desktop: React.ReactNode; mobile: Re
   }, []);
   if (isMobile === null) return null;
   return <>{isMobile ? mobile : desktop}</>;
+}
+
+const LAYOUT_KEY = "java-tutor.layout";
+type Layout = { swap: boolean; v: number };
+
+/** Per-browser workspace layout (which side the code is on). Panel sizes are saved by react-resizable-panels. */
+function useLayout(): [Layout, (l: Layout, resetSizes?: boolean) => void] {
+  const [layout, setState] = useState<Layout>({ swap: false, v: 0 });
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(LAYOUT_KEY) ?? "null");
+      if (saved && typeof saved.swap === "boolean") setState({ swap: saved.swap, v: 0 });
+    } catch {}
+  }, []);
+  const set = (l: Layout, resetSizes = false) => {
+    try {
+      if (resetSizes) {
+        Object.keys(localStorage).filter((k) => k.startsWith("react-resizable-panels:ws-")).forEach((k) => localStorage.removeItem(k));
+      }
+      localStorage.setItem(LAYOUT_KEY, JSON.stringify({ swap: l.swap }));
+    } catch {}
+    setState(l);
+  };
+  return [layout, set];
+}
+
+function isMobileNow() {
+  return typeof window !== "undefined" && window.matchMedia("(max-width: 900px)").matches;
 }

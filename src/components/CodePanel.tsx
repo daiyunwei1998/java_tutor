@@ -4,6 +4,7 @@ import { java } from "@codemirror/lang-java";
 import { EditorView } from "@codemirror/view";
 import CodeMirror, { type ReactCodeMirrorRef } from "@uiw/react-codemirror";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Panel, PanelGroup, PanelResizeHandle, type ImperativePanelHandle } from "react-resizable-panels";
 import type { Ticket } from "@/content/types";
 import { askDebug, isAiError } from "@/lib/ai";
 import { onRunnerState, parseDiagnostics, type RunResult, type RunnerState, runJava, warmUp } from "@/lib/java-runner";
@@ -20,6 +21,7 @@ export function CodePanel({
   onResult,
   hintsShown,
   onShowHint,
+  split = false,
 }: {
   ticket: Ticket;
   files: Record<string, string>;
@@ -29,6 +31,8 @@ export function CodePanel({
   onResult: (r: RunResult, mode: "run" | "test") => void;
   hintsShown: number;
   onShowHint: () => void;
+  /** Desktop: a draggable divider between the editor and the output/tests panel. */
+  split?: boolean;
 }) {
   const store = useStore();
   const theme = useResolvedTheme();
@@ -40,6 +44,8 @@ export function CodePanel({
   const [ai, setAi] = useState<{ busy: boolean; text?: string; error?: string }>({ busy: false });
   const [aiQuestion, setAiQuestion] = useState("");
   const cm = useRef<ReactCodeMirrorRef>(null);
+  const outPanel = useRef<ImperativePanelHandle>(null);
+  const [outCollapsed, setOutCollapsed] = useState(false);
 
   useEffect(() => onRunnerState((s, err) => setRunner({ s, err })), []);
   useEffect(() => {
@@ -53,6 +59,7 @@ export function CodePanel({
   const diagnostics = result?.status === "compile_error" ? parseDiagnostics(result.stderr) : [];
 
   async function exec(mode: "run" | "test") {
+    if (outPanel.current?.isCollapsed()) outPanel.current.expand();
     setRunning(mode);
     setAi({ busy: false });
     const r = await runJava({ files: allFiles, mode, mainClass: task.mainClass, testClass: task.testClass });
@@ -90,8 +97,8 @@ export function CodePanel({
   const passed = result?.tests?.filter((t) => t.passed).length ?? 0;
   const total = result?.tests?.length ?? 0;
 
-  return (
-    <div className="code-panel">
+  const editorPart = (
+    <div className="code-top">
       <div className="file-tabs" role="tablist" aria-label="Files">
         {task.files.map((f) => (
           <button key={f.path} role="tab" aria-selected={f.path === active} className="file-tab" onClick={() => setActive(f.path)}>
@@ -128,8 +135,17 @@ export function CodePanel({
           <span className={`status-dot ${runner.s}`} />
           {runner.s === "loading" ? "Loading Java (first time ~10–30 s)" : runner.s === "error" ? "Java error" : runner.s === "busy" ? "Running" : "Java 17 · runs in your browser"}
         </span>
+        {split && (
+          <button className="btn small ghost" onClick={() => (outCollapsed ? outPanel.current?.expand() : outPanel.current?.collapse())} title={outCollapsed ? "Show the output panel" : "Hide the output panel to see more code"} aria-label="Toggle output panel">
+            {outCollapsed ? "▴ Output" : "▾ Output"}
+          </button>
+        )}
         <button className="btn small ghost" onClick={() => confirm("Reset the code to the starter version? Your changes will be lost.") && onReset()}>↺ Reset</button>
       </div>
+    </div>
+  );
+
+  const outputPart = (
       <div className="output" aria-live="polite">
         {runner.s === "error" && <div className="console err">{runner.err}</div>}
         {!result && !ai.text && !ai.error && (
@@ -203,7 +219,37 @@ export function CodePanel({
           )}
         </div>
       </div>
-    </div>
+  );
+
+  if (!split) {
+    return (
+      <div className="code-panel">
+        {editorPart}
+        {outputPart}
+      </div>
+    );
+  }
+
+  return (
+    <PanelGroup direction="vertical" autoSaveId="ws-code-split" className="code-panel">
+      <Panel id="editor" order={1} defaultSize={62} minSize={25}>
+        {editorPart}
+      </Panel>
+      <PanelResizeHandle className="resize-handle horiz" aria-label="Resize the output panel" />
+      <Panel
+        id="output"
+        order={2}
+        ref={outPanel}
+        defaultSize={38}
+        minSize={12}
+        collapsible
+        collapsedSize={0}
+        onCollapse={() => setOutCollapsed(true)}
+        onExpand={() => setOutCollapsed(false)}
+      >
+        {outputPart}
+      </Panel>
+    </PanelGroup>
   );
 }
 

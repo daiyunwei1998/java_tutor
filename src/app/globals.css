@@ -182,6 +182,11 @@ textarea { resize: vertical; }
 .pane-pad { padding: 16px 18px 40px; }
 .resize-handle { width: 6px; background: var(--border); transition: background 0.15s; }
 .resize-handle:hover, .resize-handle[data-resize-handle-active] { background: var(--accent); }
+.resize-handle.horiz { width: auto; height: 6px; cursor: row-resize; }
+.code-top { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+.code-panel > [data-panel] { overflow: hidden; }
+.layout-tools { display: inline-flex; gap: 2px; }
+@media (max-width: 900px) { .layout-tools { display: none; } }
 .collapsed-strip { height: 100%; display: flex; flex-direction: column; gap: 6px; align-items: center; padding-top: 10px; background: var(--surface-2); }
 .ws-tabs { display: none; }
 .side { display: flex; flex-direction: column; height: 100%; }
@@ -211,13 +216,14 @@ textarea { resize: vertical; }
 
 /* code panel */
 .code-panel { display: flex; flex-direction: column; height: 100%; }
+div.code-panel > .output { height: 38%; min-height: 160px; flex: none; }
 .file-tabs { display: flex; gap: 2px; padding: 6px 8px 0; background: var(--surface-2); border-bottom: 1px solid var(--border); overflow-x: auto; }
 .file-tab { border: 1px solid transparent; border-bottom: none; background: transparent; padding: 5px 10px; border-radius: 6px 6px 0 0; cursor: pointer; font: inherit; font-size: 13px; color: var(--muted); font-family: var(--mono); white-space: nowrap; }
 .file-tab[aria-selected="true"] { background: var(--surface); border-color: var(--border); color: var(--text); }
-.editor-wrap { flex: 1; min-height: 220px; overflow: auto; }
+.editor-wrap { flex: 1; min-height: 0; overflow: auto; }
 .editor-wrap .cm-editor { height: 100%; font-size: 14px; }
 .toolbar { display: flex; gap: 6px; padding: 8px; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); flex-wrap: wrap; align-items: center; background: var(--surface); }
-.output { height: 38%; min-height: 160px; overflow: auto; padding: 10px 12px; background: var(--surface); font-size: 14px; }
+.output { height: 100%; overflow: auto; padding: 10px 12px; background: var(--surface); font-size: 14px; }
 .console { font-family: var(--mono); font-size: 13px; white-space: pre-wrap; background: var(--code-bg); border-radius: 6px; padding: 8px 10px; margin: 6px 0; border: 1px solid var(--border); }
 .console.err { color: var(--bad); }
 .test-row { display: flex; gap: 8px; align-items: flex-start; padding: 4px 0; border-bottom: 1px dashed var(--border); }
@@ -395,3 +401,6 @@ table.data th { color: var(--muted); font-weight: 600; font-size: 12px; text-tra
 @media (prefers-reduced-motion: reduce) {
   .mem-obj.new { animation: none; }
 }
+/* stacked (phone) code panel: editor grows, output keeps a fixed share */
+div.code-panel > .code-top { flex: 1; height: auto; }
+div.code-panel > .code-top .editor-wrap { min-height: 220px; }

@@ -755,9 +755,8 @@ Once the tests pass, press **Apply brighten with my Java** and your code process
             {50, 150, 250}
         };
         int[][] out = brighten(img, 30);
-        for (int[] row : out) {
-            System.out.println(java.util.Arrays.toString(row));
-        }
+        System.out.println("brightened: " + java.util.Arrays.deepToString(out));
+        System.out.println("original:   " + java.util.Arrays.deepToString(img) + "  (should still be [[0, 100, 200], [50, 150, 250]])");
     }
 }
 `,
@@ -793,9 +792,9 @@ public class FiltersTest {
     static void test5_doesNotModifyInput() {
         int[][] img = {{1, 2}, {3, 4}};
         int[][] out = Filters.brighten(img, 10);
-        Check.notSame(img, out, "brighten should return a new array");
-        Check.notSame(img[0], out[0], "each row must be a new array too (no shared rows)");
-        Check.equal(new int[][]{{1, 2}, {3, 4}}, img, "the original image must not change");
+        Check.notSame(img, out, "brighten returned img itself (the same array object it received). Create a NEW array with new int[...] and write the results there, so the original picture is kept");
+        Check.notSame(img[0], out[0], "out[0] is the same row object as img[0]. Create every row with new int[img[r].length]");
+        Check.equal(new int[][]{{1, 2}, {3, 4}}, img, "the original image changed. brighten may only read img and must write into the new array");
     }
 }
 `,
