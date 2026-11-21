@@ -116,7 +116,7 @@ export function TicketSummary({
 
         <div className="row" style={{ marginTop: 14, flexWrap: "wrap" }}>
           <Link className="btn" href={`/admin/live/${encodeURIComponent(username)}`}>👀 Join live session</Link>
-          <a className="btn" href={`/sprints/${sprint.id}/tickets/${ticket.id}`} target="_blank" rel="noreferrer" title="Opens the ticket in your own copy. The student's work is never changed.">
+          <a className="btn" href={`/admin/tickets/${sprint.id}/${ticket.id}`} target="_blank" rel="noreferrer" title="Opens the ticket as a teacher preview in a new tab. The student's work is never changed.">
             ✏️ Try it yourself ↗
           </a>
         </div>

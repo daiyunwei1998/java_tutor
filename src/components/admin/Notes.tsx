@@ -189,7 +189,7 @@ function NoteItem({
         {note.tickets.map((k) => {
           const t = ticketRef(k);
           return (
-            <Link key={k} className="pill todo" href={`/sprints/${t.sprintId}/tickets/${t.id}`} title={t.title} target="_blank">
+            <Link key={k} className="pill todo" href={`/admin/tickets/${t.sprintId}/${t.id}`} title={t.title} target="_blank">
               {t.id}
             </Link>
           );

@@ -25,8 +25,10 @@ function send(ticket: string, ms: number) {
   });
 }
 
-export function useActiveTime(ticketKey: string) {
+/** Pass null to record nothing (the teacher's preview and live views). */
+export function useActiveTime(ticketKey: string | null) {
   useEffect(() => {
+    if (!ticketKey) return;
     let lastActivity = Date.now();
     let lastTick = Date.now();
     let pending = 0;

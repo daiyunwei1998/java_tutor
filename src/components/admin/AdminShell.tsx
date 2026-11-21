@@ -88,7 +88,7 @@ function AdminTopbar({ loggedIn, accounts }: { loggedIn: boolean; accounts: stri
             </select>
           </label>
           <Link href="/admin/notes" className={cls(path.startsWith("/admin/notes"))} aria-current={path.startsWith("/admin/notes") ? "page" : undefined}>Notes</Link>
-          <Link href="/admin/tickets" className={cls(path.startsWith("/admin/tickets"))} aria-current={path.startsWith("/admin/tickets") ? "page" : undefined}>Ticket guide</Link>
+          <Link href="/admin/tickets" className={cls(path.startsWith("/admin/tickets"))} aria-current={path.startsWith("/admin/tickets") ? "page" : undefined}>Tickets</Link>
           <Link href="/admin/usage" className={cls(path.startsWith("/admin/usage"))} aria-current={path.startsWith("/admin/usage") ? "page" : undefined}>AI usage</Link>
           {live && <span className="active live-crumb" aria-current="page"><span className="live-dot" aria-hidden /> Live: {decodeURIComponent(live)}</span>}
         </nav>

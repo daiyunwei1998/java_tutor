@@ -25,7 +25,7 @@ export function TicketGuide() {
             {s.tickets.map((t) => (
               <div key={t.id} className="card">
                 <div style={{ marginBottom: 6 }}>
-                  <Link href={`/sprints/${s.id}/tickets/${t.id}`}><strong>{t.id}</strong> {t.title}</Link>
+                  <Link href={`/admin/tickets/${s.id}/${t.id}`} title="Open the ticket as a teacher preview"><strong>{t.id}</strong> {t.title}</Link>
                 </div>
                 <TicketGoal ticket={t} />
               </div>

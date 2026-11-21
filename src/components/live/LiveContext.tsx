@@ -131,7 +131,16 @@ export function useLiveEvent<T>(name: string, cb: (d: T) => void) {
 
 // ---------- ticket data: local store for students, the student's mirrored state for the teacher ----------
 
-export type RemoteTicket = { key: string; st: TicketState; update: (fn: (t: TicketState) => TicketState) => void };
+export type RemoteTicket = {
+  key: string;
+  st: TicketState;
+  update: (fn: (t: TicketState) => TicketState) => void;
+  /**
+   * Where the workspace's own links (back to the board, next ticket) go. Without it those links are hidden,
+   * so the teacher's views never drop into the student site (which would ask for a student login).
+   */
+  links?: { board: string; ticket: (ticketId: string) => string; boardLabel: string };
+};
 const RemoteTicketCtx = createContext<RemoteTicket | null>(null);
 export const RemoteTicketProvider = RemoteTicketCtx.Provider;
 export const useRemoteTicket = () => useContext(RemoteTicketCtx);
