@@ -2,6 +2,7 @@
 
 import type { Ticket, VizConfig } from "@/content/types";
 import { ArrayMemoryViz } from "./ArrayMemoryViz";
+import { ConceptViz } from "./concepts/ConceptViz";
 import { FilterLab } from "./FilterLab";
 import { ImageLab } from "./ImageLab";
 import { MatrixAlgoViz } from "./MatrixAlgoViz";
@@ -18,6 +19,8 @@ function renderViz(v: VizConfig, ticket: Ticket, files: Record<string, string>) 
       return <MatrixAlgoViz algorithms={v.algorithms} />;
     case "image-lab":
       return <ImageLab ticket={ticket} files={files} />;
+    case "concept":
+      return <ConceptViz concept={v.concept} />;
     case "filter-lab":
       return <FilterLab key={ticket.id} ticket={ticket} files={files} filter={v.filter} />;
   }
