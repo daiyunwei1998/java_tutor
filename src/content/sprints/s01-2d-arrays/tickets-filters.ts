@@ -1,7 +1,7 @@
 import type { Ticket } from "../../types";
 
 /*
- * Sprint 1, part 2: the Mini Photoshop filters (PF-201..PF-205).
+ * Sprint 1, part 2: the Mini Photoshop filters and tools (PF-201..PF-206).
  * Same format as tickets.ts: content is data only, Markdown uses ~~~ fences so it can live inside template literals.
  * Reference solutions live in tools/solutions/<mainClass>.java; check them with tools/verify-content.mjs.
  */
@@ -1106,4 +1106,324 @@ public class PipelineTest {
   },
 };
 
-export const tickets: Ticket[] = [pf201, pf202, pf203, pf204, pf205];
+const pf206: Ticket = {
+  id: "PF-206",
+  slug: "selection-tools",
+  title: "Selection tools: crop, fill and rotate in place",
+  xp: 250,
+  briefing: `Users keep asking for the **selection tools** every editor has: drag a box and **Crop** to it, or **Fill** it with one color to hide a license plate. And remember PF-104? The transpose was the first step towards **Rotate 90°**. Now we ship it, and on big photos it must work **in place**, without a second copy of the image.
+
+None of these loops run over the whole image from \`0\` to the end. They start and stop partway, and for the rotation the inner loop even depends on the outer one. Getting those bounds right is this ticket.`,
+  objectives: [
+    "Write nested loops that start and stop partway (a sub-rectangle of the image)",
+    "Convert between image positions and output positions when the output starts at [0][0]",
+    "Clip a range to the image with Math.max and Math.min instead of crashing",
+    "Write triangle loops where the inner bound depends on the outer variable (c < r, c <= r)",
+    "Explain why an in-place transpose must visit only one triangle",
+  ],
+  blocks: [
+    {
+      type: "markdown",
+      md: `## Loops do not have to start at 0
+
+So far almost every loop was \`for (int r = 0; r < img.length; r++)\`. But the bounds are just expressions, and changing them changes **which cells** you visit:
+
+| Shape | Outer loop | Inner loop |
+|---|---|---|
+| Whole image | \`r = 0; r < rows\` | \`c = 0; c < cols\` |
+| Sub-rectangle | \`r = top; r < bottom\` | \`c = left; c < right\` |
+| Lower triangle, with the diagonal | \`r = 0; r < n\` | \`c = 0; c <= r\` |
+| Lower triangle, no diagonal | \`r = 0; r < n\` | \`c = 0; c < r\` |
+| Upper triangle, with the diagonal | \`r = 0; r < n\` | \`c = r; c < n\` |
+
+In a triangle the inner loop uses the **outer variable** in its bound, so every row has a different length: row 0 visits 1 cell, row 1 visits 2, and so on.
+
+We write ranges **half-open**: the start is included, the end is not, just like \`substring(begin, end)\`. Then \`r = top; r < bottom\` runs exactly \`bottom - top\` times.`,
+    },
+    { type: "viz-link", vizIndex: 0, label: "Step through each loop shape and see exactly which cells it visits, and how many" },
+    {
+      type: "predict",
+      id: "pf206-triangle-count",
+      question: "How many times does the body of this loop run?",
+      code: `for (int r = 0; r < 4; r++) {
+    for (int c = 0; c <= r; c++) {
+        // body
+    }
+}`,
+      options: ["16", "10", "6", "4"],
+      answer: 1,
+      explain: "Row 0 runs c = 0 (1 time), row 1 runs c = 0..1 (2), row 2 runs 3, row 3 runs 4: 1 + 2 + 3 + 4 = 10. With `c < r` instead it would be 0 + 1 + 2 + 3 = 6, because the diagonal is left out.",
+    },
+    {
+      type: "markdown",
+      md: `## Crop: two coordinate systems
+
+\`crop(img, top, left, height, width)\` copies a rectangle into a **new** array of size \`height × width\`. Pixel \`img[r][c]\` lands at \`out[r - top][c - left]\`, because the output always starts at \`[0][0]\`.
+
+You can loop over the image positions and shift back:
+
+~~~java
+for (int r = top; r < top + height; r++)
+    for (int c = left; c < left + width; c++)
+        out[r - top][c - left] = img[r][c];
+~~~
+
+or loop over the output positions and shift forward (\`out[r][c] = img[top + r][left + c]\` with \`r\` from 0 to \`height\`). Both visit the same cells. Pick one and stay consistent.`,
+    },
+    {
+      type: "predict",
+      id: "pf206-crop-rows",
+      question: "crop(img, 2, 1, 3, 4) is called. Which rows of img does it read?",
+      options: ["0, 1, 2", "2, 3, 4", "2, 3", "1, 2, 3, 4"],
+      answer: 1,
+      explain: "It starts at row `top = 2` and reads `height = 3` rows: 2, 3 and 4. The loop is `r = 2; r < 2 + 3`, and 5 is not included.",
+    },
+    {
+      type: "markdown",
+      md: `## Fill: clip the box to the image
+
+A user can drag the selection box past the edge of the image. \`fillRect\` must not crash then: it fills only the part that is inside. Instead of an \`if\` around every pixel, **clip the bounds once** before the loop:
+
+~~~java
+int rStart = Math.max(0, top);            // never above row 0
+int rEnd   = Math.min(img.length, bottom); // never past the last row
+for (int r = rStart; r < rEnd; r++) { ... }
+~~~
+
+If the box is completely outside, \`rStart >= rEnd\` and the loop simply runs 0 times. Do the same for the columns.`,
+    },
+    {
+      type: "markdown",
+      md: `## Rotate in place: why only one triangle
+
+PF-104's transpose built a new array. In place, we **swap** \`img[r][c]\` with \`img[c][r]\` instead. Look at what happens if the loops cover the whole square: the pair \`(1, 0)\` and \`(0, 1)\` is swapped once when \`r = 1, c = 0\`, and swapped **back** when \`r = 0, c = 1\`. Every pair is swapped twice, so nothing changes. It is the same trap as the mirror loop in PF-202 that had to stop at the middle.
+
+The fix: visit **one triangle only**, \`c < r\`. The diagonal (\`c == r\`) stays where it is, so it can be left out.
+
+Then rotating 90° clockwise is two steps you already have: **transpose, then mirror every row**.`,
+    },
+    {
+      type: "predict",
+      id: "pf206-full-swap",
+      question: "This is the old transposeInPlace from the codebase. What is m after it runs?",
+      code: `int[][] m = {{1, 2}, {3, 4}};
+for (int r = 0; r < m.length; r++) {
+    for (int c = 0; c < m.length; c++) {
+        int tmp = m[r][c];
+        m[r][c] = m[c][r];
+        m[c][r] = tmp;
+    }
+}`,
+      options: ["{{1, 3}, {2, 4}}", "{{1, 2}, {3, 4}}", "{{4, 3}, {2, 1}}", "ArrayIndexOutOfBoundsException"],
+      answer: 1,
+      explain: "At r = 0, c = 1 it swaps 2 and 3, giving {{1, 3}, {2, 4}}. At r = 1, c = 0 it swaps the same pair back. Every off-diagonal pair is swapped twice, so m ends up unchanged. Limit the inner loop to `c < r`.",
+    },
+    { type: "viz-link", vizIndex: 0, label: "Pick \"Transpose in place\" and compare c < r with the full loop" },
+    {
+      type: "markdown",
+      md: `## Your task
+
+In \`Selection.java\` implement:
+
+1. \`crop(img, top, left, height, width)\`: a **new** \`height × width\` image with the pixels of that rectangle. The rectangle is always inside \`img\`.
+2. \`fillRect(img, top, left, bottom, right, value)\`: set every pixel with \`top <= r < bottom\` and \`left <= c < right\` to \`value\` (change \`img\` itself). Skip the parts outside the image and **return how many pixels you set**.
+3. \`transposeInPlace(img)\`: fix the old version so it really transposes a square image in place.
+4. \`rotateInPlace(img)\`: rotate a square image 90° clockwise in place. \`mirrorRows\` is already written for you.`,
+    },
+    { type: "viz-link", vizIndex: 1, label: "crop, fill and rotate real images with your Java" },
+  ],
+  visualizations: [
+    { type: "concept", title: "Concept: loop bounds", concept: "loop-bounds" },
+    { type: "filter-lab", title: "Mini Photoshop", filter: "selection" },
+  ],
+  task: {
+    instructions: "Implement `crop`, `fillRect`, `transposeInPlace` and `rotateInPlace`. Every loop here starts or stops partway.",
+    mainClass: "Selection",
+    testClass: "SelectionTest",
+    files: [
+      {
+        path: "Selection.java",
+        content: `import java.util.Arrays;
+
+public class Selection {
+
+    /**
+     * Returns a new height x width image: the part of img that starts at row top, column left.
+     * The rectangle is always fully inside img.
+     */
+    public static int[][] crop(int[][] img, int top, int left, int height, int width) {
+        int[][] out = new int[height][width];
+        // TODO: copy the rectangle. img[top][left] goes to out[0][0].
+        return out;
+    }
+
+    /**
+     * Sets every pixel with top <= r < bottom and left <= c < right to value (changes img itself).
+     * Parts of the rectangle outside img are skipped. Returns how many pixels were set.
+     */
+    public static int fillRect(int[][] img, int top, int left, int bottom, int right, int value) {
+        // TODO: clip the bounds to the image first (Math.max / Math.min)
+        return 0;
+    }
+
+    /** Transposes a square image in place: img[r][c] and img[c][r] trade places. */
+    public static void transposeInPlace(int[][] img) {
+        // Written by the previous engineer. The tests say the image does not change. Why?
+        for (int r = 0; r < img.length; r++) {
+            for (int c = 0; c < img.length; c++) {
+                int tmp = img[r][c];
+                img[r][c] = img[c][r];
+                img[c][r] = tmp;
+            }
+        }
+    }
+
+    /** Mirrors every row left <-> right in place. (Already done, from PF-202.) */
+    public static void mirrorRows(int[][] img) {
+        for (int[] row : img) {
+            for (int c = 0; c < row.length / 2; c++) {
+                int tmp = row[c];
+                row[c] = row[row.length - 1 - c];
+                row[row.length - 1 - c] = tmp;
+            }
+        }
+    }
+
+    /** Rotates a square image 90 degrees clockwise in place. */
+    public static void rotateInPlace(int[][] img) {
+        // TODO: two steps you already have
+    }
+
+    public static void main(String[] args) {
+        int[][] img = {
+            {11, 12, 13, 14, 15},
+            {21, 22, 23, 24, 25},
+            {31, 32, 33, 34, 35},
+            {41, 42, 43, 44, 45}
+        };
+        System.out.println("crop(img, 1, 2, 2, 3) = " + Arrays.deepToString(crop(img, 1, 2, 2, 3)));
+
+        int painted = fillRect(img, 2, 3, 6, 9, 0);   // hangs off the bottom-right corner
+        System.out.println("fillRect painted " + painted + " pixels");
+        for (int[] row : img) System.out.println("  " + Arrays.toString(row));
+
+        int[][] sq = {
+            {1, 2, 3},
+            {4, 5, 6},
+            {7, 8, 9}
+        };
+        transposeInPlace(sq);
+        System.out.println("transposed = " + Arrays.deepToString(sq));
+        transposeInPlace(sq);
+        rotateInPlace(sq);
+        System.out.println("rotated    = " + Arrays.deepToString(sq));
+    }
+}
+`,
+      },
+      {
+        path: "SelectionTest.java",
+        readOnly: true,
+        content: `import tutor.Check;
+
+public class SelectionTest {
+
+    // Each value is its position: 23 = row 2, column 3
+    static int[][] grid(int rows, int cols) {
+        int[][] g = new int[rows][cols];
+        for (int r = 0; r < rows; r++)
+            for (int c = 0; c < cols; c++)
+                g[r][c] = 10 * r + c;
+        return g;
+    }
+
+    static void test1_cropMiddle() {
+        int[][] img = grid(4, 5);
+        Check.equal(new int[][]{{12, 13, 14}, {22, 23, 24}}, Selection.crop(img, 1, 2, 2, 3), "crop(img, 1, 2, 2, 3)");
+        Check.equal(new int[][]{{33, 34}}, Selection.crop(img, 3, 3, 1, 2), "crop touching the bottom-right corner");
+        Check.equal(grid(4, 5), img, "crop must not change img");
+    }
+
+    static void test2_cropIsNewArray() {
+        int[][] img = grid(3, 3);
+        int[][] whole = Selection.crop(img, 0, 0, 3, 3);
+        Check.equal(grid(3, 3), whole, "cropping the whole image gives the same pixels");
+        whole[0][0] = 99;
+        Check.equal(0, img[0][0], "changing the crop changed img: crop must copy values into new rows");
+    }
+
+    static void test3_fillInside() {
+        int[][] img = grid(4, 5);
+        int n = Selection.fillRect(img, 1, 1, 3, 4, 7);
+        Check.equal(6, n, "a 2 x 3 box sets 6 pixels");
+        Check.equal(new int[][]{
+            { 0,  1,  2,  3,  4},
+            {10,  7,  7,  7, 14},
+            {20,  7,  7,  7, 24},
+            {30, 31, 32, 33, 34}
+        }, img, "img after fillRect(img, 1, 1, 3, 4, 7)");
+    }
+
+    static void test4_fillClipped() {
+        int[][] img = grid(4, 5);
+        int n = Selection.fillRect(img, -2, 3, 2, 9, 0);
+        Check.equal(4, n, "box hanging off the top and the right: only rows 0-1, columns 3-4 are inside");
+        Check.equal(new int[][]{
+            { 0,  1,  2,  0,  0},
+            {10, 11, 12,  0,  0},
+            {20, 21, 22, 23, 24},
+            {30, 31, 32, 33, 34}
+        }, img, "img after a clipped fillRect");
+    }
+
+    static void test5_fillOutsideOrEmpty() {
+        int[][] img = grid(3, 3);
+        Check.equal(0, Selection.fillRect(img, 5, 0, 8, 3, 1), "a box completely below the image sets nothing");
+        Check.equal(0, Selection.fillRect(img, 0, -4, 3, -1, 1), "a box completely left of the image sets nothing");
+        Check.equal(0, Selection.fillRect(img, 1, 1, 1, 3, 1), "top == bottom is an empty box");
+        Check.equal(grid(3, 3), img, "img must be unchanged");
+    }
+
+    static void test6_transposeInPlace() {
+        int[][] m = {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}};
+        Selection.transposeInPlace(m);
+        Check.equal(new int[][]{{1, 4, 7}, {2, 5, 8}, {3, 6, 9}}, m, "3x3 transposed in place");
+        int[][] g = grid(4, 4);
+        Selection.transposeInPlace(g);
+        Check.equal(new int[][]{{0, 10, 20, 30}, {1, 11, 21, 31}, {2, 12, 22, 32}, {3, 13, 23, 33}}, g, "4x4 transposed in place");
+        int[][] one = {{5}};
+        Selection.transposeInPlace(one);
+        Check.equal(new int[][]{{5}}, one, "1x1 stays the same");
+    }
+
+    static void test7_rotateInPlace() {
+        int[][] m = {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}};
+        Selection.rotateInPlace(m);
+        Check.equal(new int[][]{{7, 4, 1}, {8, 5, 2}, {9, 6, 3}}, m, "3x3 rotated 90 degrees clockwise");
+        int[][] g = grid(4, 4);
+        for (int k = 0; k < 4; k++) Selection.rotateInPlace(g);
+        Check.equal(grid(4, 4), g, "rotating 4 times gives the original back");
+    }
+}
+`,
+      },
+    ],
+    testLabels: {
+      test1_cropMiddle: "crop a rectangle from the middle",
+      test2_cropIsNewArray: "crop returns new rows",
+      test3_fillInside: "fillRect inside the image",
+      test4_fillClipped: "fillRect clips a box that hangs off the edge",
+      test5_fillOutsideOrEmpty: "fillRect with a box outside or empty",
+      test6_transposeInPlace: "transposeInPlace (3×3, 4×4, 1×1)",
+      test7_rotateInPlace: "rotateInPlace 90° clockwise",
+    },
+    hints: [
+      "`crop`: loop `r` from `top` to `top + height` (not included) and `c` from `left` to `left + width`, then write `out[r - top][c - left] = img[r][c]`.",
+      "`fillRect`: compute `rStart = Math.max(0, top)` and `rEnd = Math.min(img.length, bottom)`, the same for the columns with `img[r].length`, and count every pixel you set.",
+      "`transposeInPlace`: the full loop swaps every pair twice. Change the inner loop to `c < r` so it only visits the lower triangle.",
+      "`rotateInPlace`: call `transposeInPlace(img)` and then `mirrorRows(img)`. Try it on paper with {{1, 2}, {3, 4}}.",
+    ],
+  },
+};
+
+export const tickets: Ticket[] = [pf201, pf202, pf203, pf204, pf205, pf206];

@@ -18,9 +18,9 @@ export type TraversalMode = "row-major" | "column-major" | "enhanced-for";
 export type MatrixAlgorithmId = "row-sum" | "column-sum" | "main-diagonal" | "anti-diagonal" | "max" | "transpose";
 export type ImageFilterId = "brighten";
 /** Filters of the PF-2xx tickets, previewed by components/viz/FilterLab.tsx. */
-export type FilterLabId = "grayscale" | "flip" | "blur" | "edges" | "pipeline";
+export type FilterLabId = "grayscale" | "flip" | "blur" | "edges" | "pipeline" | "selection";
 /** Worked-example explanations with real photos and numbers (components/viz/concepts/). */
-export type ConceptId = "rgb-grayscale" | "flip-mapping" | "box-blur" | "sobel" | "pipeline-frames";
+export type ConceptId = "rgb-grayscale" | "flip-mapping" | "box-blur" | "sobel" | "pipeline-frames" | "loop-bounds";
 
 export type LessonBlock =
   | { type: "markdown"; md: string }
