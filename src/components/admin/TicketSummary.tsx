@@ -6,6 +6,7 @@ import type { Sprint, Ticket } from "@/content/types";
 import { ticketKey, type TicketState } from "@/lib/progress";
 import { STATUS_LABEL } from "@/lib/ticket-status";
 import { adminFetch, fmtTime, type Note } from "@/lib/admin";
+import { TicketGoal } from "./TicketGoal";
 
 type Detail = {
   state: Partial<TicketState> | null;
@@ -64,6 +65,7 @@ export function TicketSummary({
           <div>
             <div className="small muted">{username} · Sprint {sprint.number}</div>
             <h2 id="ts-title" style={{ margin: "2px 0 0" }}>{ticket.id} {ticket.title}</h2>
+            <TicketGoal ticket={ticket} compact />
           </div>
           <button className="btn ghost" onClick={onClose} aria-label="Close">✕</button>
         </div>
