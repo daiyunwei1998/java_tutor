@@ -1,6 +1,7 @@
 import type { Sprint } from "../../types";
 import { knowledge } from "./knowledge";
 import { tickets } from "./tickets";
+import { tickets as backlogTickets } from "./tickets-backlog";
 
 export const sprint2dArrays: Sprint = {
   id: "2d-arrays",
@@ -16,13 +17,7 @@ export const sprint2dArrays: Sprint = {
       "This sprint you join PixelForge Studio. The team is building a web-based Mini Photoshop, and every image in the code is an int[][]. Finish tickets, pass the tests, and merge your code to build the product step by step.",
     techLead: { name: "Mei", role: "Tech Lead", avatar: "👩‍💻" },
   },
-  tickets,
+  tickets: [...tickets, ...backlogTickets],
   knowledge,
-  backlog: [
-    { title: "PF-201 Grayscale", note: "RGB → grayscale" },
-    { title: "PF-202 Horizontal flip", note: "Reverse every row" },
-    { title: "PF-203 Box blur", note: "3×3 convolution" },
-    { title: "PF-204 Edge detection (Sobel)", note: "Gx, Gy and gradient magnitude" },
-    { title: "PF-205 Filter pipeline", note: "Bonus: chain several filters" },
-  ],
+  backlog: [],
 };
