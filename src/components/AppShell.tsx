@@ -22,6 +22,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const level = levelOf(xp);
   const cur = currentSprint();
 
+  // Admin pages bring their own top bar and menu (src/app/admin/layout.tsx), never the student one.
+  if (isAdmin) return <WorkspaceProvider>{children}</WorkspaceProvider>;
+
   return (
     <WorkspaceProvider>
       <header className="topbar">
@@ -36,7 +39,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </nav>
         <div className="spacer" />
         <ThemeToggle />
-        {store?.profile && !isAdmin && (
+        {store?.profile && (
           <div className="badge-level" title={`${xp} XP`}>
             <span className="avatar" aria-hidden>{store.profile.name.slice(0, 1).toUpperCase()}</span>
             <span className="level-text">
@@ -47,9 +50,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         )}
       </header>
       <main>{children}</main>
-      {store && !store.auth && !isAdmin && <Login />}
-      {!isAdmin && store?.profile && <ChatWidget />}
-      {!isAdmin && store?.profile && <NotesWidget />}
+      {store && !store.auth && <Login />}
+      {store?.profile && <ChatWidget />}
+      {store?.profile && <NotesWidget />}
     </WorkspaceProvider>
   );
 }
