@@ -35,10 +35,9 @@ export function TicketGuide() {
 
   return (
     <div className="page" style={{ maxWidth: 900 }}>
-      <h1>🎯 Ticket guide</h1>
+      <h1>🎯 Tickets</h1>
       <p className="muted small" style={{ marginTop: 0 }}>
-        What each ticket is designed to teach, with its difficulty and key techniques. Only you see this; students never do.
-        Switch a ticket off to hide it from every student&apos;s board; switch it on to issue it.
+        Manage what students get: switch a ticket on to issue it, off to hide it from every student&apos;s board. Open a ticket to try it yourself in a sandbox (only you see it, and ↺ Start over restores the starter code).
       </p>
       {msg && <div className="callout info small" role="status">{msg}</div>}
       {sprints.map((s) => (
@@ -57,11 +56,14 @@ export function TicketGuide() {
               return (
               <div key={t.id} className="card" style={on ? undefined : { opacity: 0.6 }}>
                 <div className="row" style={{ marginBottom: 6, justifyContent: "space-between", alignItems: "baseline", gap: 12 }}>
-                  <Link href={`/sprints/${s.id}/tickets/${t.id}`}><strong>{t.id}</strong> {t.title}</Link>
+                  <Link href={`/admin/tickets/${s.id}/${t.id}`} title="Try the ticket yourself in a teacher sandbox"><strong>{t.id}</strong> {t.title}</Link>
+                  <span className="row" style={{ gap: 12, flexWrap: "nowrap" }}>
                   <label className="small" style={{ whiteSpace: "nowrap", cursor: "pointer" }}>
                     <input type="checkbox" checked={on} disabled={busy === key} onChange={(e) => toggle(s, t, e.target.checked)} />{" "}
                     {on ? "Issued to students" : "Hidden from students"}
                   </label>
+                  <Link className="btn small" href={`/admin/tickets/${s.id}/${t.id}`}>▶ Try it</Link>
+                  </span>
                 </div>
                 <TicketGoal ticket={t} />
               </div>

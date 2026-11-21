@@ -6,13 +6,17 @@ import { connectLive, type Member } from "@/lib/live/transport";
 
 type Entry = { username: string; ticketId: string; title: string; since: string };
 
-/** Admin page card: students who have a ticket page open right now, with a button to join each one. */
-export function LiveLobby({ password }: { password: string }) {
+export type LobbyEntry = Entry;
+export type Lobby = { state: "connecting" | "off" | "ok"; local: boolean; entries: Entry[] };
+
+/** Students who have a ticket page open right now (presence on the "live-lobby" channel). */
+export function useLiveLobby(password: string | null): Lobby {
   const [state, setState] = useState<"connecting" | "off" | "ok">("connecting");
   const [local, setLocal] = useState(false);
   const [entries, setEntries] = useState<Entry[]>([]);
 
   useEffect(() => {
+    if (!password) return;
     let cancelled = false;
     let close = () => {};
     connectLive({ kind: "teacher", password }).then((client) => {
@@ -41,6 +45,12 @@ export function LiveLobby({ password }: { password: string }) {
     };
   }, [password]);
 
+  return { state, local, entries };
+}
+
+/** Admin card: the students in the lobby, with a button to join each one. */
+export function LiveLobby({ lobby }: { lobby: Lobby }) {
+  const { state, local, entries } = lobby;
   return (
     <div className="card">
       {state === "connecting" && <p className="muted small" style={{ margin: 0 }}>Connecting…</p>}

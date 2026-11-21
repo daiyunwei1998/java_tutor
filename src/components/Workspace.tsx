@@ -38,7 +38,7 @@ function WorkspaceInner({ sprintId, ticketId }: { sprintId: string; ticketId: st
   const st = remote ? remote.st : getTicketState(store, key);
   const updateTicket = (k: string, fn: (t: TicketState) => TicketState) => (remote ? remote.update(fn) : updateLocal(k, fn));
   const { setInfo } = useWorkspace();
-  useActiveTime(key);
+  useActiveTime(remote ? null : key); // teacher views never count as student time
   const [result, setResult] = useState<RunResult | null>(null);
   const [previewSignal, setPreviewSignal] = useState(0);
   const [mobileTab, setMobileTab] = useState<MobileTab>("learn");
@@ -151,8 +151,8 @@ function WorkspaceInner({ sprintId, ticketId }: { sprintId: string; ticketId: st
         {st.status === "in_review" && (
           <button className="btn ok" onClick={merge}>🚀 Open PR &amp; Merge (+{ticket.xp} XP)</button>
         )}
-        {st.status === "merged" && nextTicket && (
-          <Link className="btn primary" href={`/sprints/${sprint.id}/tickets/${nextTicket.id}`}>Next ticket: {nextTicket.id} →</Link>
+        {st.status === "merged" && nextTicket && (!remote || remote.links) && (
+          <Link className="btn primary" href={remote?.links ? remote.links.ticket(nextTicket.id) : `/sprints/${sprint.id}/tickets/${nextTicket.id}`}>Next ticket: {nextTicket.id} →</Link>
         )}
         {st.status === "merged" && !nextTicket && <div className="callout lead">All tickets in this sprint are done! 🎉 Your teacher will review them, and the next sprint will show up on your dashboard.</div>}
       </div>
@@ -178,9 +178,13 @@ function WorkspaceInner({ sprintId, ticketId }: { sprintId: string; ticketId: st
   return (
     <div className="ws" data-live-root>
       <div className="ws-head">
-        <Link href={`/sprints/${sprint.id}`} className="small">← Sprint {sprint.number} board</Link>
+        {!remote ? (
+          <Link href={`/sprints/${sprint.id}`} className="small">← Sprint {sprint.number} board</Link>
+        ) : remote.links ? (
+          <Link href={remote.links.board} className="small">← {remote.links.boardLabel}</Link>
+        ) : null}
         <span className="ticket-id">{ticket.id}</span>
-        {store && <StarButton ticketKey={key} starred={!!st.starred} label={ticket.id} />}
+        {store && !remote && <StarButton ticketKey={key} starred={!!st.starred} label={ticket.id} />}
         <strong style={{ flex: 1, minWidth: 200 }}>{ticket.title}</strong>
         <span className={`pill ${st.status}`}>{STATUS_LABEL[st.status]}</span>
         <span className="small muted">{ticket.xp} XP</span>

@@ -6,11 +6,12 @@ import { createContext, useCallback, useContext, useEffect, useState } from "rea
 import { SITE_NAME } from "@/content/registry";
 import { ADMIN_EVENT, adminFetch, adminPassword, setAdminPassword } from "@/lib/admin";
 import { ThemeToggle } from "../ThemeToggle";
+import { type Lobby, useLiveLobby } from "../live/LiveLobby";
 
 type Account = { username: string };
-type AdminCtx = { password: string; accounts: string[]; reloadAccounts: () => void };
+type AdminCtx = { password: string; accounts: string[]; reloadAccounts: () => void; lobby: Lobby };
 
-const Ctx = createContext<AdminCtx>({ password: "", accounts: [], reloadAccounts: () => {} });
+const Ctx = createContext<AdminCtx>({ password: "", accounts: [], reloadAccounts: () => {}, lobby: { state: "connecting", local: false, entries: [] } });
 /** The logged-in admin password and the account list, for any page under /admin. */
 export const useAdmin = () => useContext(Ctx);
 
@@ -44,12 +45,15 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
     if (password) reloadAccounts();
   }, [password, reloadAccounts]);
 
+  // One lobby connection for the whole admin, so the Live button can show who is in a session right now.
+  const lobby = useLiveLobby(password ?? null);
+
   return (
     <>
-      <AdminTopbar loggedIn={!!password} accounts={accounts} />
+      <AdminTopbar loggedIn={!!password} live={lobby.state === "ok" ? lobby.entries.length : null} />
       <main>
         {password === undefined ? null : password ? (
-          <Ctx.Provider value={{ password, accounts, reloadAccounts }}>{children}</Ctx.Provider>
+          <Ctx.Provider value={{ password, accounts, reloadAccounts, lobby }}>{children}</Ctx.Provider>
         ) : (
           <AdminLogin />
         )}
@@ -58,13 +62,15 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   );
 }
 
-function AdminTopbar({ loggedIn, accounts }: { loggedIn: boolean; accounts: string[] }) {
+function AdminTopbar({ loggedIn, live }: { loggedIn: boolean; live: number | null }) {
   const path = usePathname();
   const router = useRouter();
   const account = path.match(/^\/admin\/accounts\/([^/]+)/)?.[1];
-  const live = path.match(/^\/admin\/live\/([^/]+)/)?.[1];
-  const current = account ? decodeURIComponent(account) : "";
-  const cls = (on: boolean) => (on ? "active" : undefined);
+  const students = path === "/admin" || !!account;
+  const inLive = path.startsWith("/admin/live");
+  const item = (href: string, label: string, on: boolean) => (
+    <Link href={href} className={on ? "active" : undefined} aria-current={on ? "page" : undefined}>{label}</Link>
+  );
 
   return (
     <header className="topbar">
@@ -74,26 +80,24 @@ function AdminTopbar({ loggedIn, accounts }: { loggedIn: boolean; accounts: stri
       </Link>
       {loggedIn && (
         <nav className="topnav admin-nav" aria-label="Admin menu">
-          <Link href="/admin" className={cls(path === "/admin")} aria-current={path === "/admin" ? "page" : undefined}>Overview</Link>
-          <label className={`admin-nav-select${account ? " active" : ""}`}>
-            <span className="sr-only">Open a student</span>
-            <select
-              value={current}
-              onChange={(e) => e.target.value && router.push(`/admin/accounts/${encodeURIComponent(e.target.value)}`)}
-              aria-current={account ? "page" : undefined}
-            >
-              <option value="">Students</option>
-              {current && !accounts.includes(current) && <option value={current}>{current}</option>}
-              {accounts.map((u) => <option key={u} value={u}>👤 {u}</option>)}
-            </select>
-          </label>
-          <Link href="/admin/notes" className={cls(path.startsWith("/admin/notes"))} aria-current={path.startsWith("/admin/notes") ? "page" : undefined}>Notes</Link>
-          <Link href="/admin/tickets" className={cls(path.startsWith("/admin/tickets"))} aria-current={path.startsWith("/admin/tickets") ? "page" : undefined}>Ticket guide</Link>
-          <Link href="/admin/usage" className={cls(path.startsWith("/admin/usage"))} aria-current={path.startsWith("/admin/usage") ? "page" : undefined}>AI usage</Link>
-          {live && <span className="active live-crumb" aria-current="page"><span className="live-dot" aria-hidden /> Live: {decodeURIComponent(live)}</span>}
+          {item("/admin", "Students", students)}
+          {account && <span className="crumb" aria-hidden>› {decodeURIComponent(account)}</span>}
+          {item("/admin/tickets", "Tickets", path.startsWith("/admin/tickets"))}
+          {item("/admin/notes", "Notes", path.startsWith("/admin/notes"))}
+          {item("/admin/usage", "AI usage", path.startsWith("/admin/usage"))}
         </nav>
       )}
       <div className="spacer" />
+      {loggedIn && (
+        <Link
+          href="/admin/live"
+          className={`btn small live-cta${live ? " on" : ""}${inLive ? " current" : ""}`}
+          aria-current={inLive ? "page" : undefined}
+          title={live ? `${live} student${live === 1 ? "" : "s"} working on a ticket right now` : "See who is working on a ticket right now"}
+        >
+          <span className={`live-dot${live ? "" : " off"}`} aria-hidden /> Live{live ? ` · ${live}` : ""}
+        </Link>
+      )}
       <ThemeToggle />
       {loggedIn && (
         <button className="btn small ghost" onClick={() => { setAdminPassword(null); router.push("/admin"); }}>Log out</button>
@@ -125,7 +129,7 @@ function AdminLogin() {
   return (
     <div className="page" style={{ maxWidth: 480 }}>
       <h1>Teacher admin</h1>
-      <p className="muted">Student accounts, live sessions, notes and AI usage. The password is <code>ADMIN_PASSWORD</code> from the environment.</p>
+      <p className="muted">Student progress, tickets, live sessions, notes and AI usage. The password is <code>ADMIN_PASSWORD</code> from the environment.</p>
       <form className="card" onSubmit={(e) => { e.preventDefault(); submit(); }}>
         <label htmlFor="pw" className="small muted">Admin password</label>
         <div className="row" style={{ marginTop: 6 }}>

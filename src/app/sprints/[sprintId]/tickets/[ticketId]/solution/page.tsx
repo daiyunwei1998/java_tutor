@@ -1,9 +1,8 @@
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getTicket, sprints } from "@/content/registry";
+import { readSolution } from "@/lib/solution";
 
 /**
  * Reference solution of one ticket, read from tools/solutions/<mainClass>.java at build time.
@@ -14,14 +13,6 @@ export const metadata: Metadata = { title: "Reference solution", robots: { index
 
 export function generateStaticParams() {
   return sprints.flatMap((s) => s.tickets.map((t) => ({ sprintId: s.id, ticketId: t.id })));
-}
-
-function readSolution(mainClass: string): string | null {
-  try {
-    return readFileSync(join(process.cwd(), "tools", "solutions", `${mainClass}.java`), "utf8");
-  } catch {
-    return null;
-  }
 }
 
 export default async function SolutionPage({ params }: { params: Promise<{ sprintId: string; ticketId: string }> }) {
