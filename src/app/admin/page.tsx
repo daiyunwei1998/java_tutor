@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { sprints } from "@/content/registry";
-import { LiveLobby } from "@/components/live/LiveLobby";
 import { useAdmin } from "@/components/admin/AdminShell";
 import { AdminError, adminFetch } from "@/lib/admin";
 
@@ -78,18 +77,17 @@ export default function AdminPage() {
   return (
     <div className="page" style={{ maxWidth: 1200 }}>
       <div className="row" style={{ justifyContent: "space-between" }}>
-        <h1>Overview</h1>
+        <div>
+          <h1>Students</h1>
+          <p className="muted small" style={{ margin: 0 }}>Read-only view of each student&apos;s progress. Open a student to see their board, ticket summaries and code.</p>
+        </div>
         <button className="btn" onClick={load} disabled={loading}>↻ Refresh</button>
       </div>
       {err && <div className="callout warn" role="alert">{err}</div>}
 
       <QuotaWarning />
 
-      <h2>Live sessions</h2>
-      <p className="small muted" style={{ marginTop: -6 }}>Join a student who has a ticket open: you see their workspace, they see your pointer and highlights, and you can scroll, edit their code and press Run / Run tests for them.</p>
-      <LiveLobby password={pw} />
-
-      <h2>Student accounts</h2>
+      <h2>Accounts</h2>
       <div className="card table-scroll">
         <table className="data">
           <thead>

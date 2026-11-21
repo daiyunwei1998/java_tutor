@@ -108,7 +108,7 @@ export function TeacherLive({ username }: { username: string }) {
           <input type="checkbox" checked={highlighter} onChange={(e) => setHighlighter(e.target.checked)} /> 🖍 Highlighter
         </label>
         {session && <button className="btn small ghost" onClick={() => sendHighlight(session, { op: "clear" })}>Clear highlights</button>}
-        <Link className="btn small" href="/admin">Leave</Link>
+        <Link className="btn small" href="/admin/live">Leave</Link>
       </div>
       {error && <div className="page"><div className="callout warn" role="alert">{error}</div></div>}
       {!error && !peer && (

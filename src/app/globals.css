@@ -549,3 +549,8 @@ div.code-panel > .code-top .editor-wrap { min-height: 220px; }
 }
 .preview-frame { position: relative; }
 .solution-drawer { position: absolute; top: 46px; right: 12px; bottom: 12px; width: min(620px, calc(100vw - 24px)); overflow: auto; z-index: 40; }
+.admin-nav .crumb { color: var(--text); font-weight: 600; margin-left: -6px; }
+.live-cta { display: inline-flex; align-items: center; gap: 7px; font-weight: 600; white-space: nowrap; }
+.live-cta.on { border-color: #2f9e44; color: var(--text); }
+.live-cta.current { background: var(--accent-soft); border-color: var(--accent); }
+.live-cta:hover { text-decoration: none; }
