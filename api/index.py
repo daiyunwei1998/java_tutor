@@ -339,6 +339,21 @@ def admin_reset(username: str, x_admin_password: str | None = Header(default=Non
     return {"ok": True, "accounts": accounts.list_accounts()}
 
 
+class TicketStatusPut(BaseModel):
+    ticket: str = Field(min_length=3, max_length=120)  # "sprintId/ticketId"
+    status: str
+
+
+@app.put("/api/admin/accounts/{username}/ticket-status")
+def admin_ticket_status(username: str, req: TicketStatusPut, x_admin_password: str | None = Header(default=None)):
+    _require_admin(x_admin_password)
+    if not accounts.exists(username):
+        raise HTTPException(404, "No such account.")
+    if req.status not in accounts.STATUSES or "/" not in req.ticket:
+        raise HTTPException(400, "Invalid ticket or status.")
+    return accounts.set_ticket_status(username, req.ticket, req.status)
+
+
 @app.post("/api/admin/accounts/sync")
 def admin_sync(req: SyncRequest, x_admin_password: str | None = Header(default=None)):
     _require_admin(x_admin_password)

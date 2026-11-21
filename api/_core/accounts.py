@@ -163,6 +163,30 @@ def reset(username: str) -> None:
         c.execute("DELETE FROM ticket_time WHERE username = ?", (username,))
 
 
+STATUSES = ("todo", "in_progress", "in_review", "merged")
+
+
+def set_ticket_status(username: str, ticket_key: str, status: str) -> dict:
+    """Teacher moves one ticket to another board column. The revision goes up, so the student's open
+    tab picks up the change (like a reset), and the ticket's code, runs and hints are kept."""
+    with usage._conn() as c:
+        row = c.execute("SELECT data, rev FROM progress WHERE username = ?", (username,)).fetchone()
+        data = json.loads(row["data"]) if row else {"tickets": {}}
+        tickets = data.setdefault("tickets", {})
+        t = tickets.get(ticket_key)
+        if not isinstance(t, dict):
+            t = {"status": "todo", "attempts": 0, "files": {}, "predictions": {}, "hintsShown": 0}
+        t["status"] = status
+        if status == "merged":
+            t.setdefault("mergedAt", usage.now_iso())
+        else:
+            t.pop("mergedAt", None)
+            t.pop("tutorVerified", None)
+        tickets[ticket_key] = t
+        _write(c, username, data, (int(row["rev"]) if row else 0) + 1)
+    return detail(username)
+
+
 def copy(src: str, dst: str) -> None:
     data = get_progress(src)["data"]
     with usage._conn() as c:
