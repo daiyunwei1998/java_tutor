@@ -11,9 +11,9 @@ import { CodePanel } from "./CodePanel";
 import { LessonBlocks } from "./LessonBlocks";
 import { Markdown } from "./Markdown";
 import { useWorkspace } from "./WorkspaceContext";
-import { VizPanel } from "./viz/VizPanel";
+import { renderViz } from "./viz/VizPanel";
 
-type MobileTab = "learn" | "code" | "viz" | "tasks";
+type MobileTab = "learn" | "code" | "tasks";
 
 export function Workspace({ sprintId, ticketId }: { sprintId: string; ticketId: string }) {
   const { sprint, ticket } = getTicket(sprintId, ticketId)!;
@@ -22,9 +22,8 @@ export function Workspace({ sprintId, ticketId }: { sprintId: string; ticketId: 
   const st = getTicketState(store, key);
   const { setInfo } = useWorkspace();
   const [result, setResult] = useState<RunResult | null>(null);
-  const [vizIndex, setVizIndex] = useState(0);
+  const [previewSignal, setPreviewSignal] = useState(0);
   const [mobileTab, setMobileTab] = useState<MobileTab>("learn");
-  const [sideTab, setSideTab] = useState<"learn" | "viz">("learn");
   const [sideCollapsed, setSideCollapsed] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [layout, setLayout] = useLayout();
@@ -52,6 +51,7 @@ export function Workspace({ sprintId, ticketId }: { sprintId: string; ticketId: 
   useEffect(() => {
     setInfo({
       ticket: { id: ticket.id, title: ticket.title, task: ticket.task.instructions },
+      solutionUrl: `/sprints/${sprint.id}/tickets/${ticket.id}/solution`,
       files: ticket.task.files.map((f) => ({ path: f.path, content: f.readOnly ? f.content : files[f.path] })),
       lastResult: result,
     });
@@ -81,11 +81,10 @@ export function Workspace({ sprintId, ticketId }: { sprintId: string; ticketId: 
     setTimeout(() => setToast(null), 3500);
   }
 
-  function openViz(i: number) {
-    setVizIndex(i);
-    setMobileTab("viz");
-    setSideTab("viz");
-    sidePanel.current?.expand();
+  /** Shows the "run my code on an image" preview in the code panel's output area. */
+  function openPreview() {
+    setMobileTab("code");
+    setPreviewSignal((n) => n + 1);
   }
 
   const learn = (
@@ -105,7 +104,9 @@ export function Workspace({ sprintId, ticketId }: { sprintId: string; ticketId: 
         blocks={ticket.blocks}
         predictions={st.predictions}
         onPredict={(id, choice) => updateTicket(key, (t) => ({ ...t, predictions: { ...t.predictions, [id]: choice } }))}
-        onOpenViz={openViz}
+        visualizations={ticket.visualizations}
+        renderViz={(i) => renderViz(ticket.visualizations[i], ticket, files)}
+        onOpenPreview={openPreview}
       />
       {tasksBox()}
     </div>
@@ -147,10 +148,9 @@ export function Workspace({ sprintId, ticketId }: { sprintId: string; ticketId: 
       onShowHint={() => updateTicket(key, (t) => ({ ...t, hintsShown: t.hintsShown + 1 }))}
       split={!isMobileNow()}
       outputSide={layout.id === "output-right" ? "right" : "below"}
+      previewSignal={previewSignal}
     />
   );
-
-  const viz = <VizPanel ticket={ticket} index={vizIndex} onIndex={setVizIndex} files={files} />;
 
   return (
     <div className="ws">
@@ -164,9 +164,9 @@ export function Workspace({ sprintId, ticketId }: { sprintId: string; ticketId: 
       </div>
 
       <div className="ws-tabs" role="tablist" aria-label="Workspace">
-        {(["learn", "code", "viz", "tasks"] as MobileTab[]).map((t) => (
+        {(["learn", "code", "tasks"] as MobileTab[]).map((t) => (
           <button key={t} role="tab" className="btn small" aria-selected={mobileTab === t} onClick={() => setMobileTab(t)}>
-            {{ learn: "📖 Learn", code: "⌨️ Code", viz: "🔬 Visualize", tasks: "✅ Tasks" }[t]}
+            {{ learn: "📖 Learn", code: "⌨️ Code", tasks: "✅ Tasks" }[t]}
           </button>
         ))}
       </div>
@@ -194,18 +194,16 @@ export function Workspace({ sprintId, ticketId }: { sprintId: string; ticketId: 
               >
                 {sideCollapsed ? (
                   <div className="collapsed-strip">
-                    <button className="btn small" onClick={() => { setSideTab("learn"); sidePanel.current?.expand(); }} aria-label="Show lesson" title="Lesson">📖</button>
-                    <button className="btn small" onClick={() => { setSideTab("viz"); sidePanel.current?.expand(); }} aria-label="Show visualization" title="Visualization">🔬</button>
+                    <button className="btn small" onClick={() => sidePanel.current?.expand()} aria-label="Show lesson" title="Lesson">📖</button>
                   </div>
                 ) : (
                   <div className="side">
                     <div className="side-tabs" role="tablist" aria-label="Side panel">
-                      <button role="tab" aria-selected={sideTab === "learn"} onClick={() => setSideTab("learn")}>📖 Lesson & task</button>
-                      <button role="tab" aria-selected={sideTab === "viz"} onClick={() => setSideTab("viz")}>🔬 Visualize</button>
+                      <button role="tab" aria-selected>📖 Lesson & task</button>
                       <div className="spacer" />
                       <button className="btn small ghost" onClick={() => sidePanel.current?.collapse()} aria-label="Collapse the side panel to widen the code" title="Collapse to widen the code">{swap ? "⇥" : "⇤"}</button>
                     </div>
-                    <div className="pane">{sideTab === "learn" ? learn : viz}</div>
+                    <div className="pane">{learn}</div>
                   </div>
                 )}
               </Panel>
@@ -225,18 +223,16 @@ export function Workspace({ sprintId, ticketId }: { sprintId: string; ticketId: 
               >
                 {sideCollapsed ? (
                   <div className="collapsed-strip">
-                    <button className="btn small" onClick={() => { setSideTab("learn"); sidePanel.current?.expand(); }} aria-label="Show lesson" title="Lesson">📖</button>
-                    <button className="btn small" onClick={() => { setSideTab("viz"); sidePanel.current?.expand(); }} aria-label="Show visualization" title="Visualization">🔬</button>
+                    <button className="btn small" onClick={() => sidePanel.current?.expand()} aria-label="Show lesson" title="Lesson">📖</button>
                   </div>
                 ) : (
                   <div className="side">
                     <div className="side-tabs" role="tablist" aria-label="Side panel">
-                      <button role="tab" aria-selected={sideTab === "learn"} onClick={() => setSideTab("learn")}>📖 Lesson & task</button>
-                      <button role="tab" aria-selected={sideTab === "viz"} onClick={() => setSideTab("viz")}>🔬 Visualize</button>
+                      <button role="tab" aria-selected>📖 Lesson & task</button>
                       <div className="spacer" />
                       <button className="btn small ghost" onClick={() => sidePanel.current?.collapse()} aria-label="Collapse the side panel to widen the code" title="Collapse to widen the code">{swap ? "⇥" : "⇤"}</button>
                     </div>
-                    <div className="pane">{sideTab === "learn" ? learn : viz}</div>
+                    <div className="pane">{learn}</div>
                   </div>
                 )}
               </Panel>
@@ -252,7 +248,6 @@ export function Workspace({ sprintId, ticketId }: { sprintId: string; ticketId: 
             <div className="pane">
               {mobileTab === "learn" && learn}
               {mobileTab === "code" && code}
-              {mobileTab === "viz" && viz}
               {mobileTab === "tasks" && <div className="pane-pad">{tasksBox()}</div>}
             </div>
           }
@@ -263,7 +258,7 @@ export function Workspace({ sprintId, ticketId }: { sprintId: string; ticketId: 
   );
 }
 
-/** Two resizable columns on desktop (left: lesson / visualization tabs, right: code), tabs on phones. */
+/** Two resizable columns on desktop (lesson with inline visualizations | code), tabs on phones. */
 function MediaSwitch({ desktop, mobile }: { desktop: React.ReactNode; mobile: React.ReactNode }) {
   const [isMobile, setIsMobile] = useState<boolean | null>(null);
   useEffect(() => {

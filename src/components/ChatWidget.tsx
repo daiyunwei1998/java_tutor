@@ -40,6 +40,13 @@ export function ChatWidget() {
   async function send() {
     const q = text.trim();
     if (!q || busy) return;
+    // Hidden shortcut: "skip" opens the reference solution of the current ticket in a new tab (no AI call).
+    if (q.toLowerCase() === "skip" && info) {
+      window.open(info.solutionUrl, "_blank", "noopener");
+      setMsgs((m) => [...m, { role: "user", content: q }, { role: "assistant", content: `Opened the reference solution for **${info.ticket.id}** in a new tab.` }]);
+      setText("");
+      return;
+    }
     const next: Msg[] = [...msgs, { role: "user", content: q }];
     setMsgs(next);
     setText("");

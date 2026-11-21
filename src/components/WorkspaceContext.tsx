@@ -6,6 +6,8 @@ import type { RunResult } from "@/lib/java-runner";
 /** What the student is currently working on, shared with the global AI mentor chat. */
 export type WorkspaceInfo = {
   ticket: { id: string; title: string; task: string };
+  /** Where the reference solution lives (opened by the chat's hidden "skip" command). */
+  solutionUrl: string;
   files: { path: string; content: string }[];
   lastResult: RunResult | null;
 } | null;

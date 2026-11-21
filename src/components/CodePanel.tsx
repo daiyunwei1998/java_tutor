@@ -11,6 +11,7 @@ import { onRunnerState, parseDiagnostics, type RunResult, type RunnerState, runJ
 import { useStore } from "@/lib/progress";
 import { useResolvedTheme } from "@/lib/theme";
 import { Markdown } from "./Markdown";
+import { isPreviewViz, renderViz } from "./viz/VizPanel";
 
 export function CodePanel({
   ticket,
@@ -23,6 +24,7 @@ export function CodePanel({
   onShowHint,
   split = false,
   outputSide = "below",
+  previewSignal = 0,
 }: {
   ticket: Ticket;
   files: Record<string, string>;
@@ -36,6 +38,8 @@ export function CodePanel({
   split?: boolean;
   /** Where the output/tests panel sits next to the editor on desktop. */
   outputSide?: "below" | "right";
+  /** Incremented by the lesson's "Open the image preview" button. */
+  previewSignal?: number;
 }) {
   const store = useStore();
   const theme = useResolvedTheme();
@@ -49,6 +53,22 @@ export function CodePanel({
   const cm = useRef<ReactCodeMirrorRef>(null);
   const outPanel = useRef<ImperativePanelHandle>(null);
   const [outCollapsed, setOutCollapsed] = useState(false);
+  // Tickets with an image preview get a second output tab that runs the student's code on a real image.
+  const previewViz = ticket.visualizations.find(isPreviewViz);
+  const [outTab, setOutTab] = useState<"console" | "preview">("console");
+
+  function openPreview() {
+    setOutTab("preview");
+    const p = outPanel.current;
+    if (p) {
+      if (p.isCollapsed()) p.expand();
+      if (p.getSize() < 50) p.resize(55);
+    }
+  }
+  useEffect(() => {
+    if (previewSignal > 0) openPreview();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [previewSignal]);
 
   useEffect(() => onRunnerState((s, err) => setRunner({ s, err })), []);
   useEffect(() => {
@@ -63,6 +83,7 @@ export function CodePanel({
 
   async function exec(mode: "run" | "test") {
     if (outPanel.current?.isCollapsed()) outPanel.current.expand();
+    setOutTab("console");
     setRunning(mode);
     setAi({ busy: false });
     const r = await runJava({ files: allFiles, mode, mainClass: task.mainClass, testClass: task.testClass });
@@ -130,6 +151,9 @@ export function CodePanel({
         <button className="btn primary" onClick={() => exec("test")} disabled={!!running || runner.s === "error"}>
           {running === "test" ? "⏳ Testing…" : "✓ Run tests"}
         </button>
+        {previewViz && (
+          <button className="btn" onClick={openPreview} title="Run your code on a real image and see the result">🖼 Try on an image</button>
+        )}
         <button className="btn" onClick={debugWithAi} disabled={ai.busy} title="Send your code and the latest error to the AI mentor">
           {ai.busy ? "🤖 Thinking…" : "🤖 AI Debug Help"}
         </button>
@@ -148,8 +172,21 @@ export function CodePanel({
     </div>
   );
 
-  const outputPart = (
+  const outputTabs = previewViz && (
+    <div className="out-tabs" role="tablist" aria-label="Output">
+      <button role="tab" aria-selected={outTab === "console"} onClick={() => setOutTab("console")}>Console &amp; tests</button>
+      <button role="tab" aria-selected={outTab === "preview"} onClick={() => setOutTab("preview")}>🖼 Image preview (your code)</button>
+    </div>
+  );
+
+  const outputPart = previewViz && outTab === "preview" ? (
+      <div className="output">
+        {outputTabs}
+        {renderViz(previewViz, ticket, files)}
+      </div>
+  ) : (
       <div className="output" aria-live="polite">
+        {outputTabs}
         {runner.s === "error" && <div className="console err">{runner.err}</div>}
         {!result && !ai.text && !ai.error && (
           <p className="muted small" style={{ margin: 0 }}>

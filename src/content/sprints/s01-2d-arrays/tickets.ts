@@ -40,7 +40,7 @@ a[1] = new int[]{4};
 a[2] = new int[]{5, 6};
 ~~~`,
     },
-    { type: "viz-link", vizIndex: 0, label: "Open Array vs Memory and build this array step by step" },
+    { type: "viz-link", vizIndex: 0, label: "Build this array step by step and watch the references" },
     {
       type: "callout",
       tone: "warn",
@@ -683,9 +683,9 @@ A grayscale image can be stored as \`int[][] image\`:
 - \`image.length\` is the **height** (number of rows), \`image[0].length\` is the **width** (number of columns).
 - \`image[r][c]\` is the pixel in row r, column c: **0 = black, 255 = white**.
 
-Move the mouse over the image to see each pixel's \`(row, col)\` and brightness. Click to change its value.`,
+In the image preview (🖼 Try on an image, next to ▶ Run main), move the mouse over the image to see each pixel's \`(row, col)\` and brightness. Click to change its value.`,
     },
-    { type: "viz-link", vizIndex: 0, label: "Open Mini Photoshop to see how pixels map to the array" },
+    { type: "viz-link", vizIndex: 0, label: "see how pixels map to the array, then brighten a real image" },
     {
       type: "predict",
       id: "pf105-clamp",
@@ -716,7 +716,7 @@ In \`Filters.java\`, implement \`brighten(int[][] img, int delta)\`:
 2. Each pixel = \`clamp(img[r][c] + delta)\`.
 3. Do not change \`img\`.
 
-Once the tests pass, press **Apply brighten with my Java** and your code processes a real image!`,
+Once the tests pass, press **🖼 Try on an image** next to ▶ Run main, then **Apply brighten with my Java**, and your code processes a real image!`,
     },
     {
       type: "callout",

@@ -416,3 +416,12 @@ table.data th { color: var(--muted); font-weight: 600; font-size: 12px; text-tra
 /* stacked (phone) code panel: editor grows, output keeps a fixed share */
 div.code-panel > .code-top { flex: 1; height: auto; }
 div.code-panel > .code-top .editor-wrap { min-height: 220px; }
+
+/* lesson: visualizations embedded inline */
+.inline-viz { margin: 14px 0; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); overflow: hidden; }
+.inline-viz-head { display: flex; flex-direction: column; gap: 2px; padding: 8px 12px; background: var(--surface-2); border-bottom: 1px solid var(--border); }
+.inline-viz-body { padding: 12px; }
+/* output area: console / image preview tabs */
+.out-tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin: -4px 0 10px; }
+.out-tabs [role="tab"] { background: transparent; border: 1px solid transparent; border-bottom: none; color: var(--muted); padding: 5px 12px; border-radius: 8px 8px 0 0; font: inherit; font-size: 13px; cursor: pointer; margin-bottom: -1px; }
+.out-tabs [role="tab"][aria-selected="true"] { background: var(--bg); border-color: var(--border); color: var(--text); font-weight: 600; }
