@@ -163,21 +163,85 @@ export function rangeRects(a: RangeAnchor): DOMRect[] {
     const right = Math.min(r.right, clip.right);
     if (bottom > top && right > left) out.push(new DOMRect(left, top, right - left, bottom - top));
   }
-  return out;
+  // Nested elements (code tokens inside a line) report overlapping boxes; keep only the outer ones so the
+  // highlighter color stays even.
+  const inside = (a: DOMRect, b: DOMRect) => a !== b && a.left >= b.left - 0.5 && a.right <= b.right + 0.5 && a.top >= b.top - 0.5 && a.bottom <= b.bottom + 0.5;
+  return out.filter((r, i) => !out.some((o, j) => (j < i || !inside(o, r)) && inside(r, o)));
 }
 
 // ---------- scroll regions ----------
+// A scroll position is sent as "this content is at the top of the pane" (a code line, or an element plus an offset),
+// so both screens show the same thing even when their panes have different widths and text wraps differently.
+
+export type ScrollAnchor = { k: "line"; line: number; dy: number } | { k: "el"; p: number[]; fy: number } | { k: "ratio"; r: number };
+
+/** The element that really scrolls the code: CodeMirror's own scroller or the wrapper around it. */
+function editorScroller(view: EditorView): HTMLElement {
+  for (let el: HTMLElement | null = view.scrollDOM; el && el !== document.body; el = el.parentElement) {
+    const o = getComputedStyle(el).overflowY;
+    if ((o === "auto" || o === "scroll") && el.scrollHeight > el.clientHeight + 1) return el;
+    if (el.classList.contains("editor-wrap")) break;
+  }
+  return view.scrollDOM;
+}
 
 export function scrollRegionOf(el: Element): string | null {
-  if (el.classList.contains("cm-scroller")) return "editor";
+  if (el.classList.contains("cm-scroller") || el.classList.contains("editor-wrap")) return "editor";
   return el.getAttribute("data-live-scroll");
 }
 
 export function findScrollRegion(name: string): HTMLElement | null {
   const root = liveRoot();
   if (!root) return null;
-  if (name === "editor") return currentEditor()?.view.scrollDOM ?? null;
+  if (name === "editor") {
+    const ed = currentEditor();
+    return ed ? editorScroller(ed.view) : null;
+  }
   return root.querySelector<HTMLElement>(`[data-live-scroll="${name}"]`);
+}
+
+export function encodeScroll(region: string, el: Element): ScrollAnchor {
+  const max = el.scrollHeight - el.clientHeight;
+  const ratio: ScrollAnchor = { k: "ratio", r: max > 0 ? el.scrollTop / max : 0 };
+  if (el.scrollTop <= 1 || el.scrollTop >= max - 1) return ratio; // top and bottom are exact as they are
+  const box = el.getBoundingClientRect();
+  if (region === "editor") {
+    const ed = currentEditor();
+    if (!ed) return ratio;
+    const h = box.top - ed.view.documentTop;
+    const block = ed.view.lineBlockAtHeight(h);
+    return { k: "line", line: ed.view.state.doc.lineAt(block.from).number, dy: h - block.top };
+  }
+  const root = liveRoot();
+  const hit = document.elementFromPoint(box.left + Math.min(40, box.width / 2), box.top + 6);
+  const p = root && hit && el.contains(hit) ? pathOf(root, hit) : null;
+  if (!p || !hit) return ratio;
+  const r = hit.getBoundingClientRect();
+  return { k: "el", p, fy: r.height ? (box.top - r.top) / r.height : 0 };
+}
+
+export function applyScroll(region: string, el: HTMLElement, a: ScrollAnchor) {
+  const box = el.getBoundingClientRect();
+  if (a.k === "line" && region === "editor") {
+    const ed = currentEditor();
+    if (ed) {
+      const doc = ed.view.state.doc;
+      const block = ed.view.lineBlockAt(doc.line(Math.min(Math.max(1, a.line), doc.lines)).from);
+      el.scrollTop += ed.view.documentTop + block.top + a.dy - box.top;
+      return;
+    }
+  }
+  if (a.k === "el") {
+    const root = liveRoot();
+    const t = root && resolve(root, a.p);
+    if (t && el.contains(t)) {
+      const r = t.getBoundingClientRect();
+      el.scrollTop += r.top + a.fy * r.height - box.top;
+      return;
+    }
+  }
+  const max = el.scrollHeight - el.clientHeight;
+  el.scrollTop = (a.k === "ratio" ? a.r : 0) * max;
 }
 
 export function elementPath(el: Element): number[] | null {

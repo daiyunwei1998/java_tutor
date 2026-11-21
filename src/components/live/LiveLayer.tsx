@@ -8,8 +8,11 @@ import {
   elementPath,
   encodePoint,
   encodeSelection,
+  applyScroll,
+  encodeScroll,
   findScrollRegion,
   liveRoot,
+  type ScrollAnchor,
   type PointAnchor,
   type RangeAnchor,
   rangeRects,
@@ -64,6 +67,13 @@ export function LiveLayer({ peerLabel, highlighter = false }: { peerLabel: strin
     cursor.querySelector("span")!.textContent = peerLabel;
     cursor.style.display = "none";
     layer.appendChild(cursor);
+    const caretEl = document.createElement("div");
+    caretEl.className = "live-caret";
+    caretEl.style.setProperty("--live-color", COLORS[them].cursor);
+    caretEl.innerHTML = "<span></span>";
+    caretEl.querySelector("span")!.textContent = peerLabel;
+    caretEl.style.display = "none";
+    layer.appendChild(caretEl);
     document.body.appendChild(layer);
     offs.push(() => layer.remove());
 
@@ -71,6 +81,7 @@ export function LiveLayer({ peerLabel, highlighter = false }: { peerLabel: strin
     let remotePointer: PointAnchor | null = null;
     let highlights: Highlight[] = [];
     let remoteSel: RangeAnchor | null = null;
+    let remoteCaret: { file: string; pos: number } | null = null;
     const pings: { a: PointAnchor; until: number }[] = [];
 
     offs.push(
@@ -80,11 +91,15 @@ export function LiveLayer({ peerLabel, highlighter = false }: { peerLabel: strin
         if (m.op === "clear") highlights = [];
         else highlights = [...highlights.filter((h) => h.id !== m.h.id), m.h].slice(-40);
       }),
-      live.on<{ a: RangeAnchor | null }>("sel", (d) => (remoteSel = d.a)),
+      live.on<{ a: RangeAnchor | null; caret?: { file: string; pos: number } | null }>("sel", (d) => {
+        remoteSel = d.a;
+        remoteCaret = d.caret ?? null;
+      }),
       live.on<boolean>("_peer", (p) => {
         if (!p) {
           remotePointer = null;
           remoteSel = null;
+          remoteCaret = null;
           highlights = [];
         }
       }),
@@ -115,10 +130,19 @@ export function LiveLayer({ peerLabel, highlighter = false }: { peerLabel: strin
     // ----- highlighter (teacher drags over lesson text) -----
     listen("mouseup", (e) => {
       if (me !== "teacher" || !hlOn.current || !e.isTrusted) return;
+      const target = e.target;
       setTimeout(() => {
+        const id = Math.random().toString(36).slice(2);
+        // In the code editor: mark the selected code (the selection itself stays, so editing still works).
+        const ed = currentEditor();
+        if (ed && target instanceof Node && ed.view.dom.contains(target)) {
+          const s = ed.view.state.selection.main;
+          if (!s.empty) sendHighlight(live, { op: "add", h: { id, by: me, a: { k: "cm", file: ed.file, from: s.from, to: s.to } } });
+          return;
+        }
         const a = encodeSelection();
         if (!a) return;
-        sendHighlight(live, { op: "add", h: { id: Math.random().toString(36).slice(2), by: me, a } });
+        sendHighlight(live, { op: "add", h: { id, by: me, a } });
         window.getSelection()?.removeAllRanges();
       }, 0);
     });
@@ -134,15 +158,14 @@ export function LiveLayer({ peerLabel, highlighter = false }: { peerLabel: strin
       if (scrollTimers.has(region)) return;
       scrollTimers.set(region, setTimeout(() => {
         scrollTimers.delete(region);
-        const max = el.scrollHeight - el.clientHeight;
-        live.send("scroll", { region, ratio: max > 0 ? el.scrollTop / max : 0 });
+        live.send("scroll", { region, a: encodeScroll(region, el) });
       }, 70));
     });
-    offs.push(live.on<{ region: string; ratio: number }>("scroll", (d) => {
+    offs.push(live.on<{ region: string; a: ScrollAnchor }>("scroll", (d) => {
       const el = findScrollRegion(d.region);
-      if (!el) return;
+      if (!el || !d.a) return;
       suppressed.set(el, Date.now() + 160);
-      el.scrollTop = d.ratio * (el.scrollHeight - el.clientHeight);
+      applyScroll(d.region, el, d.a);
     }));
 
     // ----- button presses and inputs inside visualizations (their state lives in the components) -----
@@ -190,12 +213,14 @@ export function LiveLayer({ peerLabel, highlighter = false }: { peerLabel: strin
       const ed = currentEditor();
       if (live.peer && ed && Date.now() - lastSelSent > 100) {
         const s = ed.view.state.selection.main;
-        const a: RangeAnchor | null = ed.view.hasFocus && !s.empty ? { k: "cm", file: ed.file, from: s.from, to: s.to } : null;
-        const key = JSON.stringify(a);
+        const focused = ed.view.hasFocus;
+        const a: RangeAnchor | null = focused && !s.empty ? { k: "cm", file: ed.file, from: s.from, to: s.to } : null;
+        const caret = focused ? { file: ed.file, pos: s.head } : null;
+        const key = JSON.stringify([a, caret]);
         if (key !== lastSel) {
           lastSel = key;
           lastSelSent = Date.now();
-          live.send("sel", { a });
+          live.send("sel", { a, caret });
         }
       }
       // highlights
@@ -227,6 +252,14 @@ export function LiveLayer({ peerLabel, highlighter = false }: { peerLabel: strin
         d.style.width = `${b.r.width}px`;
         d.style.height = `${b.r.height}px`;
       });
+      // the other person's typing cursor in the code
+      const cr = remoteCaret && ed && ed.file === remoteCaret.file && remoteCaret.pos <= ed.view.state.doc.length ? ed.view.coordsAtPos(remoteCaret.pos) : null;
+      const cbox = cr && ed!.view.scrollDOM.getBoundingClientRect();
+      if (cr && cbox && cr.top >= cbox.top - 2 && cr.bottom <= cbox.bottom + 2) {
+        caretEl.style.display = "block";
+        caretEl.style.transform = `translate(${cr.left - 1}px, ${cr.top}px)`;
+        caretEl.style.height = `${cr.bottom - cr.top}px`;
+      } else caretEl.style.display = "none";
       // pointer
       const pt = remotePointer && decodePoint(remotePointer);
       if (pt) {
