@@ -8,6 +8,7 @@ import type { Ticket } from "../../types";
 
 const pf207: Ticket = {
   id: "PF-207",
+  issuedByDefault: false,
   slug: "life-texture",
   title: "Living textures: a cell simulation with 8 neighbors",
   xp: 250,

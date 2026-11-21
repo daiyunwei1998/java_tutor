@@ -21,7 +21,7 @@ from pathlib import Path
 # Vercel runs this file as a standalone Python function; make the sibling _core package importable.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from _core import accounts, live, notes, usage  # noqa: E402
+from _core import accounts, issued, live, notes, usage  # noqa: E402
 from _core.config import settings  # noqa: E402
 from _core.prompts import DEBUG_INSTRUCTIONS, MENTOR_BASE, number_lines  # noqa: E402
 
@@ -36,6 +36,7 @@ usage.init(settings.database_url, settings.db_path)
 accounts.init(os.getenv("AUTH_SECRET") or settings.admin_password or settings.database_url or "local-dev",
               [a.strip().lower() for a in os.getenv("SEED_ACCOUNTS", "stu,test").split(",") if a.strip()])
 notes.init()
+issued.init()
 
 MAX_CODE_CHARS = 12_000
 MAX_MESSAGE_CHARS = 2_000
@@ -457,3 +458,21 @@ def admin_note_delete(note_id: str, x_admin_password: str | None = Header(defaul
     if not notes.delete(note_id):
         raise HTTPException(404, "No such note.")
     return {"ok": True}
+
+
+class IssueUpdate(BaseModel):
+    ticket: str = Field(min_length=3, max_length=80, pattern=r"^[\w-]+/[\w-]+$")
+    # None = back to the ticket's default from the content.
+    issued: bool | None = None
+
+
+@app.get("/api/tickets/issued")
+def tickets_issued():
+    """Public: the teacher's issue/hide overrides. Students' boards hide tickets that are not issued."""
+    return {"overrides": issued.overrides()}
+
+
+@app.put("/api/admin/tickets/issued")
+def admin_ticket_issue(req: IssueUpdate, x_admin_password: str | None = Header(default=None)):
+    _require_admin(x_admin_password)
+    return {"overrides": issued.set_issued(req.ticket, req.issued)}

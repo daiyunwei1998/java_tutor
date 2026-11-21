@@ -7,6 +7,7 @@ import { getTicket } from "@/content/registry";
 import type { RunResult } from "@/lib/java-runner";
 import { getTicketState, type TicketState, ticketKey, updateTicket as updateLocal, useStore } from "@/lib/progress";
 import { STATUS_LABEL } from "@/lib/ticket-status";
+import { useIssuedTickets } from "@/lib/issued";
 import { useActiveTime } from "@/lib/time-tracking";
 import { CodePanel } from "./CodePanel";
 import { LessonBlocks } from "./LessonBlocks";
@@ -55,8 +56,9 @@ function WorkspaceInner({ sprintId, ticketId }: { sprintId: string; ticketId: st
     else if (sidePanel.current?.isCollapsed()) sidePanel.current.expand();
   }, [layout.id, layout.v]);
   const sidePanel = useRef<ImperativePanelHandle>(null);
-  const idx = sprint.tickets.findIndex((t) => t.id === ticket.id);
-  const nextTicket = sprint.tickets[idx + 1];
+  const issuedTickets = useIssuedTickets(sprint);
+  const pos = issuedTickets.findIndex((t) => t.id === ticket.id);
+  const nextTicket = pos < 0 ? undefined : issuedTickets[pos + 1];
 
   const files: Record<string, string> = Object.fromEntries(
     ticket.task.files.filter((f) => !f.readOnly).map((f) => [f.path, st.files[f.path] ?? f.content]),

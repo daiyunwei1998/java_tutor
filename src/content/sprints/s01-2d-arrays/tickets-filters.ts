@@ -8,6 +8,7 @@ import type { Ticket } from "../../types";
 
 const pf201: Ticket = {
   id: "PF-201",
+  issuedByDefault: false,
   slug: "grayscale",
   title: "Grayscale conversion: three channels into one image",
   xp: 150,
@@ -607,6 +608,7 @@ public class BlurTest {
 
 const pf204: Ticket = {
   id: "PF-204",
+  issuedByDefault: false,
   slug: "sobel-edges",
   title: "Edge detection with Sobel kernels",
   xp: 250,
@@ -848,6 +850,7 @@ public class EdgesTest {
 
 const pf205: Ticket = {
   id: "PF-205",
+  issuedByDefault: false,
   slug: "filter-pipeline",
   title: "Bonus: filter pipeline",
   xp: 300,
