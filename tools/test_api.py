@@ -5,6 +5,7 @@ os.environ.pop("DATABASE_URL", None); os.environ.pop("POSTGRES_URL", None)
 os.environ["USAGE_DB_PATH"] = os.path.join(tempfile.mkdtemp(), "u.db")
 os.environ["OPENAI_API_KEY"] = "sk-test-not-real"
 os.environ["ADMIN_PASSWORD"] = "pw"
+os.environ["ABLY_API_KEY"] = "appid.keyid:secretsecret"
 os.environ["AI_DAILY_LIMIT_PER_STUDENT"] = "3"
 import httpx, openai
 from fastapi.testclient import TestClient
@@ -83,6 +84,19 @@ def test_accounts():
     assert client.post("/api/admin/accounts/nobody/reset", headers=h).status_code == 404
     print("ACCOUNTS OK")
 
+def test_live():
+    import json
+    assert client.post("/api/live/token").status_code == 401
+    assert client.post("/api/live/token", headers={"X-Admin-Password": "nope"}).status_code == 401
+    t = client.post("/api/live/token", headers={"X-Admin-Password": "pw"}).json()
+    assert t["clientId"] == "teacher" and t["keyName"] == "appid.keyid" and "live:*" in json.loads(t["capability"]), t
+    tok = client.post("/api/auth/login", json={"username": "stu", "password": "stu"}).json()["token"]
+    t = client.post("/api/live/token", headers={"Authorization": f"Bearer {tok}"}).json()
+    cap = json.loads(t["capability"])
+    assert t["clientId"] == "stu" and cap == {"live-lobby": ["presence"], "live:stu": ["publish", "subscribe", "presence"]}, t
+    print("LIVE OK")
+
 if __name__ == "__main__":
     test_all()
     test_accounts()
+    test_live()

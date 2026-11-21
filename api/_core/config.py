@@ -43,6 +43,7 @@ class Settings:
     database_url: str | None
     db_path: Path
     cors_origins: list[str]
+    ably_api_key: str | None
 
 
 def load_settings() -> Settings:
@@ -62,6 +63,8 @@ def load_settings() -> Settings:
         # Fallback when no Postgres is configured (local dev). On Vercel only /tmp is writable and is NOT persistent.
         db_path=Path(os.getenv("USAGE_DB_PATH") or ("/tmp/usage.db" if os.getenv("VERCEL") else str(PROJECT_ROOT / ".data" / "usage.db"))),
         cors_origins=[o.strip() for o in os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",") if o.strip()],
+        # Realtime layer for live teacher sessions (ably.com, free tier). Format "appId.keyId:secret".
+        ably_api_key=os.getenv("ABLY_API_KEY", "").strip() or None,
     )
 
 

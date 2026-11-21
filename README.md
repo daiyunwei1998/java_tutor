@@ -14,6 +14,12 @@ Each sprint has its own mini project and story (Sprint 1: the Mini Photoshop at 
   `SEED_ACCOUNTS=stu,test,newname` in Vercel and redeploy; they are created automatically (password = username).
 - **Teacher admin** at `/admin` (no link on the site; type the URL): AI usage, progress per account,
   "Reset test" and "Sync stu → test".
+- **Live teacher sessions**: while a student has a ticket open, the teacher can join from `/admin` → Live sessions.
+  Both see each other's pointer, the teacher's drag-highlights appear as a highlighter on the student's screen, pane
+  scrolling and tabs stay in sync, and the teacher can edit the student's code and press Run / Run tests / AI Debug
+  (which run on the student's computer). The student sees a "Your teacher is connected" banner. Realtime goes through
+  [Ably](https://ably.com) (free tier) because Vercel functions cannot keep WebSockets open; set `ABLY_API_KEY`.
+  Locally without a key, two tabs of the same browser are linked instead (one student tab, one `/admin` tab).
 - Spec review and recommendations: [docs/spec-review.md](docs/spec-review.md)
 - Tests: `node --experimental-strip-types tools/verify-content.mjs` (needs a JDK) and `python tools/test_api.py`
 
@@ -22,7 +28,8 @@ Each sprint has its own mini project and story (Sprint 1: the Mini Photoshop at 
   `vercel.json` routes `/api/*` to it).
 - Database: Postgres (Neon) from the Vercel Marketplace. Connecting it sets `DATABASE_URL`; the backend creates
   its tables on first start.
-- Environment variables on the Vercel project: `OPENAI_API_KEY` and `ADMIN_PASSWORD` (required). Optional ones are
+- Environment variables on the Vercel project: `OPENAI_API_KEY` and `ADMIN_PASSWORD` (required), `ABLY_API_KEY`
+  (live teacher sessions; create a free Ably app and copy its root API key). Optional ones are
   listed in `.env.example`.
 - Pushing to `main` deploys automatically.
 

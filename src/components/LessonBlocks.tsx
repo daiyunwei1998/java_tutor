@@ -38,7 +38,7 @@ export function LessonBlocks({
           <strong>🔬 {v.title ?? "Visualization"}</strong>
           {label && <span className="small muted">{label}</span>}
         </figcaption>
-        <div className="inline-viz-body">{renderViz(index)}</div>
+        <div className="inline-viz-body" data-live-clicks>{renderViz(index)}</div>
       </figure>
     );
   };
