@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { sprints } from "@/content/registry";
+import { LiveLobby } from "@/components/live/LiveLobby";
 
 type Usage = {
   month: { requests: number; prompt_tokens: number; completion_tokens: number; estimated_cost_usd: number };
@@ -162,6 +163,10 @@ export default function AdminPage() {
           {data.failures.length === 0 ? <div className="stat">0</div> : data.failures.map((f) => <div key={f.status} className="small">{STATUS_TEXT[f.status] ?? f.status}: <strong>{f.count}</strong> (last {fmt(f.last)})</div>)}
         </div>
       </div>
+
+      <h2>Live sessions</h2>
+      <p className="small muted" style={{ marginTop: -6 }}>Join a student who has a ticket open: you see their workspace, they see your pointer and highlights, and you can scroll, edit their code and press Run / Run tests for them.</p>
+      <LiveLobby password={pw} />
 
       <h2>Student accounts</h2>
       <div className="card table-scroll">

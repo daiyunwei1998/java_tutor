@@ -459,3 +459,19 @@ div.code-panel > .code-top .editor-wrap { min-height: 220px; }
 .note-item.done .note-body { color: var(--muted); text-decoration: line-through; }
 .note-body { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.5; }
 .note-item a.pill:hover { text-decoration: none; filter: brightness(0.97); }
+/* live teacher sessions */
+.live-layer { position: fixed; inset: 0; pointer-events: none; z-index: 90; overflow: hidden; }
+.live-layer .live-hl { position: absolute; left: 0; top: 0; border-radius: 3px; mix-blend-mode: multiply; }
+[data-theme="dark"] .live-layer .live-hl { mix-blend-mode: screen; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .live-layer .live-hl { mix-blend-mode: screen; } }
+.live-layer .live-ping { position: absolute; left: 0; top: 0; border-radius: 50%; border: 2px solid var(--live-color); animation: live-ping 0.7s ease-out forwards; }
+@keyframes live-ping { from { opacity: 1; scale: 0.4; } to { opacity: 0; scale: 1.4; } }
+.live-cursor { position: absolute; left: 0; top: 0; transition: transform 60ms linear; will-change: transform; }
+.live-cursor span { position: absolute; left: 14px; top: 18px; background: var(--live-color); color: #fff; font-size: 12px; font-weight: 600; padding: 1px 7px; border-radius: 999px; white-space: nowrap; }
+.live-banner { position: fixed; bottom: 14px; left: 14px; z-index: 80; display: flex; align-items: center; gap: 10px; padding: 6px 8px 6px 14px; border-radius: 999px; background: var(--surface); border: 2px solid #e8590c; box-shadow: var(--shadow); font-size: 14px; max-width: calc(100vw - 32px); flex-wrap: wrap; }
+.live-banner.teacher { border-color: #1c7ed6; }
+.live-banner-sub { color: var(--muted); font-size: 13px; }
+.live-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: #2f9e44; box-shadow: 0 0 0 3px rgba(47, 158, 68, 0.25); animation: live-pulse 1.6s ease-in-out infinite; }
+.live-dot.off { background: var(--muted); box-shadow: none; animation: none; }
+@keyframes live-pulse { 50% { box-shadow: 0 0 0 6px rgba(47, 158, 68, 0.05); } }
+@media (max-width: 900px) { .live-banner-sub { display: none; } }

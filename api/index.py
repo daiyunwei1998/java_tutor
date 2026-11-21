@@ -21,7 +21,7 @@ from pathlib import Path
 # Vercel runs this file as a standalone Python function; make the sibling _core package importable.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from _core import accounts, notes, usage  # noqa: E402
+from _core import accounts, live, notes, usage  # noqa: E402
 from _core.config import settings  # noqa: E402
 from _core.prompts import DEBUG_INSTRUCTIONS, MENTOR_BASE, number_lines  # noqa: E402
 
@@ -181,7 +181,8 @@ def _call_openai(kind: str, student: Student, ticket_id: str | None, messages: l
 @app.get("/api/health")
 def health():
     return {"ok": True, "ai_configured": bool(settings.openai_api_key), "model": settings.openai_model,
-            "admin_configured": bool(settings.admin_password), "database": usage.backend_name()}
+            "admin_configured": bool(settings.admin_password), "database": usage.backend_name(),
+            "live_configured": bool(settings.ably_api_key)}
 
 
 @app.post("/api/ai/chat")
@@ -279,6 +280,20 @@ def post_time(req: TimePost, authorization: str | None = Header(default=None)):
     if req.ms:
         accounts.add_time(user, req.ticket, req.ms)
     return {"ok": True}
+
+
+# ---------- live teacher sessions (Ably) ----------
+
+@app.post("/api/live/token")
+def live_token(authorization: str | None = Header(default=None), x_admin_password: str | None = Header(default=None)):
+    """Signed Ably token request. Teacher: X-Admin-Password. Student: Bearer login token."""
+    if not settings.ably_api_key:
+        raise HTTPException(503, "Live sessions are not set up (missing ABLY_API_KEY).")
+    if x_admin_password is not None:
+        _require_admin(x_admin_password)
+        return live.token_request(settings.ably_api_key, live.TEACHER_ID, live.capability_for("teacher"))
+    user = _require_user(authorization)
+    return live.token_request(settings.ably_api_key, user, live.capability_for("student", user))
 
 
 # ---------- admin ----------

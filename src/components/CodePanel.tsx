@@ -2,14 +2,16 @@
 
 import { java } from "@codemirror/lang-java";
 import { EditorView } from "@codemirror/view";
-import CodeMirror, { type ReactCodeMirrorRef } from "@uiw/react-codemirror";
-import { useEffect, useMemo, useRef, useState } from "react";
+import CodeMirror, { ExternalChange, type ReactCodeMirrorRef } from "@uiw/react-codemirror";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Panel, PanelGroup, PanelResizeHandle, type ImperativePanelHandle } from "react-resizable-panels";
 import type { Ticket } from "@/content/types";
 import { askDebug, isAiError } from "@/lib/ai";
 import { onRunnerState, parseDiagnostics, type RunResult, type RunnerState, runJava, warmUp } from "@/lib/java-runner";
 import { useStore } from "@/lib/progress";
+import { registerEditor } from "@/lib/live/anchor";
 import { useResolvedTheme } from "@/lib/theme";
+import { useLive, useLiveEvent, useLiveSync } from "./live/LiveContext";
 import { Markdown } from "./Markdown";
 import { isPreviewViz, renderViz } from "./viz/VizPanel";
 
@@ -57,6 +59,22 @@ export function CodePanel({
   const previewViz = ticket.visualizations.find(isPreviewViz);
   const [outTab, setOutTab] = useState<"console" | "preview">("console");
 
+  // Live session: both screens show the same file, output tab and run state. In the teacher's view, Run / Test /
+  // AI are pressed on the student's computer (their browser runs the Java, their account asks the AI).
+  const live = useLive();
+  const isTeacher = live?.role === "teacher";
+  useLiveSync("activeFile", active, setActive);
+  useLiveSync("running", running, setRunning);
+  useLiveSync("lastMode", lastMode, setLastMode);
+  useLiveSync("ai", ai, setAi);
+  useLiveSync("aiQuestion", aiQuestion, setAiQuestion);
+  useLiveSync("outTab", outTab, setOutTab);
+  useLiveEvent<{ action: "run" | "test" | "ai" }>("action", (d) => {
+    if (isTeacher || running) return;
+    if (d.action === "ai") debugWithAi();
+    else exec(d.action);
+  });
+
   function openPreview() {
     setOutTab("preview");
     const p = outPanel.current;
@@ -73,15 +91,35 @@ export function CodePanel({
   useEffect(() => onRunnerState((s, err) => setRunner({ s, err })), []);
   useEffect(() => {
     // Start downloading the JVM as soon as a workspace opens, so the first Run is faster.
-    warmUp().catch(() => {});
-  }, []);
+    if (!isTeacher) warmUp().catch(() => {});
+  }, [isTeacher]);
 
   const activeFile = task.files.find((f) => f.path === active)!;
   const extensions = useMemo(() => [java(), EditorView.lineWrapping], []);
+  const editorValue = activeFile.readOnly ? activeFile.content : files[active] ?? activeFile.content;
+
+  // When the code changes from outside (the teacher typing, a progress sync), apply only the changed span so the
+  // local cursor stays where it was. Runs before the editor's own effect, which would replace the whole document.
+  useLayoutEffect(() => {
+    const view = cm.current?.view;
+    if (!view) return;
+    const cur = view.state.doc.toString();
+    if (cur === editorValue) return;
+    let a = 0;
+    while (a < cur.length && a < editorValue.length && cur[a] === editorValue[a]) a++;
+    let b = 0;
+    while (b < cur.length - a && b < editorValue.length - a && cur[cur.length - 1 - b] === editorValue[editorValue.length - 1 - b]) b++;
+    view.dispatch({ changes: { from: a, to: cur.length - b, insert: editorValue.slice(a, editorValue.length - b) }, annotations: [ExternalChange.of(true)] });
+  }, [editorValue]);
+  useEffect(() => {
+    registerEditor(cm.current?.view, active);
+    return () => registerEditor(undefined, active);
+  }, [active]);
   const allFiles = task.files.map((f) => ({ path: f.path, content: f.readOnly ? f.content : files[f.path] ?? f.content }));
   const diagnostics = result?.status === "compile_error" ? parseDiagnostics(result.stderr) : [];
 
   async function exec(mode: "run" | "test") {
+    if (isTeacher) return live!.send("action", { action: mode });
     if (outPanel.current?.isCollapsed()) outPanel.current.expand();
     setOutTab("console");
     setRunning(mode);
@@ -104,6 +142,7 @@ export function CodePanel({
   }
 
   async function debugWithAi() {
+    if (isTeacher) return live!.send("action", { action: "ai" });
     if (!store?.profile) return;
     setAi({ busy: true });
     const res = await askDebug({
@@ -134,7 +173,8 @@ export function CodePanel({
       <div className="editor-wrap">
         <CodeMirror
           ref={cm}
-          value={activeFile.readOnly ? activeFile.content : files[active] ?? activeFile.content}
+          value={editorValue}
+          onCreateEditor={(view) => registerEditor(view, active)}
           editable={!activeFile.readOnly}
           readOnly={activeFile.readOnly}
           extensions={extensions}
@@ -185,7 +225,7 @@ export function CodePanel({
         {renderViz(previewViz, ticket, files)}
       </div>
   ) : (
-      <div className="output" aria-live="polite">
+      <div className="output" aria-live="polite" data-live-scroll="output">
         {outputTabs}
         {runner.s === "error" && <div className="console err">{runner.err}</div>}
         {!result && !ai.text && !ai.error && (

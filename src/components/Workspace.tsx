@@ -5,11 +5,13 @@ import { useEffect, useRef, useState } from "react";
 import { Panel, PanelGroup, PanelResizeHandle, type ImperativePanelHandle } from "react-resizable-panels";
 import { getTicket } from "@/content/registry";
 import type { RunResult } from "@/lib/java-runner";
-import { getTicketState, ticketKey, updateTicket, useStore } from "@/lib/progress";
+import { getTicketState, type TicketState, ticketKey, updateTicket as updateLocal, useStore } from "@/lib/progress";
 import { STATUS_LABEL } from "@/lib/ticket-status";
 import { useActiveTime } from "@/lib/time-tracking";
 import { CodePanel } from "./CodePanel";
 import { LessonBlocks } from "./LessonBlocks";
+import { useLiveSync, useRemoteTicket } from "./live/LiveContext";
+import { StudentLive } from "./live/StudentLive";
 import { Markdown } from "./Markdown";
 import { useWorkspace } from "./WorkspaceContext";
 import { StarButton } from "./StarButton";
@@ -18,10 +20,22 @@ import { renderViz } from "./viz/VizPanel";
 type MobileTab = "learn" | "code" | "tasks";
 
 export function Workspace({ sprintId, ticketId }: { sprintId: string; ticketId: string }) {
+  const remote = useRemoteTicket();
+  const inner = <WorkspaceInner sprintId={sprintId} ticketId={ticketId} />;
+  // The teacher's live view already provides the session; a student's page announces itself for live help.
+  if (remote) return inner;
+  const { ticket } = getTicket(sprintId, ticketId)!;
+  return <StudentLive sprintId={sprintId} ticketId={ticketId} title={ticket.title}>{inner}</StudentLive>;
+}
+
+function WorkspaceInner({ sprintId, ticketId }: { sprintId: string; ticketId: string }) {
   const { sprint, ticket } = getTicket(sprintId, ticketId)!;
   const key = ticketKey(sprintId, ticketId);
   const store = useStore();
-  const st = getTicketState(store, key);
+  // In the teacher's live view the ticket state is the student's, and edits are sent to the student.
+  const remote = useRemoteTicket();
+  const st = remote ? remote.st : getTicketState(store, key);
+  const updateTicket = (k: string, fn: (t: TicketState) => TicketState) => (remote ? remote.update(fn) : updateLocal(k, fn));
   const { setInfo } = useWorkspace();
   useActiveTime(key);
   const [result, setResult] = useState<RunResult | null>(null);
@@ -29,7 +43,11 @@ export function Workspace({ sprintId, ticketId }: { sprintId: string; ticketId: 
   const [mobileTab, setMobileTab] = useState<MobileTab>("learn");
   const [sideCollapsed, setSideCollapsed] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
-  const [layout, setLayout] = useLayout();
+  const [layout, setLayout, applyLayout] = useLayout();
+  useLiveSync("result", result, setResult);
+  useLiveSync("previewSignal", previewSignal, setPreviewSignal);
+  useLiveSync("layout", layout.id, (id) => applyLayout(id));
+  useLiveSync("sideCollapsed", sideCollapsed, (c) => (c ? sidePanel.current?.collapse() : sidePanel.current?.expand()));
   const swap = layout.id === "code-left";
   // "Focus on code" starts with the side panel folded away.
   useEffect(() => {
@@ -46,8 +64,8 @@ export function Workspace({ sprintId, ticketId }: { sprintId: string; ticketId: 
 
   // Opening a ticket = "viewed" → In Progress.
   useEffect(() => {
-    if (store && getTicketState(store, key).status === "todo") updateTicket(key, (t) => ({ ...t, status: "in_progress" }));
-  }, [store, key]);
+    if (!remote && store && getTicketState(store, key).status === "todo") updateLocal(key, (t) => ({ ...t, status: "in_progress" }));
+  }, [store, key, remote]);
 
   // Share context with the AI mentor chat.
   const filesJson = JSON.stringify(files);
@@ -156,7 +174,7 @@ export function Workspace({ sprintId, ticketId }: { sprintId: string; ticketId: 
   );
 
   return (
-    <div className="ws">
+    <div className="ws" data-live-root>
       <div className="ws-head">
         <Link href={`/sprints/${sprint.id}`} className="small">← Sprint {sprint.number} board</Link>
         <span className="ticket-id">{ticket.id}</span>
@@ -207,7 +225,7 @@ export function Workspace({ sprintId, ticketId }: { sprintId: string; ticketId: 
                       <div className="spacer" />
                       <button className="btn small ghost" onClick={() => sidePanel.current?.collapse()} aria-label="Collapse the side panel to widen the code" title="Collapse to widen the code">{swap ? "⇥" : "⇤"}</button>
                     </div>
-                    <div className="pane">{learn}</div>
+                    <div className="pane" data-live-scroll="side">{learn}</div>
                   </div>
                 )}
               </Panel>
@@ -236,7 +254,7 @@ export function Workspace({ sprintId, ticketId }: { sprintId: string; ticketId: 
                       <div className="spacer" />
                       <button className="btn small ghost" onClick={() => sidePanel.current?.collapse()} aria-label="Collapse the side panel to widen the code" title="Collapse to widen the code">{swap ? "⇥" : "⇤"}</button>
                     </div>
-                    <div className="pane">{learn}</div>
+                    <div className="pane" data-live-scroll="side">{learn}</div>
                   </div>
                 )}
               </Panel>
@@ -249,7 +267,7 @@ export function Workspace({ sprintId, ticketId }: { sprintId: string; ticketId: 
             </PanelGroup>
           }
           mobile={
-            <div className="pane">
+            <div className="pane" data-live-scroll="mobile">
               {mobileTab === "learn" && learn}
               {mobileTab === "code" && code}
               {mobileTab === "tasks" && <div className="pane-pad">{tasksBox()}</div>}
@@ -288,7 +306,7 @@ const LAYOUTS: { id: LayoutId; label: string; hint: string; cells: string[] }[] 
 ];
 
 /** Per-browser workspace layout preset. Panel sizes inside each preset are saved by react-resizable-panels. */
-function useLayout(): [Layout, (l: Layout, resetSizes?: boolean) => void] {
+function useLayout(): [Layout, (l: Layout, resetSizes?: boolean) => void, (id: LayoutId) => void] {
   const [layout, setState] = useState<Layout>({ id: "classic", v: 0 });
   useEffect(() => {
     try {
@@ -305,7 +323,9 @@ function useLayout(): [Layout, (l: Layout, resetSizes?: boolean) => void] {
     } catch {}
     setState(l);
   };
-  return [layout, set];
+  // Live sessions: follow the other screen's layout without changing this browser's saved choice.
+  const apply = (id: LayoutId) => LAYOUTS.some((l) => l.id === id) && setState((l) => (l.id === id ? l : { id, v: l.v + 1 }));
+  return [layout, set, apply];
 }
 
 function LayoutMenu({ layout, onChange }: { layout: Layout; onChange: (l: Layout, resetSizes?: boolean) => void }) {
