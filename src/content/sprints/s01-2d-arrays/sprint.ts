@@ -1,7 +1,7 @@
 import type { Sprint } from "../../types";
 import { knowledge } from "./knowledge";
 import { tickets } from "./tickets";
-import { tickets as backlogTickets } from "./tickets-backlog";
+import { tickets as filterTickets } from "./tickets-filters";
 
 export const sprint2dArrays: Sprint = {
   id: "2d-arrays",
@@ -17,7 +17,6 @@ export const sprint2dArrays: Sprint = {
       "This sprint you join PixelForge Studio. The team is building a web-based Mini Photoshop, and every image in the code is an int[][]. Finish tickets, pass the tests, and merge your code to build the product step by step.",
     techLead: { name: "Mei", role: "Tech Lead", avatar: "👩‍💻" },
   },
-  tickets: [...tickets, ...backlogTickets],
+  tickets: [...tickets, ...filterTickets],
   knowledge,
-  backlog: [],
 };

@@ -61,8 +61,6 @@ export type Ticket = {
   blocks: LessonBlock[];
   visualizations: VizConfig[];
   task: CodeTask;
-  /** Ticket ids that should be merged first (soft lock in the UI). */
-  dependsOn: string[];
 };
 
 /** A block on a Knowledge Space page (one topic = one single-column page). */
@@ -105,7 +103,6 @@ export type Sprint = {
   project: MiniProject;
   tickets: Ticket[];
   /** Tickets planned for later, shown greyed out on the board. */
-  backlog: { title: string; note: string }[];
   /** Deeper, optional material for this sprint's topic (see KnowledgeTopic). */
   knowledge?: KnowledgeTopic[];
 };

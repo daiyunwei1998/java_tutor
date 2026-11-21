@@ -11,7 +11,6 @@ const pf101: Ticket = {
   slug: "image-buffer-memory",
   title: "Image buffer health check: 2D arrays and memory",
   xp: 100,
-  dependsOn: [],
   briefing: `Welcome to **PixelForge Studio**! 🎉 We're building a Mini Photoshop that runs in the browser.
 
 In our code, every image is an \`int[][]\` (we call it an *image buffer*). Last week someone passed a buffer with a \`null\` row into a filter and the whole app crashed 😅
@@ -191,7 +190,6 @@ const pf102: Ticket = {
   slug: "row-column-major",
   title: "Brightness stats: row-major and column-major traversal",
   xp: 120,
-  dependsOn: ["PF-101"],
   briefing: `The designers want a "brightness profile" panel in Mini Photoshop: the total brightness of **every row** and **every column**.
 
 In this ticket you'll learn the two orders for visiting a 2D array, and when each one is the natural choice.`,
@@ -340,7 +338,6 @@ const pf103: Ticket = {
   slug: "enhanced-for",
   title: "Exposure fix: the enhanced for trap",
   xp: 120,
-  dependsOn: ["PF-102"],
   briefing: `QA reported a bug: pressing "Exposure +10" doesn't change the image at all 🐛
 
 The previous engineer used an enhanced for loop to change the pixel values. In this ticket you'll figure out why that has no effect, then write a version that works.`,
@@ -505,7 +502,6 @@ const pf104: Ticket = {
   slug: "matrix-algorithms",
   title: "Getting ready for rotate: diagonals and transpose",
   xp: 150,
-  dependsOn: ["PF-103"],
   briefing: `The product manager wants "Rotate 90°" soon. The first step of a rotation is the **transpose**: rows become columns.
 
 The image-analysis team also needs the brightness along the diagonals. In this ticket you'll implement these matrix algorithms and compare their time complexity.`,
@@ -668,7 +664,6 @@ const pf105: Ticket = {
   slug: "brightness-filter",
   title: "Ship the first filter: brightness",
   xp: 200,
-  dependsOn: ["PF-104"],
   briefing: `You made it through onboarding! 🚀 This is your first ticket that **ships in the product**.
 
 Mini Photoshop's brightness slider calls the \`Filters.brighten\` you write. Whatever your Java code computes is shown directly in the image editor.`,

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { getSprint } from "@/content/registry";
 import { getTicketState, ticketKey, type TicketStatus, useStore } from "@/lib/progress";
-import { isLocked, sprintProgress, STATUS_LABEL } from "@/lib/ticket-status";
+import { sprintProgress, STATUS_LABEL } from "@/lib/ticket-status";
 import { SprintProgressBar } from "./SprintProgressBar";
 
 const COLUMNS: TicketStatus[] = ["todo", "in_progress", "in_review", "merged"];
@@ -40,17 +40,15 @@ export function SprintBoard({ sprintId }: { sprintId: string }) {
               .filter((t) => getTicketState(store, ticketKey(sprint.id, t.id)).status === col)
               .map((t) => {
                 const st = getTicketState(store, ticketKey(sprint.id, t.id));
-                const locked = isLocked(store, sprint, t);
                 return (
-                  <Link key={t.id} href={`/sprints/${sprint.id}/tickets/${t.id}`} className={`ticket-card${locked ? " locked" : ""}`}>
+                  <Link key={t.id} href={`/sprints/${sprint.id}/tickets/${t.id}`} className="ticket-card">
                     <div className="row" style={{ justifyContent: "space-between" }}>
                       <span className="ticket-id">{t.id}</span>
                       <span className="small muted">{t.xp} XP</span>
                     </div>
                     <div style={{ fontWeight: 600, margin: "4px 0" }}>{t.title}</div>
                     <div className="small muted">
-                      {locked && `🔒 Finish ${t.dependsOn.join(", ")} first`}
-                      {st.lastTest && `${locked ? " · " : ""}tests ${st.lastTest.passed}/${st.lastTest.total}`}
+                      {st.lastTest && `tests ${st.lastTest.passed}/${st.lastTest.total}`}
                       {st.status === "merged" && (st.tutorVerified ? " · ✅ reviewed by teacher" : " · waiting for teacher review")}
                     </div>
                   </Link>
@@ -60,19 +58,6 @@ export function SprintBoard({ sprintId }: { sprintId: string }) {
         ))}
       </div>
 
-      {sprint.backlog.length > 0 && (
-        <>
-          <h2>Backlog: tickets coming later</h2>
-          <div className="grid2">
-            {sprint.backlog.map((u) => (
-              <div key={u.title} className="card" style={{ opacity: 0.75 }}>
-                <strong>{u.title}</strong>
-                <div className="small muted">{u.note} · 🔒 coming soon</div>
-              </div>
-            ))}
-          </div>
-        </>
-      )}
     </div>
   );
 }

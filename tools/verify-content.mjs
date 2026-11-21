@@ -8,7 +8,7 @@ const root = resolve(import.meta.dirname, "..");
 const sprintDir = join(root, "src/content/sprints");
 const allTickets = [];
 for (const d of readdirSync(sprintDir)) {
-  // tickets.ts plus any extra tickets-*.ts files (e.g. tickets-backlog.ts), each exporting `tickets`.
+  // tickets.ts plus any extra tickets-*.ts files (e.g. tickets-filters.ts), each exporting `tickets`.
   if (!existsSync(join(sprintDir, d, "tickets.ts"))) continue;
   for (const f of readdirSync(join(sprintDir, d)).filter((n) => /^tickets(-[\w-]+)?\.ts$/.test(n)).sort()) {
     allTickets.push(...(await import(join(sprintDir, d, f))).tickets);

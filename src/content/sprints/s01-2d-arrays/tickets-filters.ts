@@ -1,7 +1,7 @@
 import type { Ticket } from "../../types";
 
 /*
- * Sprint 1, part 2: the Mini Photoshop filter backlog (PF-201..PF-205).
+ * Sprint 1, part 2: the Mini Photoshop filters (PF-201..PF-205).
  * Same format as tickets.ts: content is data only, Markdown uses ~~~ fences so it can live inside template literals.
  * Reference solutions live in tools/solutions/<mainClass>.java; check them with tools/verify-content.mjs.
  */
@@ -11,7 +11,6 @@ const pf201: Ticket = {
   slug: "grayscale",
   title: "Grayscale conversion: three channels into one image",
   xp: 150,
-  dependsOn: ["PF-105"],
   briefing: `Users keep uploading **color** photos, but every filter we have works on grayscale \`int[][]\` images.
 
 A color image is stored as three separate channels: \`red\`, \`green\` and \`blue\`. Each one is an \`int[][]\` of the same size, with values 0–255. Your job: combine the three channels into a single grayscale image so the rest of the pipeline can use it.`,
@@ -213,7 +212,6 @@ const pf202: Ticket = {
   slug: "flip",
   title: "Flip horizontal and vertical",
   xp: 150,
-  dependsOn: ["PF-105"],
   briefing: `Design asked for the most requested feature after brightness: **Flip**. The toolbar will have "Flip horizontal" (mirror left ↔ right) and "Flip vertical" (upside down).
 
 There is also an old in-place mirror used by the thumbnail generator that was never finished. Please write that one too, it saves memory on big images.`,
@@ -399,7 +397,6 @@ const pf203: Ticket = {
   slug: "box-blur",
   title: "Box blur: 3×3 neighborhoods and bounds checks",
   xp: 200,
-  dependsOn: ["PF-202"],
   briefing: `Next up: the **Blur** button. The simplest blur replaces every pixel with the average of the 3×3 square around it.
 
 Last time someone tried this, the app crashed on the first pixel with \`ArrayIndexOutOfBoundsException\` 💥 because the corner pixel has no neighbor above it or to its left. This time, handle the edges properly.`,
@@ -586,7 +583,6 @@ const pf204: Ticket = {
   slug: "sobel-edges",
   title: "Edge detection with Sobel kernels",
   xp: 250,
-  dependsOn: ["PF-203"],
   briefing: `Marketing wants a "Sketch" effect that turns photos into line drawings. Under the hood that is **edge detection**: find the places where brightness changes quickly.
 
 The Sobel operator does this with two small 3×3 **kernels**, and a kernel is just another \`int[][]\`. You already know how to visit a 3×3 neighborhood from the blur ticket. Now you will weight each neighbor instead of averaging them.`,
@@ -819,7 +815,6 @@ const pf205: Ticket = {
   slug: "filter-pipeline",
   title: "Bonus: filter pipeline",
   xp: 300,
-  dependsOn: ["PF-204"],
   briefing: `Power users want **presets**: a list of steps like \`invert\`, \`threshold 128\`, \`darken 40\` applied one after the other, plus a history panel that shows the image after every step.
 
 A teammate already wrote the basic operations in \`Ops.java\` (read-only). Careful: \`darkenInPlace\` is legacy code that **modifies the image you pass in**. The pipeline must never damage the user's original image or the history.`,

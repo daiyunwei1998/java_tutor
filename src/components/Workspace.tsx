@@ -6,7 +6,7 @@ import { Panel, PanelGroup, PanelResizeHandle, type ImperativePanelHandle } from
 import { getTicket } from "@/content/registry";
 import type { RunResult } from "@/lib/java-runner";
 import { getTicketState, ticketKey, updateTicket, useStore } from "@/lib/progress";
-import { isLocked, STATUS_LABEL } from "@/lib/ticket-status";
+import { STATUS_LABEL } from "@/lib/ticket-status";
 import { CodePanel } from "./CodePanel";
 import { LessonBlocks } from "./LessonBlocks";
 import { Markdown } from "./Markdown";
@@ -81,8 +81,6 @@ export function Workspace({ sprintId, ticketId }: { sprintId: string; ticketId: 
     sidePanel.current?.expand();
   }
 
-  const locked = isLocked(store, sprint, ticket);
-
   const learn = (
     <div className="pane-pad">
       <div className="briefing">
@@ -92,7 +90,6 @@ export function Workspace({ sprintId, ticketId }: { sprintId: string; ticketId: 
           <Markdown>{ticket.briefing}</Markdown>
         </div>
       </div>
-      {locked && <div className="callout warn">🔒 Finish {ticket.dependsOn.join(", ")} first. You can still look around this ticket.</div>}
       <h3 style={{ marginTop: 0 }}>After this ticket you will be able to…</h3>
       <ul className="objectives">
         {ticket.objectives.map((o) => <li key={o}>{o}</li>)}

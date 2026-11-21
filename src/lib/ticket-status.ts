@@ -1,4 +1,4 @@
-import type { Sprint, Ticket } from "@/content/types";
+import type { Sprint } from "@/content/types";
 import { getTicketState, ticketKey, type TicketStatus, useStore } from "./progress";
 
 export const STATUS_LABEL: Record<TicketStatus, string> = {
@@ -7,10 +7,6 @@ export const STATUS_LABEL: Record<TicketStatus, string> = {
   in_review: "Tests Passed",
   merged: "Merged",
 };
-
-export function isLocked(store: ReturnType<typeof useStore>, sprint: Sprint, t: Ticket) {
-  return t.dependsOn.some((d) => getTicketState(store, ticketKey(sprint.id, d)).status !== "merged");
-}
 
 /** Sprint completion: merged tickets count fully, "tests passed" counts half. */
 export function sprintProgress(store: ReturnType<typeof useStore>, sprint: Sprint) {
