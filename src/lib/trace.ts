@@ -10,7 +10,7 @@
 export type Val = { t: "p"; v: string } | { t: "r"; id: string } | { t: "null" };
 
 export type HeapObj =
-  | { id: string; kind: "array"; type: string; items: Val[] }
+  | { id: string; kind: "array"; type: string; items: Val[]; /** set when items were cut short (debugger) */ length?: number }
   | { id: string; kind: "object"; type: string; fields: { name: string; v: Val }[] };
 
 export type Frame = { name: string; vars: { name: string; v: Val }[] };
