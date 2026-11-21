@@ -83,6 +83,35 @@ def test_accounts():
     assert client.post("/api/admin/accounts/nobody/reset", headers=h).status_code == 404
     print("ACCOUNTS OK")
 
+def test_notes():
+    h = {"X-Admin-Password": "pw"}
+    assert client.get("/api/admin/notes").status_code == 401
+    d = client.get("/api/admin/accounts/stu", headers=h).json()
+    assert d["username"] == "stu" and "files" not in d["tickets"].get("a/PF-101", {}), d
+    assert client.get("/api/admin/accounts/nobody", headers=h).status_code == 404
+    r = client.post("/api/admin/notes", headers=h, json={"username": "STU", "body": " Off-by-one on rows ", "tickets": ["a/PF-101", "a/PF-101", "a/PF-102"]})
+    assert r.status_code == 200, r.text
+    n1 = r.json()
+    assert n1["username"] == "stu" and n1["body"] == "Off-by-one on rows" and n1["tickets"] == ["a/PF-101", "a/PF-102"] and not n1["done"], n1
+    general = client.post("/api/admin/notes", headers=h, json={"body": "Next class: start with PF-203"}).json()
+    assert general["username"] is None and general["tickets"] == [], general
+    assert client.post("/api/admin/notes", headers=h, json={"username": "nobody", "body": "x"}).status_code == 400
+    assert client.post("/api/admin/notes", headers=h, json={"body": "   "}).status_code == 400
+    assert len(client.get("/api/admin/notes", headers=h).json()["notes"]) == 2
+    assert [n["id"] for n in client.get("/api/admin/notes?username=stu", headers=h).json()["notes"]] == [n1["id"]]
+    r = client.put(f"/api/admin/notes/{n1['id']}", headers=h, json={"done": True}).json()
+    assert r["done"] and r["body"] == "Off-by-one on rows" and r["username"] == "stu", r  # untouched fields kept
+    r = client.put(f"/api/admin/notes/{n1['id']}", headers=h, json={"username": None, "tickets": []}).json()
+    assert r["username"] is None and r["tickets"] == [] and r["done"], r  # now a general note
+    client.post("/api/admin/accounts/test/reset", headers=h)
+    client.post("/api/admin/accounts/sync", headers=h, json={"source": "stu", "target": "test"})
+    assert len(client.get("/api/admin/notes", headers=h).json()["notes"]) == 2  # reset/sync leave notes alone
+    assert client.delete(f"/api/admin/notes/{n1['id']}", headers=h).status_code == 200
+    assert client.delete(f"/api/admin/notes/{n1['id']}", headers=h).status_code == 404
+    assert client.put("/api/admin/notes/missing", headers=h, json={"done": True}).status_code == 404
+    print("NOTES OK")
+
 if __name__ == "__main__":
     test_all()
     test_accounts()
+    test_notes()

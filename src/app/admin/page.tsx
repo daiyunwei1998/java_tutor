@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
 type Usage = {
@@ -118,6 +119,7 @@ export default function AdminPage() {
           </p>
         </div>
         <div className="row">
+          <Link className="btn" href="/admin/notes">📝 Notes</Link>
           <button className="btn" onClick={() => load(pw)} disabled={loading}>↻ Refresh</button>
           <button className="btn ghost" onClick={() => { sessionStorage.removeItem("jt.admin"); setData(null); setPw(""); }}>Log out</button>
         </div>
@@ -152,7 +154,7 @@ export default function AdminPage() {
           <tbody>
             {accounts.map((a) => (
               <tr key={a.username}>
-                <td><strong>{a.username}</strong></td>
+                <td><Link href={`/admin/accounts/${encodeURIComponent(a.username)}`}><strong>{a.username}</strong></Link> <span className="small muted">· info &amp; notes</span></td>
                 <td>{a.merged}</td>
                 <td>{a.in_review}</td>
                 <td>{a.in_progress}</td>

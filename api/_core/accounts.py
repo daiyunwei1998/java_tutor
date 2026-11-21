@@ -160,3 +160,14 @@ def copy(src: str, dst: str) -> None:
     with usage._conn() as c:
         row = c.execute("SELECT rev FROM progress WHERE username = ?", (dst,)).fetchone()
         _write(c, dst, data, (int(row["rev"]) if row else 0) + 1)
+
+
+def detail(username: str) -> dict:
+    """One account's progress per ticket, without the code (for the admin account page)."""
+    p = get_progress(username)
+    tickets = {}
+    for key, t in (p["data"].get("tickets") or {}).items():
+        if not isinstance(t, dict):
+            continue
+        tickets[key] = {k: t.get(k) for k in ("status", "attempts", "lastTest", "hintsShown", "mergedAt")}
+    return {"username": username, "updated_at": p["updated_at"], "tickets": tickets}
