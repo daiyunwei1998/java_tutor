@@ -26,7 +26,18 @@ export type Profile = { id: string; name: string; createdAt: string };
 
 export type Auth = { username: string; token: string; rev: number; dirty: boolean };
 
-export type Store = { version: 1; profile: Profile | null; tickets: Record<string, TicketState>; auth?: Auth | null };
+/** A student's note. Keyed by ticket key ("sprintId/ticketId") or GENERAL_NOTE. */
+export type Note = { text: string; updatedAt: string };
+export const GENERAL_NOTE = "general";
+export const MAX_NOTE_CHARS = 20_000;
+
+export type Store = {
+  version: 1;
+  profile: Profile | null;
+  tickets: Record<string, TicketState>;
+  notes?: Record<string, Note>;
+  auth?: Auth | null;
+};
 
 const KEY = "java-tutor.v2";
 const EMPTY: Store = { version: 1, profile: null, tickets: {} };
@@ -102,6 +113,14 @@ export function authToken(): string | null {
   return read().auth?.token ?? null;
 }
 
+export function setNote(key: string, text: string) {
+  const s = read();
+  const notes = { ...(s.notes ?? {}) };
+  if (text.trim()) notes[key] = { text: text.slice(0, MAX_NOTE_CHARS), updatedAt: new Date().toISOString() };
+  else delete notes[key];
+  write({ ...s, notes });
+}
+
 // ---------- accounts + server sync ----------
 
 let editSeq = 0;
@@ -114,12 +133,18 @@ function schedulePush(delay = 800) {
   pushTimer = setTimeout(push, delay);
 }
 
-function applyServer(username: string, token: string, data: { tickets?: Record<string, TicketState> }, rev: number) {
+function applyServer(
+  username: string,
+  token: string,
+  data: { tickets?: Record<string, TicketState>; notes?: Record<string, Note> },
+  rev: number,
+) {
   write(
     {
       version: 1,
       profile: { id: username, name: username, createdAt: read().profile?.createdAt ?? new Date().toISOString() },
       tickets: data?.tickets ?? {},
+      notes: data?.notes ?? {},
       auth: { username, token, rev, dirty: false },
     },
     { local: true },
@@ -137,7 +162,7 @@ async function push() {
     const res = await fetch("/api/progress", {
       method: "PUT",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ data: { tickets: s.tickets }, base_rev: rev }),
+      body: JSON.stringify({ data: { tickets: s.tickets, notes: s.notes ?? {} }, base_rev: rev }),
     });
     if (res.status === 401) return logout();
     if (!res.ok) throw new Error(String(res.status));
