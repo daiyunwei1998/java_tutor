@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { getSprint } from "@/content/registry";
 import { getTicketState, ticketKey, type TicketState, type TicketStatus, updateTicket, useStore } from "@/lib/progress";
+import { useIssuedTickets } from "@/lib/issued";
 import { sprintProgress, STATUS_LABEL, STATUSES } from "@/lib/ticket-status";
 import { SprintProgressBar } from "./SprintProgressBar";
 import { StarButton } from "./StarButton";
@@ -33,7 +34,8 @@ function moveTo(key: string, to: TicketStatus) {
 export function SprintBoard({ sprintId }: { sprintId: string }) {
   const sprint = getSprint(sprintId)!;
   const store = useStore();
-  const prog = sprintProgress(store, sprint);
+  const issued = useIssuedTickets(sprint);
+  const prog = sprintProgress(store, sprint, issued);
   const [dragKey, setDragKey] = useState<string | null>(null);
   const [overCol, setOverCol] = useState<TicketStatus | null>(null);
   const dragState = dragKey ? getTicketState(store, dragKey) : null;
@@ -83,7 +85,7 @@ export function SprintBoard({ sprintId }: { sprintId: string }) {
             }}
           >
             <h3>{STATUS_LABEL[col]}</h3>
-            {sprint.tickets
+            {issued
               .filter((t) => getTicketState(store, ticketKey(sprint.id, t.id)).status === col)
               // Starred tickets first; otherwise keep the sprint's order (sort is stable).
               .sort((a, b) => Number(!!getTicketState(store, ticketKey(sprint.id, b.id)).starred) - Number(!!getTicketState(store, ticketKey(sprint.id, a.id)).starred))

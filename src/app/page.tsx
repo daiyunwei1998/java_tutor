@@ -4,6 +4,7 @@ import Link from "next/link";
 import { currentSprint, SITE_NAME, sprints } from "@/content/registry";
 import type { Sprint } from "@/content/types";
 import { getTicketState, levelOf, ticketKey, useStore, xpOf } from "@/lib/progress";
+import { useIssuedTickets } from "@/lib/issued";
 import { sprintProgress } from "@/lib/ticket-status";
 import { xpByKey } from "@/components/AppShell";
 import { SprintProgressBar } from "@/components/SprintProgressBar";
@@ -51,8 +52,9 @@ export default function DashboardPage() {
 }
 
 function SprintCard({ sprint, store, highlight }: { sprint: Sprint; store: ReturnType<typeof useStore>; highlight?: boolean }) {
-  const prog = sprintProgress(store, sprint);
-  const next = sprint.tickets.find((t) => getTicketState(store, ticketKey(sprint.id, t.id)).status !== "merged");
+  const issued = useIssuedTickets(sprint);
+  const prog = sprintProgress(store, sprint, issued);
+  const next = issued.find((t) => getTicketState(store, ticketKey(sprint.id, t.id)).status !== "merged");
   const upcoming = sprint.status === "upcoming";
   return (
     <div className="card" style={highlight ? { borderColor: "var(--accent)" } : upcoming ? { opacity: 0.7 } : undefined}>

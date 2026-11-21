@@ -1,3 +1,5 @@
+import java.util.Arrays;
+
 public class Filters {
 
     /** Limits v to 0..255 */
@@ -26,13 +28,26 @@ public class Filters {
         return out;
     }
 
+    /** Adds delta to every pixel of img itself, clamped to 0..255 (no return value). */
+    public static void brightenInPlace(int[][] img, int delta) {
+        for (int[] row : img) {
+            // v in "for (int v : row)" is only a copy of the value, so changing it changes nothing.
+            // To change the array, write through an index.
+            for (int c = 0; c < row.length; c++) {
+                row[c] = clamp(row[c] + delta);
+            }
+        }
+    }
+
     public static void main(String[] args) {
         int[][] img = {
             {0, 100, 200},
             {50, 150, 250}
         };
         int[][] out = brighten(img, 30);
-        System.out.println("brightened: " + java.util.Arrays.deepToString(out));
-        System.out.println("original:   " + java.util.Arrays.deepToString(img) + "  (should still be [[0, 100, 200], [50, 150, 250]])");
+        System.out.println("brightened: " + Arrays.deepToString(out));
+        System.out.println("original:   " + Arrays.deepToString(img) + "  (should still be [[0, 100, 200], [50, 150, 250]])");
+        brightenInPlace(img, 10);
+        System.out.println("after in-place +10: " + Arrays.deepToString(img) + "  (should be [[10, 110, 210], [60, 160, 255]])");
     }
 }

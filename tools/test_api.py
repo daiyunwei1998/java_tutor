@@ -156,6 +156,22 @@ def test_notes():
     print("NOTES OK")
 
 
+def test_issued():
+    A = {"X-Admin-Password": "pw"}
+    assert client.get("/api/tickets/issued").json() == {"overrides": {}}
+    r = client.put("/api/admin/tickets/issued", json={"ticket": "2d-arrays/PF-205", "issued": True})
+    assert r.status_code == 401, r.text
+    r = client.put("/api/admin/tickets/issued", json={"ticket": "2d-arrays/PF-205", "issued": True}, headers=A)
+    assert r.json() == {"overrides": {"2d-arrays/PF-205": True}}, r.text
+    client.put("/api/admin/tickets/issued", json={"ticket": "2d-arrays/PF-205", "issued": False}, headers=A)
+    client.put("/api/admin/tickets/issued", json={"ticket": "2d-arrays/PF-101", "issued": False}, headers=A)
+    assert client.get("/api/tickets/issued").json()["overrides"] == {"2d-arrays/PF-205": False, "2d-arrays/PF-101": False}
+    r = client.put("/api/admin/tickets/issued", json={"ticket": "2d-arrays/PF-101", "issued": None}, headers=A)
+    assert r.json()["overrides"] == {"2d-arrays/PF-205": False}
+    assert client.put("/api/admin/tickets/issued", json={"ticket": "bad key", "issued": True}, headers=A).status_code == 422
+    print("issued ok")
+
+
 def test_live():
     import json
     assert client.post("/api/live/token").status_code == 401
@@ -174,3 +190,4 @@ if __name__ == "__main__":
     test_time_and_stars()
     test_notes()
     test_live()
+    test_issued()

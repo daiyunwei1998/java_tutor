@@ -345,45 +345,73 @@ public class BrightnessStatsTest {
 
 const pf103: Ticket = {
   id: "PF-103",
-  slug: "enhanced-for",
-  title: "Exposure fix: the enhanced for trap",
-  xp: 120,
+  slug: "brightness-filter-in-place",
+  title: "Ship the first filter: brightness and the enhanced for trap",
+  xp: 200,
   learningGoal: {
     level: "easy",
-    goal: "Avoid the enhanced-for trap: the loop variable is a copy, so writing to an array needs row[c] or an index loop.",
-    techniques: ["Nested enhanced for", "Value copy vs element write", "Changing an array in place", "Counting with a condition"],
+    goal: "Apply a pixel-wise operation with clamping, both into a new array and in place, and avoid the enhanced-for trap: the loop variable is a copy, so writing needs row[c].",
+    techniques: ["Pixel-wise map over every cell", "Clamping to 0-255", "New array vs changing in place", "Enhanced for: value copy vs element write"],
   },
-  briefing: `QA reported a bug: pressing "Exposure +10" doesn't change the image at all 🐛
+  briefing: `You made it through onboarding! 🚀 This is your first ticket that **ships in the product**.
 
-The previous engineer used an enhanced for loop to change the pixel values. In this ticket you'll figure out why that has no effect, then write a version that works.`,
+Mini Photoshop's brightness slider calls the \`Filters.brighten\` you write. Whatever your Java code computes is shown directly in the image editor.
+
+There is also a bug from QA: the "Exposure +10" button, which changes the image in place, does nothing at all 🐛 The previous engineer used an enhanced for loop. You'll find out why that has no effect and fix it.`,
   objectives: [
-    "Read enhanced for (for-each) syntax",
-    "Rewrite a nested enhanced for as an index loop, and back",
+    "See a grayscale image as an int[][] where each value is a brightness from 0 to 255",
+    "Implement a pixel-wise operation and clamp the result to 0–255",
+    "Return a new array without changing the original image",
     "Explain why changing the for-each variable doesn't change the array, but changing row[c] does",
   ],
   blocks: [
     {
       type: "markdown",
-      md: `## Enhanced for
+      md: `## Image = 2D array
+
+A grayscale image can be stored as \`int[][] image\`:
+
+- \`image.length\` is the **height** (number of rows), \`image[0].length\` is the **width** (number of columns).
+- \`image[r][c]\` is the pixel in row r, column c: **0 = black, 255 = white**.
+
+In the image preview (🖼 Try on an image, next to ▶ Run main), move the mouse over the image to see each pixel's \`(row, col)\` and brightness. Click to change its value.`,
+    },
+    { type: "viz-link", vizIndex: 0, label: "see how pixels map to the array, then brighten a real image" },
+    {
+      type: "predict",
+      id: "pf105-clamp",
+      question: "A pixel is 250 and brightness goes +20. What goes wrong if you store the result as is?",
+      options: ["Nothing, it is just 270", "It is outside the valid 0–255 range, so it displays wrong", "Java turns it into 255 automatically", "Compile error"],
+      answer: 1,
+      explain: "An `int` can hold 270, and Java won't limit it for you. But a pixel must be 0–255, so we **clamp** it ourselves: below 0 becomes 0, above 255 becomes 255.",
+    },
+    {
+      type: "markdown",
+      md: `## Clamp
 
 ~~~java
-int[] values = {1, 2, 3};
-for (int value : values) {
-    System.out.println(value);
+static int clamp(int v) {
+    if (v < 0) return 0;
+    if (v > 255) return 255;
+    return v;
 }
 ~~~
 
-In 2D, the outer loop gets **a reference to one row** each time (type \`int[]\`), and the inner loop gets **a copy of one int** each time.
+(You can also write \`Math.max(0, Math.min(255, v))\`.)
+
+## The enhanced for trap
+
+In 2D, an enhanced for gives the outer loop **a reference to one row** each time (type \`int[]\`), and the inner loop **a copy of one int** each time.
 
 ~~~java
-for (int[] row : matrix) {
+for (int[] row : img) {
     for (int value : row) {
         System.out.println(value);
     }
 }
 ~~~`,
     },
-    { type: "viz-link", vizIndex: 0, label: "Pick \"Enhanced for\" and watch what row and value refer to at each step" },
+    { type: "viz-link", vizIndex: 1, label: "Pick \"Enhanced for\" and watch what row and value refer to at each step" },
     {
       type: "predict",
       id: "pf103-bug",
@@ -402,112 +430,140 @@ System.out.println(img[0][0]);`,
     {
       type: "callout",
       tone: "info",
-      md: "Rule of thumb: for-each is for **reading**. When you need to **change** elements or need the index, use a regular index loop (at least for the inner loop: `for (int c = 0; c < row.length; c++) row[c] += 10;`).",
+      md: "Rule of thumb: for-each is for **reading**. When you need to **change** elements or need the index, use a regular index loop (at least for the inner loop: `for (int c = 0; c < row.length; c++) row[c] = ...;`).",
     },
     {
       type: "markdown",
       md: `## Your task
 
-In \`Exposure.java\`, implement:
+In \`Filters.java\`, implement:
 
-1. \`total(int[][] img)\`: use **enhanced for** to add up all pixels.
-2. \`addToAll(int[][] img, int delta)\`: add \`delta\` to every pixel, **changing the array that was passed in** (no return value).
-3. \`countAbove(int[][] img, int threshold)\`: count how many pixels are **greater than** threshold.
+1. \`clamp(int v)\`: limit v to 0–255.
+2. \`brighten(int[][] img, int delta)\`: return a **new** array of the same size where each pixel = \`clamp(img[r][c] + delta)\`. Do not change \`img\`.
+3. \`brightenInPlace(int[][] img, int delta)\`: fix the previous engineer's version so it **really changes the array that was passed in**, clamped to 0–255.
 
-All of them must handle jagged arrays.`,
+All of them must handle jagged arrays. Once the tests pass, press **🖼 Try on an image** next to ▶ Run main, then **Apply brighten with my Java**, and your code processes a real image!`,
+    },
+    {
+      type: "callout",
+      tone: "info",
+      md: "The label under the image tells you where the result came from: only **\"Computed by your Java code\"** means your `brighten` produced it. Mini Photoshop never secretly computes it in JavaScript.",
     },
   ],
-  visualizations: [{ type: "traversal", title: "Enhanced for", modes: ["enhanced-for", "row-major"], rows: 3, cols: 3 }],
+  visualizations: [
+    { type: "image-lab", title: "Mini Photoshop", filter: "brighten" },
+    { type: "traversal", title: "Enhanced for", modes: ["enhanced-for", "row-major"], rows: 3, cols: 3 },
+  ],
   task: {
-    instructions: "Implement `total`, `addToAll` and `countAbove`. `addToAll` must really change the array!",
-    mainClass: "Exposure",
-    testClass: "ExposureTest",
+    instructions: "Implement `clamp`, `brighten` (returns a new image) and fix `brightenInPlace` (changes the image), then process an image with your Java code.",
+    mainClass: "Filters",
+    testClass: "FiltersTest",
     files: [
       {
-        path: "Exposure.java",
+        path: "Filters.java",
         content: `import java.util.Arrays;
 
-public class Exposure {
+public class Filters {
 
-    /** Returns the sum of all pixels, using enhanced for */
-    public static int total(int[][] img) {
-        int sum = 0;
+    /** Limits v to 0..255 */
+    public static int clamp(int v) {
         // TODO
-        return sum;
+        return v;
     }
 
-    /** Adds delta to every pixel (changes img itself) */
-    public static void addToAll(int[][] img, int delta) {
+    /**
+     * Returns a new image: each pixel = clamp(original value + delta).
+     * Must not change img.
+     */
+    public static int[][] brighten(int[][] img, int delta) {
+        // TODO
+        return img;
+    }
+
+    /** Adds delta to every pixel of img itself, clamped to 0..255 (no return value). */
+    public static void brightenInPlace(int[][] img, int delta) {
         // Written by the previous engineer. It has a bug:
         for (int[] row : img) {
             for (int v : row) {
-                v += delta;
+                v = clamp(v + delta);
             }
         }
     }
 
-    /** How many pixels are > threshold */
-    public static int countAbove(int[][] img, int threshold) {
-        // TODO
-        return 0;
-    }
-
     public static void main(String[] args) {
-        int[][] img = {{10, 20, 30}, {40, 50, 60}};
-        System.out.println("total = " + total(img));
-        addToAll(img, 10);
-        System.out.println("after +10: " + Arrays.deepToString(img));
-        System.out.println("above 45: " + countAbove(img, 45));
+        int[][] img = {
+            {0, 100, 200},
+            {50, 150, 250}
+        };
+        int[][] out = brighten(img, 30);
+        System.out.println("brightened: " + Arrays.deepToString(out));
+        System.out.println("original:   " + Arrays.deepToString(img) + "  (should still be [[0, 100, 200], [50, 150, 250]])");
+        brightenInPlace(img, 10);
+        System.out.println("after in-place +10: " + Arrays.deepToString(img) + "  (should be [[10, 110, 210], [60, 160, 255]])");
     }
 }
 `,
       },
       {
-        path: "ExposureTest.java",
+        path: "FiltersTest.java",
         readOnly: true,
         content: `import tutor.Check;
 
-public class ExposureTest {
+public class FiltersTest {
 
-    static void test1_total() {
-        Check.equal(210, Exposure.total(new int[][]{{10, 20, 30}, {40, 50, 60}}), "total 2x3");
+    static void test1_clamp() {
+        Check.equal(0, Filters.clamp(-20), "clamp(-20)");
+        Check.equal(128, Filters.clamp(128), "clamp(128)");
+        Check.equal(255, Filters.clamp(300), "clamp(300)");
     }
 
-    static void test2_totalJagged() {
-        Check.equal(15, Exposure.total(new int[][]{{1, 2, 3}, {4}, {5}}), "total jagged");
+    static void test2_brightenBasic() {
+        int[][] out = Filters.brighten(new int[][]{{0, 100}, {50, 150}}, 30);
+        Check.equal(new int[][]{{30, 130}, {80, 180}}, out, "brighten +30");
     }
 
-    static void test3_addToAllModifiesArray() {
+    static void test3_brightenClamps() {
+        Check.equal(new int[][]{{255, 255, 255}}, Filters.brighten(new int[][]{{250, 255, 240}}, 20), "above 255 must clamp");
+        Check.equal(new int[][]{{0}, {0, 150}}, Filters.brighten(new int[][]{{10}, {0, 200}}, -50), "below 0 must clamp (negative delta, jagged)");
+    }
+
+    static void test4_doesNotModifyInput() {
+        int[][] img = {{1, 2}, {3, 4}};
+        int[][] out = Filters.brighten(img, 10);
+        Check.notSame(img, out, "brighten returned img itself (the same array object it received). Create a NEW array with new int[...] and write the results there, so the original picture is kept");
+        Check.notSame(img[0], out[0], "out[0] is the same row object as img[0]. Create every row with new int[img[r].length]");
+        Check.equal(new int[][]{{1, 2}, {3, 4}}, img, "the original image changed. brighten may only read img and must write into the new array");
+    }
+
+    static void test5_inPlaceChangesArray() {
         int[][] img = {{10, 20}, {30, 40}};
-        Exposure.addToAll(img, 10);
-        Check.equal(new int[][]{{20, 30}, {40, 50}}, img, "array after addToAll");
+        Filters.brightenInPlace(img, 10);
+        Check.equal(new int[][]{{20, 30}, {40, 50}}, img, "array after brightenInPlace(+10). Changing the for-each variable v does not change the array: write row[c]");
     }
 
-    static void test4_addToAllNegativeJagged() {
-        int[][] img = {{5}, {6, 7}};
-        Exposure.addToAll(img, -5);
-        Check.equal(new int[][]{{0}, {1, 2}}, img, "addToAll(-5) jagged");
-    }
-
-    static void test5_countAbove() {
-        int[][] img = {{10, 50}, {45, 46}, {100}};
-        Check.equal(3, Exposure.countAbove(img, 45), "countAbove 45 (exactly 45 does not count)");
+    static void test6_inPlaceClampsJagged() {
+        int[][] img = {{5}, {250, 7}};
+        Filters.brightenInPlace(img, -10);
+        Check.equal(new int[][]{{0}, {240, 0}}, img, "brightenInPlace(-10) on a jagged array, clamped at 0");
+        Filters.brightenInPlace(img, 20);
+        Check.equal(new int[][]{{20}, {255, 20}}, img, "brightenInPlace(+20), clamped at 255");
     }
 }
 `,
       },
     ],
     testLabels: {
-      test1_total: "total (2×3)",
-      test2_totalJagged: "total (jagged)",
-      test3_addToAllModifiesArray: "addToAll really changes the array",
-      test4_addToAllNegativeJagged: "addToAll with a negative delta + jagged",
-      test5_countAbove: "countAbove (strictly greater)",
+      test1_clamp: "clamp at the edges",
+      test2_brightenBasic: "brighten, basic case",
+      test3_brightenClamps: "brighten clamps above 255 and below 0",
+      test4_doesNotModifyInput: "brighten keeps the original image",
+      test5_inPlaceChangesArray: "brightenInPlace really changes the array",
+      test6_inPlaceClampsJagged: "brightenInPlace clamps, jagged rows",
     },
     hints: [
-      "`total` can use two for-each loops: `for (int[] row : img) for (int v : row) sum += v;`",
-      "The `addToAll` bug: `v` is just a copy. Getting `row` with a for-each is fine, but the inner loop needs an index: `row[c] += delta`.",
-      "`countAbove` uses `>`, not `>=`.",
+      "Write `clamp` first, then call it for every pixel in `brighten` and `brightenInPlace`.",
+      "New array: `int[][] out = new int[img.length][];`, then for each row `out[r] = new int[img[r].length];` (this handles jagged arrays too).",
+      "The `brightenInPlace` bug: `v` is just a copy. Getting `row` with a for-each is fine, but the inner loop needs an index: `row[c] = clamp(row[c] + delta);`",
     ],
   },
 };
@@ -681,6 +737,7 @@ public class MatrixToolsTest {
 
 const pf105: Ticket = {
   id: "PF-105",
+  issuedByDefault: false,
   slug: "brightness-filter",
   title: "Ship the first filter: brightness",
   xp: 200,

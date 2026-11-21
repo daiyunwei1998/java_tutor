@@ -70,6 +70,11 @@ export type Ticket = {
   xp: number;
   /** Teacher-only: what this ticket is designed to teach. Shown in /admin, never in the student UI. */
   learningGoal: LearningGoal;
+  /**
+   * Whether students see this ticket before the teacher changes it on /admin/tickets (default true).
+   * false keeps a ticket in the content but hidden, e.g. a duplicate or an optional extra.
+   */
+  issuedByDefault?: boolean;
   /** Message from the tech lead that frames the task as real work. */
   briefing: string;
   objectives: string[];
