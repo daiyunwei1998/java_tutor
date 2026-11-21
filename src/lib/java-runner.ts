@@ -17,7 +17,10 @@ export type RunnerState = "idle" | "loading" | "ready" | "busy" | "error";
 
 type RunRequest = {
   files: { path: string; content: string }[];
-  mode: "run" | "test";
+  mode: "run" | "test" | "debug";
+  /** Debug mode: "fileIndex:line,..." where recording starts; empty = from the first line of main. */
+  breakpoints?: string;
+  maxSteps?: number;
   mainClass?: string;
   testClass?: string;
   dataFiles?: { name: string; content: string }[];
@@ -146,6 +149,19 @@ export function warmUp(): Promise<void> {
     readyPromise = null;
   });
   return readyPromise;
+}
+
+/** What the step recorder (tutor.T) sends back; see src/lib/debugger.ts. */
+export type DebugRunResult = Omit<RunResult, "status"> & {
+  status: RunResult["status"] | "unsupported";
+  reached?: boolean;
+  stepLimit?: boolean;
+  steps?: unknown[];
+};
+
+export async function debugJava(req: Omit<RunRequest, "mode" | "testClass">): Promise<DebugRunResult> {
+  // Recording snapshots makes the program slower, so it gets more time than a normal run.
+  return (await runJava({ ...req, mode: "debug", timeoutMs: req.timeoutMs ?? 20_000 })) as DebugRunResult;
 }
 
 export async function runJava(req: RunRequest): Promise<RunResult> {

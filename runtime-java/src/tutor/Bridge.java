@@ -96,6 +96,76 @@ public final class Bridge {
     }
 
     /**
+     * Step-through debugger, part 1: writes an instrumented copy of each source file (see {@link Instrument})
+     * from srcDir to dstDir. Files keep their index in the list so the debugger can tell them apart.
+     */
+    public static boolean instrument(String srcDir, String dstDir, String files, boolean addInits, String breakpoints) {
+        try {
+            String[] list = files.trim().split("\\s+");
+            // breakpoints: one per line, "fileIndex:line" or "fileIndex:line:condition"
+            java.util.Map<Integer, java.util.Map<Integer, String>> bps = new java.util.HashMap<>();
+            for (String b : (breakpoints == null ? "" : breakpoints).split("\n")) {
+                String[] p = b.split(":", 3);
+                if (p.length < 2) continue;
+                try {
+                    bps.computeIfAbsent(Integer.parseInt(p[0].trim()), k -> new java.util.HashMap<>())
+                            .put(Integer.parseInt(p[1].trim()), p.length > 2 ? p[2].trim() : "");
+                } catch (NumberFormatException e) {
+                    // ignore malformed entries
+                }
+            }
+            for (int i = 0; i < list.length; i++) {
+                if (list[i].isEmpty()) continue;
+                String text = new String(java.nio.file.Files.readAllBytes(new File(srcDir + list[i]).toPath()), java.nio.charset.StandardCharsets.UTF_8);
+                java.util.Map<Integer, String> mine = bps.getOrDefault(i, java.util.Collections.emptyMap());
+                if (!writeFile(dstDir + list[i], Instrument.rewrite(text, i, addInits, mine))) return false;
+            }
+            return true;
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
+    /**
+     * Step-through debugger, part 2: runs the instrumented main and records snapshots from the first time one
+     * of the breakpoints is about to run (fromStart: record from the first line of main).
+     */
+    public static String trace(String classDir, String mainClass, boolean fromStart, int maxSteps) {
+        Capture cap = Capture.start();
+        String status = "completed";
+        boolean limit = false;
+        try {
+            URLClassLoader loader = new URLClassLoader(new URL[] {new File(classDir).toURI().toURL()}, Bridge.class.getClassLoader());
+            T.reset(fromStart, maxSteps, loader, cap.outBuf);
+            Class<?> c = Class.forName(mainClass, true, loader);
+            Method m = c.getMethod("main", String[].class);
+            m.invoke(null, (Object) new String[0]);
+            T.finish();
+        } catch (InvocationTargetException e) {
+            if (e.getCause() instanceof T.StepLimit) {
+                limit = true;
+            } else {
+                status = "runtime_error";
+                cap.err.print(userStackTrace(e.getCause()));
+            }
+        } catch (NoSuchMethodException e) {
+            status = "runtime_error";
+            cap.err.print("Cannot find public static void main(String[] args) in " + mainClass);
+        } catch (Throwable t) {
+            if (t instanceof T.StepLimit) limit = true;
+            else {
+                status = "runtime_error";
+                cap.err.print(userStackTrace(t));
+            }
+        } finally {
+            cap.stop();
+        }
+        return "{\"status\":" + Json.str(status) + ",\"stdout\":" + Json.str(cap.stdout())
+                + ",\"stderr\":" + Json.str(cap.stderr()) + ",\"reached\":" + T.reached()
+                + ",\"stepLimit\":" + limit + ",\"steps\":" + T.json() + "}";
+    }
+
+    /**
      * Runs every public static no-arg method whose name starts with "test" in testClass.
      * Each test is isolated: an exception in one test does not stop the others.
      */
@@ -252,6 +322,8 @@ public final class Bridge {
             case "compile": real.println(compile(args[1], args[2], args[3], args.length > 4 ? args[4] : "", args.length > 5 ? args[5] : "")); break;
             case "run": real.println(run(args[1], args[2])); break;
             case "test": real.println(runTests(args[1], args[2])); break;
+            case "instrument": real.println(instrument(args[1], args[2], args[3], true, args.length > 4 ? args[4].replace(";", "\n") : "")); break;
+            case "trace": real.println(trace(args[1], args[2], args.length <= 3 || Boolean.parseBoolean(args[3]), 1000)); break;
             default: real.println("usage: compile|run|test");
         }
     }

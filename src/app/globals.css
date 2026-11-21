@@ -480,3 +480,34 @@ div.code-panel > .code-top .editor-wrap { min-height: 220px; }
 .live-dot.off { background: var(--muted); box-shadow: none; animation: none; }
 @keyframes live-pulse { 50% { box-shadow: 0 0 0 6px rgba(47, 158, 68, 0.05); } }
 @media (max-width: 900px) { .live-banner-sub { display: none; } }
+
+/* step-through debugger (CodePanel 🐞 Debug) */
+.cm-bp-gutter { width: 18px; cursor: pointer; }
+.cm-bp-gutter .cm-gutterElement { position: relative; display: flex; align-items: center; justify-content: center; }
+.cm-bp-gutter .cm-gutterElement:hover::after { content: ""; width: 9px; height: 9px; border-radius: 50%; background: color-mix(in srgb, var(--bad) 35%, transparent); position: absolute; }
+.cm-bp-dot { display: inline-block; width: 11px; height: 11px; border-radius: 50%; background: var(--bad); box-shadow: 0 0 0 1px color-mix(in srgb, var(--bad) 60%, black); }
+.cm-bp-here { position: absolute; color: var(--hl); font-size: 12px; font-weight: 700; text-shadow: 0 0 2px var(--code-bg); }
+.cm-bp-dot.cond { background: var(--hl); box-shadow: 0 0 0 1px color-mix(in srgb, var(--hl) 60%, black); border-radius: 3px; }
+.cm-lineNumbers .cm-gutterElement { cursor: pointer; }
+.bp-bar { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 5px 10px; border-top: 1px solid var(--border); background: var(--surface-2); }
+.bp-chip { display: inline-flex; align-items: center; gap: 4px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); padding: 1px 4px 1px 2px; font-size: 13px; }
+.bp-chip.cond { border-color: var(--hl); }
+.bp-chip .cm-bp-dot { width: 9px; height: 9px; vertical-align: -1px; }
+.bp-go, .bp-x { background: none; border: none; font: inherit; color: var(--text); cursor: pointer; padding: 2px 6px; border-radius: 999px; font-family: var(--mono); }
+.bp-x { color: var(--muted); padding: 2px 5px; }
+.bp-go:hover, .bp-x:hover { background: var(--surface-2); }
+.bp-cond { display: inline-flex; align-items: center; gap: 4px; color: var(--muted); font-size: 12px; }
+.bp-cond input { width: 160px; font-variant-ligatures: none; font-family: var(--mono); font-size: 12.5px; padding: 1px 6px; height: 22px; border-radius: 6px; }
+.editor-wrap .cm-debug-now { background-color: color-mix(in srgb, var(--hl) 24%, transparent) !important; box-shadow: inset 3px 0 0 var(--hl); }
+.editor-wrap .cm-debug-was { background-color: color-mix(in srgb, var(--accent) 7%, transparent) !important; }
+.debug-output { padding-bottom: 0; }
+.debug-panel { display: flex; flex-direction: column; gap: 0; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); margin-bottom: 10px; }
+.debug-panel:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.debug-panel > .callout, .debug-panel > .console { margin: 10px 12px; }
+.debug-head { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--border); }
+.debug-bar { display: flex; align-items: center; gap: 6px; padding: 8px 10px; border-bottom: 1px solid var(--border); flex-wrap: wrap; position: sticky; top: -10px; z-index: 2; background: var(--surface); border-radius: 10px 10px 0 0; }
+.debug-bar .trace-range { min-width: 90px; }
+.debug-stale { margin: 8px 10px 0 !important; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.debug-note { border-top: none; border-bottom: 1px solid var(--border); padding: 8px 12px 10px; }
+.debug-panel .trace-mem { min-height: 140px; }
+.debug-out { margin: 0 12px 12px; max-height: 180px; overflow: auto; }

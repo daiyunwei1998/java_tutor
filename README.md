@@ -21,7 +21,7 @@ Each sprint has its own mini project and story (Sprint 1: the Mini Photoshop at 
   [Ably](https://ably.com) (free tier) because Vercel functions cannot keep WebSockets open; set `ABLY_API_KEY`.
   Locally without a key, two tabs of the same browser are linked instead (one student tab, one `/admin` tab).
 - Spec review and recommendations: [docs/spec-review.md](docs/spec-review.md)
-- Tests: `node --experimental-strip-types tools/verify-content.mjs` (needs a JDK) and `python tools/test_api.py`
+- Tests: `node --experimental-strip-types tools/verify-content.mjs` and `tools/verify-debugger.mjs` (both need a JDK) and `python tools/test_api.py`
 
 ## Deployment (Vercel)
 - One Vercel project serves both the Next.js frontend and FastAPI (`api/index.py` is a Vercel Python function;
@@ -66,7 +66,7 @@ public/java-runner.html  Runs CheerpJ in a hidden iframe; rebuilds the iframe on
 public/java/             ecj.jar (Eclipse Java compiler), tutor-runtime.jar (compile/run/test bridge)
 api/index.py             FastAPI: AI, login, progress sync, admin (usage / accounts), /api/health
 api/_core/               Settings, AI usage log, accounts/progress (Postgres or SQLite), AI mentor prompts
-runtime-java/            Source of tutor-runtime.jar (Bridge, Check assertions, Img image I/O)
+runtime-java/            Source of tutor-runtime.jar (Bridge, Check assertions, Img image I/O, Instrument + T for the debugger)
 tools/                   Content verification, API smoke test, reference solutions
 ```
 
@@ -103,3 +103,18 @@ Every request (including failures) is logged and visible to the teacher at `/adm
 - CheerpJ downloads the JVM on first load (cached afterwards) and needs access to `cjrtnc.leaningtech.com`.
 - The free CheerpJ license has conditions; check the license before using it for paid tutoring.
 - `tools/solutions/` contains reference solutions. If the repo is public, students can see them; make the repo private if needed.
+
+## Step-through debugger
+
+In a ticket, **🐞 Debug** runs `main` one statement at a time and shows the call stack, variables, arrays and
+objects with reference arrows (the same memory view as the Knowledge Space traces). Students click left of a line
+number (or the number itself) to set a breakpoint; the chips above the toolbar take an optional Java condition such
+as `row == 7`, so it pauses there only when that is true.
+
+How it works: the in-browser JVM has no debugger interface, so the runner compiles an *instrumented copy* of the
+code. `tutor.Instrument` (using ecj's parser) inserts `tutor.T.at(file, line, names, values)` before every statement
+and loop check, and wraps method bodies in `T.enter(..) / T.exit()`; only same-line text is inserted, so line
+numbers stay correct. `tutor.T` records a snapshot per step from the first breakpoint hit (max 1000 steps; long
+arrays and lists show the first 24 items). `src/lib/debugger.ts` turns the snapshots into trace steps and notes;
+everything is recorded up front, so stepping backwards works. Rebuild the jar with `runtime-java/build.sh` after
+changing the Java side and check every ticket with `tools/verify-debugger.mjs`.

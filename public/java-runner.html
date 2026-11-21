@@ -50,6 +50,7 @@
     if (!compiled.ok) {
       return { status: "compile_error", stdout: "", stderr: compiled.diagnostics, compileMs };
     }
+    if (req.mode === "debug") return debug(Bridge, req, dir, names, compileMs);
     // Execution time limit starts now (compiling can be slow the first time, so it is not counted).
     post({ type: "running", id: req.id });
     const t1 = performance.now();
@@ -57,6 +58,45 @@
       ? JSON.parse(await Bridge.runTests(out, req.testClass))
       : JSON.parse(await Bridge.run(out, req.mainClass));
     return { ...result, compileMs, runMs: Math.round(performance.now() - t1), warnings: compiled.diagnostics };
+  }
+
+  // Step-through debugger: the code compiled fine, so compile an instrumented copy that records every step
+  // (tutor.Instrument / tutor.T in tutor-runtime.jar) and run it.
+  async function debug(Bridge, req, dir, names, compileMs) {
+    const idir = `/files/dbg${req.id}/`;
+    // req.breakpoints: one per line, "fileIndex:line" or "fileIndex:line:condition" (empty = from the start)
+    const bps = req.breakpoints || "";
+    const tryCompile = async (spec, addInits, tag) => {
+      const out = `/files/dbgout${req.id}${tag}/`;
+      if (!(await Bridge.instrument(dir, idir, names.join(" "), addInits, spec))) return { ok: false, diagnostics: "" };
+      const c = JSON.parse(await Bridge.compile(idir, out, names.join(" "), "/app/java/tutor-runtime.jar", "/app/java/jdk-api.jar"));
+      return { ...c, out };
+    };
+    // First try with default values for variables declared without one (so they show up right away); if that
+    // breaks compilation (rare, e.g. lambdas), fall back to leaving such variables out.
+    let compiled = null;
+    let firstError = "";
+    for (const addInits of [true, false]) {
+      const c = await tryCompile(bps, addInits, addInits ? "a" : "b");
+      if (c.ok) { compiled = c.out; break; }
+      firstError ||= c.diagnostics;
+    }
+    if (!compiled) {
+      const hasCond = bps.split("\n").some((b) => b.split(":").length > 2 && b.split(":").slice(2).join(":").trim());
+      if (hasCond) {
+        const plain = bps.split("\n").map((b) => b.split(":").slice(0, 2).join(":")).join("\n");
+        const c = await tryCompile(plain, true, "c");
+        if (c.ok) {
+          const m = firstError.match(/\n\t[^\n]*\^+\n([^\n]+)/);
+          return { status: "unsupported", stdout: "", stderr: "A breakpoint condition is not valid Java here" + (m ? ": " + m[1].trim() : ".") + "\nFix or remove the condition and press Debug again.", compileMs, steps: [] };
+        }
+      }
+      return { status: "unsupported", stdout: "", stderr: "The debugger cannot follow this code yet (it uses something the step recorder does not support). Run it normally instead.", compileMs, steps: [] };
+    }
+    post({ type: "running", id: req.id });
+    const t1 = performance.now();
+    const result = JSON.parse(await Bridge.trace(compiled, req.mainClass, bps.trim() === "", req.maxSteps || 1000));
+    return { ...result, compileMs, runMs: Math.round(performance.now() - t1) };
   }
 
   let queue = Promise.resolve();
