@@ -94,6 +94,10 @@ def test_accounts():
     assert t["rev"] == 4 and t["data"]["tickets"]["a/PF-102"] == {"status": "in_progress", "attempts": 3, "files": {"A.java": "code"}}, t
     r = client.put(url, headers=h, json={"ticket": "a/PF-103", "status": "merged"}).json()
     assert r["tickets"]["a/PF-103"]["status"] == "merged" and r["tickets"]["a/PF-103"]["mergedAt"], r
+    d = client.get("/api/admin/accounts/test/ticket?key=a/PF-102", headers=h).json()
+    assert d["state"]["files"] == {"A.java": "code"} and d["time"] is None, d
+    assert client.get("/api/admin/accounts/test/ticket?key=a/PF-102").status_code == 401
+    assert client.get("/api/admin/accounts/test/ticket?key=a/none", headers=h).json()["state"] is None
     client.post("/api/admin/accounts/test/reset", headers=h)
     print("ACCOUNTS OK")
 
