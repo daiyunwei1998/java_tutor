@@ -196,3 +196,14 @@ def list_time() -> list[dict]:
         ).fetchall()
     return [{"username": r["username"], "ticket": r["ticket_key"], "active_ms": int(r["active_ms"]),
              "first_at": r["first_at"], "last_at": r["last_at"]} for r in rows]
+
+
+def detail(username: str) -> dict:
+    """One account's progress per ticket, without the code (for the admin account page)."""
+    p = get_progress(username)
+    tickets = {}
+    for key, t in (p["data"].get("tickets") or {}).items():
+        if not isinstance(t, dict):
+            continue
+        tickets[key] = {k: t.get(k) for k in ("status", "attempts", "lastTest", "hintsShown", "mergedAt")}
+    return {"username": username, "updated_at": p["updated_at"], "tickets": tickets}

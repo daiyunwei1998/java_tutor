@@ -21,7 +21,7 @@ from pathlib import Path
 # Vercel runs this file as a standalone Python function; make the sibling _core package importable.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from _core import accounts, usage  # noqa: E402
+from _core import accounts, notes, usage  # noqa: E402
 from _core.config import settings  # noqa: E402
 from _core.prompts import DEBUG_INSTRUCTIONS, MENTOR_BASE, number_lines  # noqa: E402
 
@@ -29,12 +29,13 @@ app = FastAPI(title="Java Tutor API", version="0.1.0")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
-    allow_methods=["GET", "POST", "PUT"],
+    allow_methods=["GET", "POST", "PUT", "DELETE"],
     allow_headers=["*"],
 )
 usage.init(settings.database_url, settings.db_path)
 accounts.init(os.getenv("AUTH_SECRET") or settings.admin_password or settings.database_url or "local-dev",
               [a.strip().lower() for a in os.getenv("SEED_ACCOUNTS", "stu,test").split(",") if a.strip()])
+notes.init()
 
 MAX_CODE_CHARS = 12_000
 MAX_MESSAGE_CHARS = 2_000
@@ -306,6 +307,14 @@ def admin_time(x_admin_password: str | None = Header(default=None)):
     return {"time": accounts.list_time()}
 
 
+@app.get("/api/admin/accounts/{username}")
+def admin_account_detail(username: str, x_admin_password: str | None = Header(default=None)):
+    _require_admin(x_admin_password)
+    if not accounts.exists(username):
+        raise HTTPException(404, "No such account.")
+    return accounts.detail(username)
+
+
 @app.post("/api/admin/accounts/{username}/reset")
 def admin_reset(username: str, x_admin_password: str | None = Header(default=None)):
     _require_admin(x_admin_password)
@@ -337,3 +346,76 @@ def admin_usage(x_admin_password: str | None = Header(default=None), days: int =
         "database": usage.backend_name(),
     }
     return data
+
+
+# ---------- teacher notes ----------
+
+class NoteCreate(BaseModel):
+    username: str | None = Field(default=None, max_length=40)
+    body: str = Field(min_length=1, max_length=10_000)
+    tickets: list[str] = Field(default_factory=list, max_length=50)
+
+
+class NoteUpdate(BaseModel):
+    """Only the fields that are sent change. Send username null to make it a general note."""
+    username: str | None = Field(default=None, max_length=40)
+    body: str | None = Field(default=None, min_length=1, max_length=10_000)
+    tickets: list[str] | None = Field(default=None, max_length=50)
+    done: bool | None = None
+
+
+def _note_account(username: str | None) -> str | None:
+    username = (username or "").strip().lower() or None
+    if username and not accounts.exists(username):
+        raise HTTPException(400, "No such account.")
+    return username
+
+
+def _check_tickets(tickets: list[str]) -> list[str]:
+    if any(len(t) > 80 for t in tickets):
+        raise HTTPException(400, "Ticket key too long.")
+    return tickets
+
+
+@app.get("/api/admin/notes")
+def admin_notes(username: str | None = None, x_admin_password: str | None = Header(default=None)):
+    _require_admin(x_admin_password)
+    return {"notes": notes.list_notes(username.strip().lower() if username else None)}
+
+
+@app.post("/api/admin/notes")
+def admin_note_create(req: NoteCreate, x_admin_password: str | None = Header(default=None)):
+    _require_admin(x_admin_password)
+    body = req.body.strip()
+    if not body:
+        raise HTTPException(400, "The note is empty.")
+    return notes.create(_note_account(req.username), body, _check_tickets(req.tickets))
+
+
+@app.put("/api/admin/notes/{note_id}")
+def admin_note_update(note_id: str, req: NoteUpdate, x_admin_password: str | None = Header(default=None)):
+    _require_admin(x_admin_password)
+    changes: dict = {}
+    sent = req.model_fields_set
+    if "username" in sent:
+        changes["username"] = _note_account(req.username)
+    if "body" in sent and req.body is not None:
+        if not req.body.strip():
+            raise HTTPException(400, "The note is empty.")
+        changes["body"] = req.body.strip()
+    if "tickets" in sent and req.tickets is not None:
+        changes["tickets"] = _check_tickets(req.tickets)
+    if "done" in sent and req.done is not None:
+        changes["done"] = req.done
+    note = notes.update(note_id, **changes)
+    if not note:
+        raise HTTPException(404, "No such note.")
+    return note
+
+
+@app.delete("/api/admin/notes/{note_id}")
+def admin_note_delete(note_id: str, x_admin_password: str | None = Header(default=None)):
+    _require_admin(x_admin_password)
+    if not notes.delete(note_id):
+        raise HTTPException(404, "No such note.")
+    return {"ok": True}

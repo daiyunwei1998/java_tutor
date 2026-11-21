@@ -444,3 +444,18 @@ div.code-panel > .code-top .editor-wrap { min-height: 220px; }
 .notes-panel .note-text { flex: 1; margin: 8px 12px 0; resize: none; font-size: 15px; line-height: 1.55; }
 .notes-panel.full .note-text { font-size: 17px; padding: 16px 20px; }
 .note-card .note-text { width: 100%; min-height: 120px; margin-top: 8px; line-height: 1.5; field-sizing: content; max-height: 60vh; }
+/* ---------- teacher notes (admin) ---------- */
+.note-editor { display: flex; flex-direction: column; gap: 10px; }
+.note-editor textarea { width: 100%; min-height: 72px; }
+.note-tickets { border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; margin: 0; display: flex; flex-direction: column; gap: 6px; }
+.note-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.note-chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border: 1px solid var(--border); border-radius: 999px; font-size: 13px; cursor: pointer; max-width: 260px; }
+.note-chip.on { background: var(--accent-soft); border-color: var(--accent); }
+.note-chip strong { white-space: nowrap; flex: none; }
+.note-chip input { flex: none; margin: 0; }
+.note-chip-title { color: var(--muted); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.note-list { list-style: none; padding: 0; margin: 12px 0 0; display: flex; flex-direction: column; gap: 10px; }
+.note-item { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; }
+.note-item.done .note-body { color: var(--muted); text-decoration: line-through; }
+.note-body { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.5; }
+.note-item a.pill:hover { text-decoration: none; filter: brightness(0.97); }
