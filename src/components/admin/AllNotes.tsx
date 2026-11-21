@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { AdminError, adminFetch, allTickets, type Note, ticketRef } from "@/lib/admin";
 import { AdminLoginNeeded, NotesPanel } from "./Notes";
@@ -50,8 +49,7 @@ export function AllNotes() {
 
   return (
     <div className="page" style={{ maxWidth: 1000 }}>
-      <Link href="/admin" className="small">← Teacher admin</Link>
-      <h1 style={{ marginTop: 6 }}>📝 Teacher notes</h1>
+      <h1>📝 Teacher notes</h1>
       <p className="muted small" style={{ marginTop: 0 }}>
         Only you see these. Notes about a student also show on that student&apos;s page. General notes are for things like what to do next class.
       </p>

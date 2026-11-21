@@ -3,16 +3,35 @@
 import { sprints } from "@/content/registry";
 import { ticketKey } from "./progress";
 
-/** The admin password lives in sessionStorage after logging in on /admin. */
+/**
+ * The admin password is kept in localStorage after logging in on any /admin page, so every admin page
+ * and every new tab shares one login. (It used to be sessionStorage, which a new tab does not see.)
+ */
 export const ADMIN_KEY = "jt.admin";
 
 export function adminPassword(): string | null {
   try {
-    return sessionStorage.getItem(ADMIN_KEY);
+    const pw = localStorage.getItem(ADMIN_KEY) ?? sessionStorage.getItem(ADMIN_KEY);
+    if (pw) localStorage.setItem(ADMIN_KEY, pw);
+    return pw;
   } catch {
     return null;
   }
 }
+
+export function setAdminPassword(pw: string | null) {
+  try {
+    if (pw) localStorage.setItem(ADMIN_KEY, pw);
+    else localStorage.removeItem(ADMIN_KEY);
+    sessionStorage.removeItem(ADMIN_KEY);
+  } catch {
+    /* storage blocked: the login just won't persist */
+  }
+  window.dispatchEvent(new Event(ADMIN_EVENT));
+}
+
+/** Fired on this tab whenever the admin login changes, so the admin layout can show the login form again. */
+export const ADMIN_EVENT = "jt-admin-auth";
 
 export class AdminError extends Error {
   constructor(message: string, readonly status: number) {
@@ -31,7 +50,7 @@ export async function adminFetch<T>(path: string, init: { method?: string; body?
   const body = await res.json().catch(() => null);
   if (!res.ok) {
     const detail = typeof body?.detail === "string" ? body.detail : `Error ${res.status}`;
-    if (res.status === 401) sessionStorage.removeItem(ADMIN_KEY);
+    if (res.status === 401) setAdminPassword(null);
     throw new AdminError(detail, res.status);
   }
   return body as T;
