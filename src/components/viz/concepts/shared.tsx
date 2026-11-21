@@ -75,7 +75,7 @@ export type CellMark = "center" | "window" | "src" | "dst" | "done" | "ghost" | 
 
 /** A small 2D array drawn as numbered cells. Cells can be shaded by their value (like pixels) and marked. */
 export function NumGrid({
-  values, marks, shade = true, onCell, rowLabels = true, caption, ghostRing = false, cell = 34,
+  values, marks, shade = true, onCell, rowLabels = true, caption, ghostRing = false, cell = 34, cellStyle,
 }: {
   values: (number | null)[][];
   marks?: (r: number, c: number) => CellMark | undefined;
@@ -86,6 +86,8 @@ export function NumGrid({
   /** Draws one ring of non-existent cells around the array (r or c = -1 / length), for bounds-check pictures. */
   ghostRing?: boolean;
   cell?: number;
+  /** Extra per-cell style, e.g. to color live cells (used when shade is false). */
+  cellStyle?: (r: number, c: number, v: number | null) => React.CSSProperties | undefined;
 }) {
   const rows = values.length, cols = values[0]?.length ?? 0;
   const r0 = ghostRing ? -1 : 0, r1 = ghostRing ? rows : rows - 1;
@@ -103,16 +105,17 @@ export function NumGrid({
         {rowLabels && <span />}
         {rowLabels && cc.map((c) => <span key={`h${c}`} className={css.head}>{c >= 0 && c < cols ? c : ""}</span>)}
         {rr.map((r) => (
-          <Row key={r} r={r} cc={cc} rows={rows} cols={cols} values={values} marks={marks} shade={shade} onCell={onCell} rowLabels={rowLabels} />
+          <Row key={r} r={r} cc={cc} rows={rows} cols={cols} values={values} marks={marks} shade={shade} onCell={onCell} rowLabels={rowLabels} cellStyle={cellStyle} />
         ))}
       </div>
     </figure>
   );
 }
 
-function Row({ r, cc, rows, cols, values, marks, shade, onCell, rowLabels }: {
+function Row({ r, cc, rows, cols, values, marks, shade, onCell, rowLabels, cellStyle }: {
   r: number; cc: number[]; rows: number; cols: number; values: (number | null)[][];
   marks?: (r: number, c: number) => CellMark | undefined; shade: boolean; onCell?: (r: number, c: number) => void; rowLabels: boolean;
+  cellStyle?: (r: number, c: number, v: number | null) => React.CSSProperties | undefined;
 }) {
   return (
     <>
@@ -124,7 +127,7 @@ function Row({ r, cc, rows, cols, values, marks, shade, onCell, rowLabels }: {
           return <span key={c} className={`${css.cell} ${m === "ghost" ? css.ghost : css.void}`}>{m === "ghost" ? "✕" : ""}</span>;
         }
         const v = values[r][c];
-        const style = shade && v !== null ? { background: `rgb(${v},${v},${v})`, color: v > 140 ? "#1c1e21" : "#f4f1ea" } : undefined;
+        const style = shade && v !== null ? { background: `rgb(${v},${v},${v})`, color: v > 140 ? "#1c1e21" : "#f4f1ea" } : cellStyle?.(r, c, v);
         return (
           <button
             key={c}

@@ -11,7 +11,7 @@ export type VizConfig =
   | { type: "matrix-algo"; title?: string; algorithms: MatrixAlgorithmId[] }
   | { type: "image-lab"; title?: string; filter: ImageFilterId }
   | { type: "filter-lab"; title?: string; filter: FilterLabId }
-  | { type: "concept"; title?: string; concept: ConceptId };
+  | { type: "concept"; title?: string; concept: ConceptId; /** Which topic of a multi-topic concept to open on. */ start?: string };
 
 export type ArrayMemoryPresetId = "jagged" | "rectangular" | "alias" | "shared-row" | "null-row";
 export type TraversalMode = "row-major" | "column-major" | "enhanced-for";
@@ -20,7 +20,8 @@ export type ImageFilterId = "brighten";
 /** Filters of the PF-2xx tickets, previewed by components/viz/FilterLab.tsx. */
 export type FilterLabId = "grayscale" | "flip" | "blur" | "edges" | "pipeline" | "selection";
 /** Worked-example explanations with real photos and numbers (components/viz/concepts/). */
-export type ConceptId = "rgb-grayscale" | "flip-mapping" | "box-blur" | "sobel" | "pipeline-frames" | "loop-bounds";
+export type ConceptId = "rgb-grayscale" | "flip-mapping" | "box-blur" | "sobel" | "pipeline-frames" | "loop-bounds"
+  | "life-neighbors" | "spiral-bounds" | "pascal-triangle";
 
 export type LessonBlock =
   | { type: "markdown"; md: string }

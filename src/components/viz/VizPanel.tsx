@@ -25,7 +25,7 @@ export function renderViz(v: VizConfig, ticket: Ticket, files: Record<string, st
     case "image-lab":
       return <ImageLab ticket={ticket} files={files} />;
     case "concept":
-      return <ConceptViz concept={v.concept} />;
+      return <ConceptViz concept={v.concept} start={v.start} />;
     case "filter-lab":
       return <FilterLab key={ticket.id} ticket={ticket} files={files} filter={v.filter} />;
   }
