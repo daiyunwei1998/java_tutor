@@ -1,18 +1,42 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { getSprint } from "@/content/registry";
-import { getTicketState, ticketKey, type TicketStatus, useStore } from "@/lib/progress";
-import { sprintProgress, STATUS_LABEL } from "@/lib/ticket-status";
+import { getTicketState, ticketKey, type TicketState, type TicketStatus, updateTicket, useStore } from "@/lib/progress";
+import { sprintProgress, STATUS_LABEL, STATUSES } from "@/lib/ticket-status";
 import { SprintProgressBar } from "./SprintProgressBar";
 import { StarButton } from "./StarButton";
 
-const COLUMNS: TicketStatus[] = ["todo", "in_progress", "in_review", "merged"];
+const COLUMNS = STATUSES;
+
+/** Students can always move a ticket back. Moving forward past In Progress needs a fully passing test run. */
+function canMove(t: TicketState, to: TicketStatus): boolean {
+  if (t.status === to) return false;
+  if (COLUMNS.indexOf(to) <= Math.max(COLUMNS.indexOf(t.status), 1)) return true;
+  const lt = t.lastTest;
+  return !!lt && lt.total > 0 && lt.passed === lt.total;
+}
+
+function moveTo(key: string, to: TicketStatus) {
+  updateTicket(key, (t) => {
+    const next: TicketState = { ...t, status: to };
+    if (to === "merged") next.mergedAt = t.mergedAt ?? new Date().toISOString();
+    else {
+      delete next.mergedAt;
+      delete next.tutorVerified;
+    }
+    return next;
+  });
+}
 
 export function SprintBoard({ sprintId }: { sprintId: string }) {
   const sprint = getSprint(sprintId)!;
   const store = useStore();
   const prog = sprintProgress(store, sprint);
+  const [dragKey, setDragKey] = useState<string | null>(null);
+  const [overCol, setOverCol] = useState<TicketStatus | null>(null);
+  const dragState = dragKey ? getTicketState(store, dragKey) : null;
 
   return (
     <div className="page" style={{ maxWidth: 1250 }}>
@@ -33,9 +57,31 @@ export function SprintBoard({ sprintId }: { sprintId: string }) {
         ) : null}
       </div>
 
-      <div className="board" style={{ marginTop: 16 }}>
-        {COLUMNS.map((col) => (
-          <section key={col} className="column" aria-label={STATUS_LABEL[col]}>
+      {store && <p className="small muted" style={{ margin: "16px 0 6px" }}>Drag a card to another column to move it. Tests Passed and Merged need all tests passing.</p>}
+      <div className={`board${dragKey ? " dragging" : ""}`}>
+        {COLUMNS.map((col) => {
+          const allowed = !!dragState && canMove(dragState, col);
+          return (
+          <section
+            key={col}
+            className={`column${dragState && dragState.status !== col ? (allowed ? " drop-ok" : " drop-no") : ""}${overCol === col && allowed ? " drop-over" : ""}`}
+            aria-label={STATUS_LABEL[col]}
+            onDragOver={(e) => {
+              if (!allowed) return;
+              e.preventDefault();
+              e.dataTransfer.dropEffect = "move";
+              if (overCol !== col) setOverCol(col);
+            }}
+            onDragLeave={(e) => {
+              if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setOverCol((c) => (c === col ? null : c));
+            }}
+            onDrop={(e) => {
+              e.preventDefault();
+              if (dragKey && allowed) moveTo(dragKey, col);
+              setDragKey(null);
+              setOverCol(null);
+            }}
+          >
             <h3>{STATUS_LABEL[col]}</h3>
             {sprint.tickets
               .filter((t) => getTicketState(store, ticketKey(sprint.id, t.id)).status === col)
@@ -44,7 +90,21 @@ export function SprintBoard({ sprintId }: { sprintId: string }) {
               .map((t) => {
                 const st = getTicketState(store, ticketKey(sprint.id, t.id));
                 return (
-                  <Link key={t.id} href={`/sprints/${sprint.id}/tickets/${t.id}`} className={`ticket-card${st.starred ? " starred" : ""}`}>
+                  <Link
+                    key={t.id}
+                    href={`/sprints/${sprint.id}/tickets/${t.id}`}
+                    className={`ticket-card${st.starred ? " starred" : ""}${dragKey === ticketKey(sprint.id, t.id) ? " is-dragging" : ""}`}
+                    draggable={!!store}
+                    onDragStart={(e) => {
+                      e.dataTransfer.effectAllowed = "move";
+                      e.dataTransfer.setData("text/plain", t.id);
+                      setDragKey(ticketKey(sprint.id, t.id));
+                    }}
+                    onDragEnd={() => {
+                      setDragKey(null);
+                      setOverCol(null);
+                    }}
+                  >
                     <div className="row" style={{ justifyContent: "space-between" }}>
                       <span className="ticket-id">{t.id}</span>
                       <span className="row" style={{ gap: 6 }}>
@@ -61,7 +121,8 @@ export function SprintBoard({ sprintId }: { sprintId: string }) {
                 );
               })}
           </section>
-        ))}
+          );
+        })}
       </div>
 
     </div>

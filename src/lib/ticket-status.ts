@@ -8,6 +8,9 @@ export const STATUS_LABEL: Record<TicketStatus, string> = {
   merged: "Merged",
 };
 
+/** Board columns, left to right. */
+export const STATUSES: TicketStatus[] = ["todo", "in_progress", "in_review", "merged"];
+
 /** Sprint completion: merged tickets count fully, "tests passed" counts half. */
 export function sprintProgress(store: ReturnType<typeof useStore>, sprint: Sprint) {
   const states = sprint.tickets.map((t) => getTicketState(store, ticketKey(sprint.id, t.id)).status);

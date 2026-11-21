@@ -82,6 +82,19 @@ def test_accounts():
     assert t["data"] == {"tickets": {}} and t["rev"] == 2, t
     assert client.get("/api/progress", headers=hs).json()["data"] == data  # stu untouched
     assert client.post("/api/admin/accounts/nobody/reset", headers=h).status_code == 404
+    # Teacher moves a ticket back to In Progress: code and runs stay, mergedAt goes, rev goes up.
+    url = "/api/admin/accounts/test/ticket-status"
+    client.put("/api/progress", headers=ht, json={"data": {"tickets": {"a/PF-102": {"status": "merged", "mergedAt": "x", "attempts": 3, "files": {"A.java": "code"}}}}, "base_rev": 2})
+    assert client.put(url, json={"ticket": "a/PF-102", "status": "todo"}).status_code == 401
+    assert client.put(url, headers=h, json={"ticket": "a/PF-102", "status": "done"}).status_code == 400
+    assert client.put("/api/admin/accounts/nobody/ticket-status", headers=h, json={"ticket": "a/PF-102", "status": "todo"}).status_code == 404
+    r = client.put(url, headers=h, json={"ticket": "a/PF-102", "status": "in_progress"})
+    assert r.status_code == 200 and r.json()["tickets"]["a/PF-102"]["status"] == "in_progress", r.text
+    t = client.get("/api/progress", headers=ht).json()
+    assert t["rev"] == 4 and t["data"]["tickets"]["a/PF-102"] == {"status": "in_progress", "attempts": 3, "files": {"A.java": "code"}}, t
+    r = client.put(url, headers=h, json={"ticket": "a/PF-103", "status": "merged"}).json()
+    assert r["tickets"]["a/PF-103"]["status"] == "merged" and r["tickets"]["a/PF-103"]["mergedAt"], r
+    client.post("/api/admin/accounts/test/reset", headers=h)
     print("ACCOUNTS OK")
 
 def test_time_and_stars():
