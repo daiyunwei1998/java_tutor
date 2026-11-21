@@ -354,6 +354,14 @@ def admin_ticket_status(username: str, req: TicketStatusPut, x_admin_password: s
     return accounts.set_ticket_status(username, req.ticket, req.status)
 
 
+@app.get("/api/admin/accounts/{username}/ticket")
+def admin_ticket_detail(username: str, key: str, x_admin_password: str | None = Header(default=None)):
+    _require_admin(x_admin_password)
+    if not accounts.exists(username):
+        raise HTTPException(404, "No such account.")
+    return accounts.ticket_detail(username, key)
+
+
 @app.post("/api/admin/accounts/sync")
 def admin_sync(req: SyncRequest, x_admin_password: str | None = Header(default=None)):
     _require_admin(x_admin_password)

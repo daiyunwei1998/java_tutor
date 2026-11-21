@@ -3,8 +3,11 @@
 import { useEffect, useRef, useState } from "react";
 import { sprints } from "@/content/registry";
 import { ticketKey, type TicketStatus } from "@/lib/progress";
-import { STATUS_LABEL, STATUSES } from "@/lib/ticket-status";
+import { STATUS_LABEL } from "@/lib/ticket-status";
 import { AdminError, adminFetch, fmtTime, type Note } from "@/lib/admin";
+import type { Sprint, Ticket } from "@/content/types";
+import { AdminBoard } from "./AdminBoard";
+import { TicketSummary } from "./TicketSummary";
 import { AdminLoginNeeded, NotesPanel } from "./Notes";
 
 type TicketSummary = {
@@ -24,6 +27,7 @@ export function AccountInfo({ username }: { username: string }) {
   const [ticketFilter, setTicketFilter] = useState<string | null>(null);
   const [moving, setMoving] = useState<string | null>(null);
   const [moveMsg, setMoveMsg] = useState<string | null>(null);
+  const [summary, setSummary] = useState<{ sprint: Sprint; ticket: Ticket } | null>(null);
   const composerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -67,6 +71,12 @@ export function AccountInfo({ username }: { username: string }) {
     }
   }
 
+  function addNoteFor(key: string) {
+    setPreset([key]);
+    composerRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    composerRef.current?.querySelector("textarea")?.focus({ preventScroll: true });
+  }
+
   const countFor = (key: string) => notes.filter((n) => n.tickets.includes(key)).length;
   // Notes moved to "general" while on this page stay visible until reload, so nothing seems to vanish.
   const shown = ticketFilter ? notes.filter((n) => n.tickets.includes(ticketFilter)) : notes;
@@ -81,10 +91,18 @@ export function AccountInfo({ username }: { username: string }) {
         </div>
       </div>
 
-      <div className="row" style={{ justifyContent: "space-between", alignItems: "baseline" }}>
-        <h2>Tickets</h2>
-        <span className="small muted" role="status">{moveMsg ?? "Change a status to move the ticket on the student's board."}</span>
+      <div className="row" style={{ justifyContent: "space-between", alignItems: "baseline" }} id="board">
+        <h2>{detail.username}&apos;s board</h2>
+        <span className="small muted" role="status">{moveMsg ?? "Drag a card to move it on the student's board. Click a card for a summary."}</span>
       </div>
+      {sprints.map((s) => (
+        <div key={s.id} style={{ marginBottom: 16 }}>
+          <div className="small muted" style={{ marginBottom: 6 }}>Sprint {s.number}: {s.topic}</div>
+          <AdminBoard sprint={s} tickets={detail.tickets} busyKey={moving} onMove={moveTicket} onOpen={(ticket) => setSummary({ sprint: s, ticket })} />
+        </div>
+      ))}
+
+      <h2>Ticket details</h2>
       {sprints.map((s) => (
         <div key={s.id} className="card table-scroll" style={{ marginBottom: 12 }}>
           <div className="small muted" style={{ marginBottom: 6 }}>Sprint {s.number}: {s.topic}</div>
@@ -101,17 +119,7 @@ export function AccountInfo({ username }: { username: string }) {
                 return (
                   <tr key={key}>
                     <td><strong>{t.id}</strong> <span className="muted">{t.title}</span></td>
-                    <td>
-                      <select
-                        className={`status-select pill ${status}`}
-                        value={status}
-                        disabled={moving === key}
-                        aria-label={`Status of ${t.id}`}
-                        onChange={(e) => moveTicket(key, e.target.value as TicketStatus)}
-                      >
-                        {STATUSES.map((s2) => <option key={s2} value={s2}>{STATUS_LABEL[s2]}</option>)}
-                      </select>
-                    </td>
+                    <td><span className={`pill ${status}`}>{STATUS_LABEL[status] ?? status}</span></td>
                     <td>{st.attempts ?? 0}</td>
                     <td className="small">{st.lastTest ? `${st.lastTest.passed}/${st.lastTest.total} · ${fmtTime(st.lastTest.at)}` : "—"}</td>
                     <td>{st.hintsShown ?? 0}</td>
@@ -127,11 +135,7 @@ export function AccountInfo({ username }: { username: string }) {
                     <td>
                       <button
                         className="btn small"
-                        onClick={() => {
-                          setPreset([key]);
-                          composerRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-                          composerRef.current?.querySelector("textarea")?.focus({ preventScroll: true });
-                        }}
+                        onClick={() => addNoteFor(key)}
                       >
                         + Note
                       </button>
@@ -159,6 +163,20 @@ export function AccountInfo({ username }: { username: string }) {
         onCreated={() => setPreset([])}
         emptyText={ticketFilter ? "No notes about this ticket." : "No notes yet."}
       />
+      {summary && (
+        <TicketSummary
+          username={detail.username}
+          sprint={summary.sprint}
+          ticket={summary.ticket}
+          notes={notes}
+          onClose={() => setSummary(null)}
+          onAddNote={() => {
+            const key = ticketKey(summary.sprint.id, summary.ticket.id);
+            setSummary(null);
+            setTimeout(() => addNoteFor(key), 0);
+          }}
+        />
+      )}
     </div>
   );
 }

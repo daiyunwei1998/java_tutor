@@ -98,7 +98,10 @@ export default function AdminPage() {
           <tbody>
             {accounts.map((a) => (
               <tr key={a.username}>
-                <td><Link href={`/admin/accounts/${encodeURIComponent(a.username)}`}><strong>{a.username}</strong></Link> <span className="small muted">· info &amp; notes</span></td>
+                <td>
+                  <Link href={`/admin/accounts/${encodeURIComponent(a.username)}`}><strong>{a.username}</strong></Link>{" "}
+                  <Link className="btn small" href={`/admin/accounts/${encodeURIComponent(a.username)}#board`}>🗂 Board &amp; notes</Link>
+                </td>
                 <td>{a.merged}</td>
                 <td>{a.in_review}</td>
                 <td>{a.in_progress}</td>

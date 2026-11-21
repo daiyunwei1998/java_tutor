@@ -231,3 +231,15 @@ def detail(username: str) -> dict:
             continue
         tickets[key] = {k: t.get(k) for k in ("status", "attempts", "lastTest", "hintsShown", "mergedAt")}
     return {"username": username, "updated_at": p["updated_at"], "tickets": tickets}
+
+
+def ticket_detail(username: str, ticket_key: str) -> dict:
+    """Everything about one ticket for the teacher's summary: full state (with code) and active time."""
+    t = (get_progress(username)["data"].get("tickets") or {}).get(ticket_key)
+    with usage._conn() as c:
+        row = c.execute(
+            "SELECT active_ms, first_at, last_at FROM ticket_time WHERE username = ? AND ticket_key = ?",
+            (username, ticket_key),
+        ).fetchone()
+    time = {"active_ms": int(row["active_ms"]), "first_at": row["first_at"], "last_at": row["last_at"]} if row else None
+    return {"ticket": ticket_key, "state": t if isinstance(t, dict) else None, "time": time}
