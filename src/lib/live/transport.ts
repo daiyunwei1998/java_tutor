@@ -48,11 +48,11 @@ export async function connectLive(auth: LiveAuth): Promise<LiveClient | null> {
   if (first.status === 503 && isLocalHost()) return localClient(auth.kind === "teacher" ? "teacher" : "student");
   if (!first.ok) return null;
   const firstToken = await first.json();
-  // The modular build: smaller, and it compiles with Next's bundler (the default build does not).
-  const { BaseRealtime, WebSocketTransport, FetchRequest, RealtimePresence } = await import("ably/modular");
+  // Ably's device SDK: accounts billed by monthly active users reject the older `ably` package (error 40168).
+  // Our tokens always carry a clientId, which device connections require.
+  const { createClient } = await import("@ably/pubsub-device");
   let cached: unknown = firstToken;
-  const rt = new BaseRealtime({
-    plugins: { WebSocketTransport, FetchRequest, RealtimePresence },
+  const rt = createClient({
     echoMessages: false,
     authCallback: async (_params, cb) => {
       try {
