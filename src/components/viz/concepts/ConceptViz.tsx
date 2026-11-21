@@ -4,6 +4,7 @@ import type { ConceptId } from "@/content/types";
 import { BlurConcept } from "./BlurConcept";
 import { FlipConcept } from "./FlipConcept";
 import { GrayscaleConcept } from "./GrayscaleConcept";
+import { LoopBoundsConcept } from "./LoopBoundsConcept";
 import { PipelineConcept } from "./PipelineConcept";
 import { SobelConcept } from "./SobelConcept";
 
@@ -20,5 +21,7 @@ export function ConceptViz({ concept }: { concept: ConceptId }) {
       return <SobelConcept />;
     case "pipeline-frames":
       return <PipelineConcept />;
+    case "loop-bounds":
+      return <LoopBoundsConcept />;
   }
 }

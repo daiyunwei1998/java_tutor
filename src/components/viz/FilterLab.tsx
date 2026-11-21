@@ -64,7 +64,7 @@ export function FilterLab({ ticket, files, filter }: { ticket: Ticket; files: Re
     return bad ? `"${bad}" is not a step. Use one step per line, e.g. "invert", "threshold 128", "darken 40".` : list;
   }
 
-  async function apply(mode?: "horizontal" | "vertical") {
+  async function apply(mode?: "horizontal" | "vertical" | "crop" | "fill" | "rotate") {
     const id = Date.now();
     const data: { name: string; content: string }[] = [];
     let body = "";
@@ -88,6 +88,26 @@ export function FilterLab({ ticket, files, filter }: { ticket: Ticket; files: Re
             tutor.Img.write(img);
         }`;
       labels = Array.from({ length: passes }, (_, i) => `boxBlur × ${i + 1}`);
+    } else if (filter === "selection") {
+      const h = gray.length, w = gray[0]?.length ?? 0;
+      if (mode === "crop") {
+        const [top, left, ch, cw] = [Math.floor(h / 4), Math.floor(w / 4), Math.ceil(h / 2), Math.ceil(w / 2)];
+        body = `tutor.Img.write(Selection.crop(${read("input", gray)}, ${top}, ${left}, ${ch}, ${cw}));`;
+        labels = [`crop(img, ${top}, ${left}, ${ch}, ${cw})`];
+      } else if (mode === "fill") {
+        // A box that hangs off the right edge, so clipping matters
+        const [top, left, bottom, right] = [Math.floor(h / 3), Math.floor(w / 2), Math.floor(h / 3) + Math.max(2, Math.floor(h / 5)), w + 6];
+        body = `int[][] img = ${read("input", gray)};
+        Selection.fillRect(img, ${top}, ${left}, ${bottom}, ${right}, 0);
+        tutor.Img.write(img);`;
+        labels = [`fillRect(img, ${top}, ${left}, ${bottom}, ${right}, 0)`];
+      } else {
+        if (h !== w) { setErr(`Rotate in place needs a square image, and this one is ${h} × ${w}. Pick Circle, Checkerboard or Smiley.`); return; }
+        body = `int[][] img = ${read("input", gray)};
+        Selection.rotateInPlace(img);
+        tutor.Img.write(img);`;
+        labels = ["rotateInPlace(img)"];
+      }
     } else if (filter === "edges") {
       body = `tutor.Img.write(Edges.edges(${read("input", gray)}));`;
       labels = ["Edges.edges(img)"];
@@ -133,7 +153,13 @@ export function FilterLab({ ticket, files, filter }: { ticket: Ticket; files: Re
     }
     const out = imgs as Gray[];
     const input = color ? rgb.red : gray;
-    setIssues(filter === "pipeline" || filter === "blur" ? validate(input, out[out.length - 1]) : validate(input, out[0]));
+    if (filter === "selection" && mode === "crop") {
+      const want = [Math.ceil(input.length / 2), Math.ceil((input[0]?.length ?? 0) / 2)];
+      const got = [out[0].length, out[0][0]?.length ?? 0];
+      setIssues(want[0] === got[0] && want[1] === got[1] ? [] : [`The crop should be ${want[0]} × ${want[1]}, but it is ${got[0]} × ${got[1]}.`]);
+    } else {
+      setIssues(filter === "pipeline" || filter === "blur" ? validate(input, out[out.length - 1]) : validate(input, out[0]));
+    }
     setFrames(out.map((img, i) => ({ label: labels[i] ?? `frame ${i + 1}`, img })));
     setShownIdx(out.length - 1);
   }
@@ -212,7 +238,13 @@ export function FilterLab({ ticket, files, filter }: { ticket: Ticket; files: Re
           </label>
         )}
         <div className="row" style={{ marginTop: 6, flexWrap: "wrap" }}>
-          {filter === "flip" ? (
+          {filter === "selection" ? (
+            <>
+              <button className="btn primary" onClick={() => apply("crop")} disabled={busy}>☕ Crop the center</button>
+              <button className="btn primary" onClick={() => apply("fill")} disabled={busy}>☕ Fill a box off the edge</button>
+              <button className="btn primary" onClick={() => apply("rotate")} disabled={busy}>☕ Rotate 90°</button>
+            </>
+          ) : filter === "flip" ? (
             <>
               <button className="btn primary" onClick={() => apply("horizontal")} disabled={busy}>☕ Flip horizontal</button>
               <button className="btn primary" onClick={() => apply("vertical")} disabled={busy}>☕ Flip vertical</button>
@@ -224,7 +256,7 @@ export function FilterLab({ ticket, files, filter }: { ticket: Ticket; files: Re
           )}
           <button className="btn" onClick={reset} disabled={!frames.length}>Reset</button>
         </div>
-        {busy && filter === "flip" && <div className="small muted" style={{ marginTop: 6 }}>⏳ Your Java code is running…</div>}
+        {busy && (filter === "flip" || filter === "selection") && <div className="small muted" style={{ marginTop: 6 }}>⏳ Your Java code is running…</div>}
         {err && <div className="console err">{err}</div>}
         {issues.map((x) => <div key={x} className="callout warn small">{x}</div>)}
         {frames.length > 0 && !issues.length && !err && <div className="small" style={{ color: "var(--ok)", marginTop: 6 }}>Output size is right and every pixel is within 0–255 👍</div>}
