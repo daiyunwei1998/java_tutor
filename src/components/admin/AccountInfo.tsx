@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { sprints } from "@/content/registry";
 import { ticketKey, type TicketStatus } from "@/lib/progress";
@@ -48,7 +47,6 @@ export function AccountInfo({ username }: { username: string }) {
   if (err) {
     return (
       <div className="page">
-        <Link href="/admin" className="small">← Teacher admin</Link>
         <div className="callout warn" role="alert">{err.status === 404 ? `There is no account "${username}".` : err.message}</div>
       </div>
     );
@@ -88,11 +86,9 @@ export function AccountInfo({ username }: { username: string }) {
     <div className="page" style={{ maxWidth: 1000 }}>
       <div className="row" style={{ justifyContent: "space-between" }}>
         <div>
-          <Link href="/admin" className="small">← Teacher admin</Link>
-          <h1 style={{ marginTop: 6 }}>👤 {detail.username}</h1>
+          <h1>👤 {detail.username}</h1>
           <p className="muted small" style={{ margin: 0 }}>Last progress sync {fmtTime(detail.updated_at)}</p>
         </div>
-        <Link className="btn" href="/admin/notes">📝 All notes</Link>
       </div>
 
       <div className="row" style={{ justifyContent: "space-between", alignItems: "baseline" }} id="board">

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { adminPassword } from "@/lib/admin";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getTicket } from "@/content/registry";
 import type { TicketState } from "@/lib/progress";
@@ -28,7 +29,7 @@ export function TeacherLive({ username }: { username: string }) {
   const flushTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    const password = sessionStorage.getItem("jt.admin");
+    const password = adminPassword();
     if (!password) {
       setError("Log in on the admin page first.");
       return;
