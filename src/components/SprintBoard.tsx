@@ -5,6 +5,7 @@ import { getSprint } from "@/content/registry";
 import { getTicketState, ticketKey, type TicketStatus, useStore } from "@/lib/progress";
 import { sprintProgress, STATUS_LABEL } from "@/lib/ticket-status";
 import { SprintProgressBar } from "./SprintProgressBar";
+import { StarButton } from "./StarButton";
 
 const COLUMNS: TicketStatus[] = ["todo", "in_progress", "in_review", "merged"];
 
@@ -38,13 +39,18 @@ export function SprintBoard({ sprintId }: { sprintId: string }) {
             <h3>{STATUS_LABEL[col]}</h3>
             {sprint.tickets
               .filter((t) => getTicketState(store, ticketKey(sprint.id, t.id)).status === col)
+              // Starred tickets first; otherwise keep the sprint's order (sort is stable).
+              .sort((a, b) => Number(!!getTicketState(store, ticketKey(sprint.id, b.id)).starred) - Number(!!getTicketState(store, ticketKey(sprint.id, a.id)).starred))
               .map((t) => {
                 const st = getTicketState(store, ticketKey(sprint.id, t.id));
                 return (
-                  <Link key={t.id} href={`/sprints/${sprint.id}/tickets/${t.id}`} className="ticket-card">
+                  <Link key={t.id} href={`/sprints/${sprint.id}/tickets/${t.id}`} className={`ticket-card${st.starred ? " starred" : ""}`}>
                     <div className="row" style={{ justifyContent: "space-between" }}>
                       <span className="ticket-id">{t.id}</span>
-                      <span className="small muted">{t.xp} XP</span>
+                      <span className="row" style={{ gap: 6 }}>
+                        <span className="small muted">{t.xp} XP</span>
+                        {store && <StarButton ticketKey={ticketKey(sprint.id, t.id)} starred={!!st.starred} label={t.id} />}
+                      </span>
                     </div>
                     <div style={{ fontWeight: 600, margin: "4px 0" }}>{t.title}</div>
                     <div className="small muted">

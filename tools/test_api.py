@@ -83,6 +83,32 @@ def test_accounts():
     assert client.post("/api/admin/accounts/nobody/reset", headers=h).status_code == 404
     print("ACCOUNTS OK")
 
+def test_time_and_stars():
+    stu = client.post("/api/auth/login", json={"username": "stu", "password": "stu"}).json()["token"]
+    test = client.post("/api/auth/login", json={"username": "test", "password": "test"}).json()["token"]
+    hs, ht, h = {"Authorization": f"Bearer {stu}"}, {"Authorization": f"Bearer {test}"}, {"X-Admin-Password": "pw"}
+    assert client.post("/api/time", json={"ticket": "s1/PF-101", "ms": 1000}).status_code == 401
+    assert client.post("/api/time", headers=hs, json={"ticket": "bad key", "ms": 1000}).status_code == 422
+    assert client.post("/api/time", headers=hs, json={"ticket": "s1/PF-101", "ms": 10**9}).status_code == 422
+    for ms in (30000, 12000):
+        assert client.post("/api/time", headers=hs, json={"ticket": "s1/PF-101", "ms": ms}).status_code == 200
+    client.post("/api/time", headers=ht, json={"ticket": "s1/PF-102", "ms": 5000})
+    assert client.get("/api/admin/time").status_code == 401
+    rows = {(r["username"], r["ticket"]): r["active_ms"] for r in client.get("/api/admin/time", headers=h).json()["time"]}
+    assert rows == {("stu", "s1/PF-101"): 42000, ("test", "s1/PF-102"): 5000}, rows
+    rev = client.get("/api/progress", headers=hs).json()["rev"]
+    client.put("/api/progress", headers=hs, json={"data": {"tickets": {"s1/PF-103": {"status": "todo", "starred": True}}}, "base_rev": rev})
+    client.post("/api/admin/accounts/sync", headers=h, json={"source": "stu", "target": "test"})
+    rows = {(r["username"], r["ticket"]): r["active_ms"] for r in client.get("/api/admin/time", headers=h).json()["time"]}
+    assert rows == {("stu", "s1/PF-101"): 42000, ("test", "s1/PF-101"): 42000}, rows
+    accs = {a["username"]: a for a in client.get("/api/admin/accounts", headers=h).json()["accounts"]}
+    assert accs["test"]["starred"] == ["s1/PF-103"] == accs["stu"]["starred"], accs
+    client.post("/api/admin/accounts/test/reset", headers=h)
+    rows = {(r["username"], r["ticket"]) for r in client.get("/api/admin/time", headers=h).json()["time"]}
+    assert rows == {("stu", "s1/PF-101")}, rows
+    print("TIME + STARS OK")
+
 if __name__ == "__main__":
     test_all()
     test_accounts()
+    test_time_and_stars()

@@ -20,6 +20,11 @@ SCHEMA = [
     "CREATE TABLE IF NOT EXISTS accounts (username TEXT PRIMARY KEY, password_hash TEXT NOT NULL, created_at TEXT NOT NULL)",
     "CREATE TABLE IF NOT EXISTS progress (username TEXT PRIMARY KEY, data TEXT NOT NULL, rev INTEGER NOT NULL DEFAULT 0,"
     " updated_at TEXT NOT NULL)",
+    # Active time per ticket. Kept apart from the progress blob so heartbeats are additive and never
+    # conflict with (or overwrite) progress saves from another tab.
+    "CREATE TABLE IF NOT EXISTS ticket_time (username TEXT NOT NULL, ticket_key TEXT NOT NULL,"
+    " active_ms BIGINT NOT NULL DEFAULT 0, first_at TEXT NOT NULL, last_at TEXT NOT NULL,"
+    " PRIMARY KEY (username, ticket_key))",
 ]
 
 
@@ -133,12 +138,14 @@ def list_accounts() -> list[dict]:
     for r in rows:
         tickets = (json.loads(r["data"]) if r["data"] else EMPTY).get("tickets", {})
         statuses = [t.get("status") for t in tickets.values() if isinstance(t, dict)]
+        starred = sorted(k for k, t in tickets.items() if isinstance(t, dict) and t.get("starred"))
         out.append({
             "username": r["username"],
             "updated_at": r["updated_at"],
             "merged": statuses.count("merged"),
             "in_review": statuses.count("in_review"),
             "in_progress": statuses.count("in_progress"),
+            "starred": starred,
         })
     return out
 
@@ -153,6 +160,7 @@ def reset(username: str) -> None:
     with usage._conn() as c:
         row = c.execute("SELECT rev FROM progress WHERE username = ?", (username,)).fetchone()
         _write(c, username, EMPTY, (int(row["rev"]) if row else 0) + 1)
+        c.execute("DELETE FROM ticket_time WHERE username = ?", (username,))
 
 
 def copy(src: str, dst: str) -> None:
@@ -160,3 +168,31 @@ def copy(src: str, dst: str) -> None:
     with usage._conn() as c:
         row = c.execute("SELECT rev FROM progress WHERE username = ?", (dst,)).fetchone()
         _write(c, dst, data, (int(row["rev"]) if row else 0) + 1)
+        c.execute("DELETE FROM ticket_time WHERE username = ?", (dst,))
+        c.execute(
+            "INSERT INTO ticket_time (username, ticket_key, active_ms, first_at, last_at)"
+            " SELECT ?, ticket_key, active_ms, first_at, last_at FROM ticket_time WHERE username = ?",
+            (dst, src),
+        )
+
+
+# ---------- time on tickets ----------
+
+def add_time(username: str, ticket_key: str, ms: int) -> None:
+    now = usage.now_iso()
+    with usage._conn() as c:
+        c.execute(
+            "INSERT INTO ticket_time (username, ticket_key, active_ms, first_at, last_at) VALUES (?,?,?,?,?)"
+            " ON CONFLICT (username, ticket_key) DO UPDATE SET active_ms = ticket_time.active_ms + excluded.active_ms,"
+            " last_at = excluded.last_at",
+            (username, ticket_key, ms, now, now),
+        )
+
+
+def list_time() -> list[dict]:
+    with usage._conn() as c:
+        rows = c.execute(
+            "SELECT username, ticket_key, active_ms, first_at, last_at FROM ticket_time ORDER BY username, ticket_key"
+        ).fetchall()
+    return [{"username": r["username"], "ticket": r["ticket_key"], "active_ms": int(r["active_ms"]),
+             "first_at": r["first_at"], "last_at": r["last_at"]} for r in rows]

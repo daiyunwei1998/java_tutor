@@ -265,6 +265,21 @@ def put_progress(req: ProgressPut, authorization: str | None = Header(default=No
     return accounts.put_progress(user, req.data, req.base_rev)
 
 
+class TimePost(BaseModel):
+    # "sprintId/ticketId", the same key the progress blob uses.
+    ticket: str = Field(min_length=3, max_length=80, pattern=r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$")
+    # One heartbeat carries at most a few minutes; the client flushes every 30 s and on tab hide.
+    ms: int = Field(ge=0, le=10 * 60 * 1000)
+
+
+@app.post("/api/time")
+def post_time(req: TimePost, authorization: str | None = Header(default=None)):
+    user = _require_user(authorization)
+    if req.ms:
+        accounts.add_time(user, req.ticket, req.ms)
+    return {"ok": True}
+
+
 # ---------- admin ----------
 
 def _require_admin(x_admin_password: str | None) -> None:
@@ -283,6 +298,12 @@ class SyncRequest(BaseModel):
 def admin_accounts(x_admin_password: str | None = Header(default=None)):
     _require_admin(x_admin_password)
     return {"accounts": accounts.list_accounts()}
+
+
+@app.get("/api/admin/time")
+def admin_time(x_admin_password: str | None = Header(default=None)):
+    _require_admin(x_admin_password)
+    return {"time": accounts.list_time()}
 
 
 @app.post("/api/admin/accounts/{username}/reset")

@@ -425,3 +425,9 @@ div.code-panel > .code-top .editor-wrap { min-height: 220px; }
 .out-tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin: -4px 0 10px; }
 .out-tabs [role="tab"] { background: transparent; border: 1px solid transparent; border-bottom: none; color: var(--muted); padding: 5px 12px; border-radius: 8px 8px 0 0; font: inherit; font-size: 13px; cursor: pointer; margin-bottom: -1px; }
 .out-tabs [role="tab"][aria-selected="true"] { background: var(--bg); border-color: var(--border); color: var(--text); font-weight: 600; }
+
+/* Ticket stars */
+.star-btn { background: none; border: none; padding: 0 2px; font-size: 18px; line-height: 1; cursor: pointer; color: var(--muted); }
+.star-btn:hover { color: var(--accent); }
+.star-btn.on { color: #d9a400; }
+.ticket-card.starred { border-left: 3px solid #d9a400; }

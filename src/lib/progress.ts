@@ -18,6 +18,8 @@ export type TicketState = {
   hintsShown: number;
   mergedAt?: string;
   tutorVerified?: boolean;
+  /** Student bookmarked this ticket ("come back to it"); shown on the sprint board. */
+  starred?: boolean;
 };
 
 export type Profile = { id: string; name: string; createdAt: string };
@@ -89,6 +91,15 @@ export function getTicketState(store: Store | null, key: string): TicketState {
 export function updateTicket(key: string, fn: (t: TicketState) => TicketState) {
   const s = read();
   write({ ...s, tickets: { ...s.tickets, [key]: fn(s.tickets[key] ?? blank()) } });
+}
+
+export function toggleStar(key: string) {
+  updateTicket(key, (t) => ({ ...t, starred: !t.starred }));
+}
+
+/** The logged-in account's token, for side channels such as time tracking. */
+export function authToken(): string | null {
+  return read().auth?.token ?? null;
 }
 
 // ---------- accounts + server sync ----------
