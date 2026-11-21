@@ -22,6 +22,7 @@ export function CodePanel({
   hintsShown,
   onShowHint,
   split = false,
+  outputSide = "below",
 }: {
   ticket: Ticket;
   files: Record<string, string>;
@@ -33,6 +34,8 @@ export function CodePanel({
   onShowHint: () => void;
   /** Desktop: a draggable divider between the editor and the output/tests panel. */
   split?: boolean;
+  /** Where the output/tests panel sits next to the editor on desktop. */
+  outputSide?: "below" | "right";
 }) {
   const store = useStore();
   const theme = useResolvedTheme();
@@ -231,16 +234,21 @@ export function CodePanel({
   }
 
   return (
-    <PanelGroup direction="vertical" autoSaveId="ws-code-split" className="code-panel">
-      <Panel id="editor" order={1} defaultSize={62} minSize={25}>
+    <PanelGroup
+      key={outputSide}
+      direction={outputSide === "right" ? "horizontal" : "vertical"}
+      autoSaveId={outputSide === "right" ? "ws-code-split-right" : "ws-code-split"}
+      className="code-panel"
+    >
+      <Panel id="editor" order={1} defaultSize={outputSide === "right" ? 58 : 62} minSize={25}>
         {editorPart}
       </Panel>
-      <PanelResizeHandle className="resize-handle horiz" aria-label="Resize the output panel" />
+      <PanelResizeHandle className={`resize-handle${outputSide === "right" ? "" : " horiz"}`} aria-label="Resize the output panel" />
       <Panel
         id="output"
         order={2}
         ref={outPanel}
-        defaultSize={38}
+        defaultSize={outputSide === "right" ? 42 : 38}
         minSize={12}
         collapsible
         collapsedSize={0}

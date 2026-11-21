@@ -28,6 +28,12 @@ export function Workspace({ sprintId, ticketId }: { sprintId: string; ticketId: 
   const [sideCollapsed, setSideCollapsed] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [layout, setLayout] = useLayout();
+  const swap = layout.id === "code-left";
+  // "Focus on code" starts with the side panel folded away.
+  useEffect(() => {
+    if (layout.id === "focus") setTimeout(() => sidePanel.current?.collapse(), 0);
+    else if (sidePanel.current?.isCollapsed()) sidePanel.current.expand();
+  }, [layout.id, layout.v]);
   const sidePanel = useRef<ImperativePanelHandle>(null);
   const idx = sprint.tickets.findIndex((t) => t.id === ticket.id);
   const nextTicket = sprint.tickets[idx + 1];
@@ -140,6 +146,7 @@ export function Workspace({ sprintId, ticketId }: { sprintId: string; ticketId: 
       hintsShown={st.hintsShown}
       onShowHint={() => updateTicket(key, (t) => ({ ...t, hintsShown: t.hintsShown + 1 }))}
       split={!isMobileNow()}
+      outputSide={layout.id === "output-right" ? "right" : "below"}
     />
   );
 
@@ -153,10 +160,7 @@ export function Workspace({ sprintId, ticketId }: { sprintId: string; ticketId: 
         <strong style={{ flex: 1, minWidth: 200 }}>{ticket.title}</strong>
         <span className={`pill ${st.status}`}>{STATUS_LABEL[st.status]}</span>
         <span className="small muted">{ticket.xp} XP</span>
-        <span className="layout-tools">
-          <button className="btn small ghost" onClick={() => setLayout({ ...layout, swap: !layout.swap })} title={layout.swap ? "Put the lesson on the left" : "Put the code on the left"} aria-label="Swap the lesson and code sides">⇄ Swap sides</button>
-          <button className="btn small ghost" onClick={() => setLayout({ swap: false, v: layout.v + 1 }, true)} title="Reset all panel sizes" aria-label="Reset layout">↺ Layout</button>
-        </span>
+        <LayoutMenu layout={layout} onChange={setLayout} />
       </div>
 
       <div className="ws-tabs" role="tablist" aria-label="Workspace">
@@ -170,10 +174,10 @@ export function Workspace({ sprintId, ticketId }: { sprintId: string; ticketId: 
       <div className="ws-body">
         <MediaSwitch
           desktop={
-            <PanelGroup key={`${layout.swap}-${layout.v}`} direction="horizontal" autoSaveId={layout.swap ? "ws-layout-2col-swap" : "ws-layout-2col"}>
-              {layout.swap ? (
+            <PanelGroup key={`${layout.id}-${layout.v}`} direction="horizontal" autoSaveId={swap ? "ws-layout-2col-swap" : "ws-layout-2col"}>
+              {swap ? (
                 <>
-              <Panel id="code" defaultSize={56} minSize={35} order={layout.swap ? 1 : 2}>
+              <Panel id="code" defaultSize={56} minSize={35} order={swap ? 1 : 2}>
                 <div className="pane">{code}</div>
               </Panel>
               <PanelResizeHandle className="resize-handle" aria-label="Resize" />
@@ -184,7 +188,7 @@ export function Workspace({ sprintId, ticketId }: { sprintId: string; ticketId: 
                 collapsible
                 collapsedSize={3}
                 id="side"
-                order={layout.swap ? 2 : 1}
+                order={swap ? 2 : 1}
                 onCollapse={() => setSideCollapsed(true)}
                 onExpand={() => setSideCollapsed(false)}
               >
@@ -199,7 +203,7 @@ export function Workspace({ sprintId, ticketId }: { sprintId: string; ticketId: 
                       <button role="tab" aria-selected={sideTab === "learn"} onClick={() => setSideTab("learn")}>📖 Lesson & task</button>
                       <button role="tab" aria-selected={sideTab === "viz"} onClick={() => setSideTab("viz")}>🔬 Visualize</button>
                       <div className="spacer" />
-                      <button className="btn small ghost" onClick={() => sidePanel.current?.collapse()} aria-label="Collapse the side panel to widen the code" title="Collapse to widen the code">{layout.swap ? "⇥" : "⇤"}</button>
+                      <button className="btn small ghost" onClick={() => sidePanel.current?.collapse()} aria-label="Collapse the side panel to widen the code" title="Collapse to widen the code">{swap ? "⇥" : "⇤"}</button>
                     </div>
                     <div className="pane">{sideTab === "learn" ? learn : viz}</div>
                   </div>
@@ -215,7 +219,7 @@ export function Workspace({ sprintId, ticketId }: { sprintId: string; ticketId: 
                 collapsible
                 collapsedSize={3}
                 id="side"
-                order={layout.swap ? 2 : 1}
+                order={swap ? 2 : 1}
                 onCollapse={() => setSideCollapsed(true)}
                 onExpand={() => setSideCollapsed(false)}
               >
@@ -230,14 +234,14 @@ export function Workspace({ sprintId, ticketId }: { sprintId: string; ticketId: 
                       <button role="tab" aria-selected={sideTab === "learn"} onClick={() => setSideTab("learn")}>📖 Lesson & task</button>
                       <button role="tab" aria-selected={sideTab === "viz"} onClick={() => setSideTab("viz")}>🔬 Visualize</button>
                       <div className="spacer" />
-                      <button className="btn small ghost" onClick={() => sidePanel.current?.collapse()} aria-label="Collapse the side panel to widen the code" title="Collapse to widen the code">{layout.swap ? "⇥" : "⇤"}</button>
+                      <button className="btn small ghost" onClick={() => sidePanel.current?.collapse()} aria-label="Collapse the side panel to widen the code" title="Collapse to widen the code">{swap ? "⇥" : "⇤"}</button>
                     </div>
                     <div className="pane">{sideTab === "learn" ? learn : viz}</div>
                   </div>
                 )}
               </Panel>
               <PanelResizeHandle className="resize-handle" aria-label="Resize" />
-              <Panel id="code" defaultSize={56} minSize={35} order={layout.swap ? 1 : 2}>
+              <Panel id="code" defaultSize={56} minSize={35} order={swap ? 1 : 2}>
                 <div className="pane">{code}</div>
               </Panel>
                 </>
@@ -274,15 +278,23 @@ function MediaSwitch({ desktop, mobile }: { desktop: React.ReactNode; mobile: Re
 }
 
 const LAYOUT_KEY = "java-tutor.layout";
-type Layout = { swap: boolean; v: number };
+type LayoutId = "classic" | "code-left" | "output-right" | "focus";
+type Layout = { id: LayoutId; v: number };
 
-/** Per-browser workspace layout (which side the code is on). Panel sizes are saved by react-resizable-panels. */
+const LAYOUTS: { id: LayoutId; label: string; hint: string; cells: string[] }[] = [
+  { id: "classic", label: "Lesson | Code", hint: "Lesson on the left, output under the code", cells: ["L", "C/O"] },
+  { id: "code-left", label: "Code | Lesson", hint: "Code on the left, lesson on the right", cells: ["C/O", "L"] },
+  { id: "output-right", label: "Output beside code", hint: "Lesson, code and output side by side (good for wide screens)", cells: ["L", "C", "O"] },
+  { id: "focus", label: "Focus on code", hint: "Lesson folded away; open it from the strip on the left", cells: ["·", "C/O"] },
+];
+
+/** Per-browser workspace layout preset. Panel sizes inside each preset are saved by react-resizable-panels. */
 function useLayout(): [Layout, (l: Layout, resetSizes?: boolean) => void] {
-  const [layout, setState] = useState<Layout>({ swap: false, v: 0 });
+  const [layout, setState] = useState<Layout>({ id: "classic", v: 0 });
   useEffect(() => {
     try {
       const saved = JSON.parse(localStorage.getItem(LAYOUT_KEY) ?? "null");
-      if (saved && typeof saved.swap === "boolean") setState({ swap: saved.swap, v: 0 });
+      if (saved && LAYOUTS.some((l) => l.id === saved.id)) setState({ id: saved.id, v: 0 });
     } catch {}
   }, []);
   const set = (l: Layout, resetSizes = false) => {
@@ -290,11 +302,64 @@ function useLayout(): [Layout, (l: Layout, resetSizes?: boolean) => void] {
       if (resetSizes) {
         Object.keys(localStorage).filter((k) => k.startsWith("react-resizable-panels:ws-")).forEach((k) => localStorage.removeItem(k));
       }
-      localStorage.setItem(LAYOUT_KEY, JSON.stringify({ swap: l.swap }));
+      localStorage.setItem(LAYOUT_KEY, JSON.stringify({ id: l.id }));
     } catch {}
     setState(l);
   };
   return [layout, set];
+}
+
+function LayoutMenu({ layout, onChange }: { layout: Layout; onChange: (l: Layout, resetSizes?: boolean) => void }) {
+  const [open, setOpen] = useState(false);
+  const box = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const close = (e: MouseEvent | KeyboardEvent) => {
+      if (e instanceof KeyboardEvent ? e.key === "Escape" : !box.current?.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", close);
+    document.addEventListener("keydown", close);
+    return () => {
+      document.removeEventListener("mousedown", close);
+      document.removeEventListener("keydown", close);
+    };
+  }, [open]);
+  return (
+    <div className="layout-menu" ref={box}>
+      <button className="btn small" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(!open)} title="Choose a layout">▦ Layout ▾</button>
+      {open && (
+        <div className="layout-pop" role="menu" aria-label="Layouts">
+          {LAYOUTS.map((l) => (
+            <button
+              key={l.id}
+              role="menuitemradio"
+              aria-checked={layout.id === l.id}
+              className="layout-opt"
+              onClick={() => { onChange({ id: l.id, v: layout.v + 1 }); setOpen(false); }}
+              title={l.hint}
+            >
+              <span className="layout-pic" aria-hidden>
+                {l.cells.map((c, i) => (
+                  <span key={i} className={c === "·" ? "thin" : ""}>
+                    {c.includes("/") ? <><i>{c.split("/")[0]}</i><i>{c.split("/")[1]}</i></> : <i>{c === "·" ? "" : c}</i>}
+                  </span>
+                ))}
+              </span>
+              <span>
+                <strong>{l.label}</strong>
+                <span className="small muted" style={{ display: "block" }}>{l.hint}</span>
+              </span>
+            </button>
+          ))}
+          <hr />
+          <button role="menuitem" className="layout-opt reset" onClick={() => { onChange({ ...layout, v: layout.v + 1 }, true); setOpen(false); }}>
+            ↺ Reset panel sizes
+          </button>
+          <div className="small muted" style={{ padding: "4px 8px" }}>Drag any divider to resize. Your choice is saved in this browser.</div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 function isMobileNow() {
