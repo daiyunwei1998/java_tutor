@@ -229,6 +229,10 @@ export function logout() {
 if (typeof window !== "undefined") {
   setTimeout(pull, 0);
   window.addEventListener("focus", () => pull());
+  // Picks up changes the teacher makes (e.g. moving a ticket) while the student keeps this tab open.
+  setInterval(() => {
+    if (document.visibilityState === "visible") pull();
+  }, 30_000);
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible") pull();
     else push();
