@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { Sprint, Ticket } from "@/content/types";
+import { useIssuedTickets } from "@/lib/issued";
 import { ticketKey, type TicketStatus } from "@/lib/progress";
 import { STATUS_LABEL, STATUSES } from "@/lib/ticket-status";
 
@@ -27,6 +28,8 @@ export function AdminBoard({
   const [dragKey, setDragKey] = useState<string | null>(null);
   const [overCol, setOverCol] = useState<TicketStatus | null>(null);
   const statusOf = (key: string): TicketStatus => tickets[key]?.status ?? "todo";
+  // Only the tickets students can see (issue or hide them on /admin/tickets).
+  const issued = useIssuedTickets(sprint);
 
   return (
     <div className={`board admin-board${dragKey ? " dragging" : ""}`}>
@@ -54,7 +57,7 @@ export function AdminBoard({
             }}
           >
             <h3>{STATUS_LABEL[col]}</h3>
-            {sprint.tickets
+            {issued
               .filter((t) => statusOf(ticketKey(sprint.id, t.id)) === col)
               .map((t) => {
                 const key = ticketKey(sprint.id, t.id);
