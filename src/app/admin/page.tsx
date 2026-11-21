@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { sprints } from "@/content/registry";
 
 type Usage = {
   month: { requests: number; prompt_tokens: number; completion_tokens: number; estimated_cost_usd: number };
@@ -22,7 +23,16 @@ const STATUS_TEXT: Record<string, string> = {
   error: "Other error",
 };
 
-type Account = { username: string; updated_at: string | null; merged: number; in_review: number; in_progress: number };
+type Account = { username: string; updated_at: string | null; merged: number; in_review: number; in_progress: number; starred?: string[] };
+type TimeRow = { username: string; ticket: string; active_ms: number; first_at: string; last_at: string };
+
+/** 75 s → "1m", 3720 s → "1h 2m". Under a minute shows seconds. */
+function dur(ms: number) {
+  const s = Math.round(ms / 1000);
+  if (s < 60) return `${s}s`;
+  const m = Math.round(s / 60);
+  return m < 60 ? `${m}m` : `${Math.floor(m / 60)}h ${m % 60}m`;
+}
 
 const fmt = (iso: string | null) => (iso ? new Date(iso).toLocaleString("en-US", { hour12: false }) : "—");
 const n = (x: number) => x.toLocaleString("en-US");
@@ -35,6 +45,12 @@ export default function AdminPage() {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [confirm, setConfirm] = useState<null | "reset" | "sync">(null);
   const [accMsg, setAccMsg] = useState<string | null>(null);
+  const [time, setTime] = useState<TimeRow[]>([]);
+
+  async function loadTime(password: string) {
+    const t = await fetch("/api/admin/time", { headers: { "X-Admin-Password": password } }).then((r) => r.json()).catch(() => null);
+    setTime(t?.time ?? []);
+  }
 
   async function accountAction(kind: "reset" | "sync") {
     if (confirm !== kind) {
@@ -54,6 +70,7 @@ export default function AdminPage() {
       return;
     }
     setAccounts(body.accounts);
+    loadTime(pw);
     setAccMsg(kind === "reset" ? "✅ test progress cleared." : "✅ Copied stu progress to test.");
   }
 
@@ -73,6 +90,7 @@ export default function AdminPage() {
       setData(body);
       const acc = await fetch("/api/admin/accounts", { headers: { "X-Admin-Password": password } }).then((r) => r.json());
       setAccounts(acc.accounts ?? []);
+      await loadTime(password);
     } catch {
       setErr("Cannot reach the backend (FastAPI). Make sure it is running.");
     } finally {
@@ -174,6 +192,8 @@ export default function AdminPage() {
         <p className="small muted" style={{ marginBottom: 0 }}>An open tab logged in as test picks up the new progress when you switch back to it. stu is never changed.</p>
       </div>
 
+      <TimeTable accounts={accounts} time={time} />
+
       <h2>Requests per day (last {data.window_days} days)</h2>
       <div className="card">
         {data.by_day.length === 0 ? (
@@ -238,5 +258,52 @@ export default function AdminPage() {
       </div>
       <p className="small muted">"Student" is the account name used to log in.</p>
     </div>
+  );
+}
+
+/** Active time per student per ticket: tickets down, accounts across. ⭐ = the student starred it. */
+function TimeTable({ accounts, time }: { accounts: Account[]; time: TimeRow[] }) {
+  const byCell = new Map(time.map((r) => [`${r.username}|${r.ticket}`, r]));
+  const known = sprints.flatMap((s) => s.tickets.map((t) => ({ key: `${s.id}/${t.id}`, label: `${t.id} ${t.title}`, sprint: s.number })));
+  const extra = [...new Set(time.map((r) => r.ticket))].filter((k) => !known.some((t) => t.key === k)).map((k) => ({ key: k, label: k, sprint: 0 }));
+  const rows = [...known, ...extra];
+  const starred = new Set(accounts.flatMap((a) => (a.starred ?? []).map((k) => `${a.username}|${k}`)));
+  const total = (u: string) => time.filter((r) => r.username === u).reduce((sum, r) => sum + r.active_ms, 0);
+
+  return (
+    <>
+      <h2>Time on tickets</h2>
+      <div className="card table-scroll">
+        <table className="data">
+          <thead>
+            <tr><th>Ticket</th>{accounts.map((a) => <th key={a.username}>{a.username}</th>)}</tr>
+          </thead>
+          <tbody>
+            {rows.map((t) => (
+              <tr key={t.key}>
+                <td className="small">{t.sprint ? `S${t.sprint} · ` : ""}{t.label}</td>
+                {accounts.map((a) => {
+                  const cell = byCell.get(`${a.username}|${t.key}`);
+                  const star = starred.has(`${a.username}|${t.key}`);
+                  return (
+                    <td key={a.username} title={cell ? `First opened ${fmt(cell.first_at)}, last active ${fmt(cell.last_at)}` : ""}>
+                      {cell ? dur(cell.active_ms) : <span className="muted">—</span>}
+                      {star && <span title="Starred by the student"> ⭐</span>}
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+            <tr>
+              <td><strong>Total</strong></td>
+              {accounts.map((a) => <td key={a.username}><strong>{dur(total(a.username))}</strong></td>)}
+            </tr>
+          </tbody>
+        </table>
+        <p className="small muted" style={{ marginBottom: 0 }}>
+          Active time only: the ticket page is open in a visible tab and the student typed, clicked or scrolled in the last 3 minutes. Hover a cell for first and last activity. Reset and sync also clear or copy this time.
+        </p>
+      </div>
+    </>
   );
 }

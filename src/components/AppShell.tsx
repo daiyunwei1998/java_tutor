@@ -6,6 +6,7 @@ import { useState } from "react";
 import { currentSprint, SITE_NAME, sprints } from "@/content/registry";
 import { levelOf, login, logout, ticketKey, useStore, xpOf } from "@/lib/progress";
 import { ChatWidget } from "./ChatWidget";
+import { NotesWidget } from "./NotesWidget";
 import { ThemeToggle } from "./ThemeToggle";
 import { WorkspaceProvider } from "./WorkspaceContext";
 
@@ -31,6 +32,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <Link href="/" className={path === "/" ? "active" : ""}>Dashboard</Link>
           {cur && <Link href={`/sprints/${cur.id}`} className={path.startsWith("/sprints") && !path.includes("/knowledge") ? "active" : ""}>Sprint board</Link>}
           {cur?.knowledge?.length ? <Link href={`/sprints/${cur.id}/knowledge`} className={path.includes("/knowledge") ? "active" : ""}>Knowledge Space</Link> : null}
+          {store?.profile && <Link href="/notes" className={path.startsWith("/notes") ? "active" : ""}>My notes</Link>}
         </nav>
         <div className="spacer" />
         <ThemeToggle />
@@ -47,6 +49,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <main>{children}</main>
       {store && !store.auth && !isAdmin && <Login />}
       {!isAdmin && store?.profile && <ChatWidget />}
+      {!isAdmin && store?.profile && <NotesWidget />}
     </WorkspaceProvider>
   );
 }

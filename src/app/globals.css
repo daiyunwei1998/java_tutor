@@ -425,3 +425,22 @@ div.code-panel > .code-top .editor-wrap { min-height: 220px; }
 .out-tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin: -4px 0 10px; }
 .out-tabs [role="tab"] { background: transparent; border: 1px solid transparent; border-bottom: none; color: var(--muted); padding: 5px 12px; border-radius: 8px 8px 0 0; font: inherit; font-size: 13px; cursor: pointer; margin-bottom: -1px; }
 .out-tabs [role="tab"][aria-selected="true"] { background: var(--bg); border-color: var(--border); color: var(--text); font-weight: 600; }
+
+/* Ticket stars */
+.star-btn { background: none; border: none; padding: 0 2px; font-size: 18px; line-height: 1; cursor: pointer; color: var(--muted); }
+.star-btn:hover { color: var(--accent); }
+.star-btn.on { color: #d9a400; }
+.ticket-card.starred { border-left: 3px solid #d9a400; }
+
+/* Student notes */
+.notes-fab { position: fixed; right: 200px; bottom: 18px; z-index: 40; border-radius: 999px; padding: 10px 16px; box-shadow: var(--shadow); background: var(--surface); }
+.notes-panel { position: fixed; right: 18px; bottom: 18px; width: min(420px, calc(100vw - 32px)); height: min(520px, calc(100vh - 90px)); z-index: 42; display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: 0 12px 40px rgba(0,0,0,0.25); }
+/* Wide screens: sit left of the chat panel so both can be open. */
+@media (min-width: 1100px) {
+  .notes-panel { right: 450px; }
+  body:has(.chat-panel) .notes-fab { right: 450px; }
+}
+.notes-panel.full { inset: 12px; width: auto; height: auto; right: 12px; z-index: 60; }
+.notes-panel .note-text { flex: 1; margin: 8px 12px 0; resize: none; font-size: 15px; line-height: 1.55; }
+.notes-panel.full .note-text { font-size: 17px; padding: 16px 20px; }
+.note-card .note-text { width: 100%; min-height: 120px; margin-top: 8px; line-height: 1.5; field-sizing: content; max-height: 60vh; }

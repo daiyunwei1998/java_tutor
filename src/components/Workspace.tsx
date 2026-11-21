@@ -7,10 +7,12 @@ import { getTicket } from "@/content/registry";
 import type { RunResult } from "@/lib/java-runner";
 import { getTicketState, ticketKey, updateTicket, useStore } from "@/lib/progress";
 import { STATUS_LABEL } from "@/lib/ticket-status";
+import { useActiveTime } from "@/lib/time-tracking";
 import { CodePanel } from "./CodePanel";
 import { LessonBlocks } from "./LessonBlocks";
 import { Markdown } from "./Markdown";
 import { useWorkspace } from "./WorkspaceContext";
+import { StarButton } from "./StarButton";
 import { renderViz } from "./viz/VizPanel";
 
 type MobileTab = "learn" | "code" | "tasks";
@@ -21,6 +23,7 @@ export function Workspace({ sprintId, ticketId }: { sprintId: string; ticketId: 
   const store = useStore();
   const st = getTicketState(store, key);
   const { setInfo } = useWorkspace();
+  useActiveTime(key);
   const [result, setResult] = useState<RunResult | null>(null);
   const [previewSignal, setPreviewSignal] = useState(0);
   const [mobileTab, setMobileTab] = useState<MobileTab>("learn");
@@ -157,6 +160,7 @@ export function Workspace({ sprintId, ticketId }: { sprintId: string; ticketId: 
       <div className="ws-head">
         <Link href={`/sprints/${sprint.id}`} className="small">← Sprint {sprint.number} board</Link>
         <span className="ticket-id">{ticket.id}</span>
+        {store && <StarButton ticketKey={key} starred={!!st.starred} label={ticket.id} />}
         <strong style={{ flex: 1, minWidth: 200 }}>{ticket.title}</strong>
         <span className={`pill ${st.status}`}>{STATUS_LABEL[st.status]}</span>
         <span className="small muted">{ticket.xp} XP</span>
