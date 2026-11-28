@@ -45,7 +45,16 @@ export type LessonBlock =
    * model answer to compare with, and the teacher sees the answer in the ticket summary on /admin.
    */
   | { type: "short-answer"; id: string; question: string; placeholder?: string; modelAnswer: string }
-  | { type: "callout"; tone: "info" | "warn" | "lead"; md: string };
+  | { type: "callout"; tone: "info" | "warn" | "lead"; md: string }
+  /**
+   * Starts a new step: the workspace shows one step at a time with ◀ Back / Next ▶ (blocks before the first
+   * step marker, plus the briefing and objectives, belong to step 1). `focus` picks the layout of that step:
+   * read = the lesson alone; game = lesson | game; code = lesson | code; build = lesson above the game | code.
+   * Tickets without step markers keep the classic lesson | code workspace.
+   */
+  | { type: "step"; title: string; focus: StepFocus };
+
+export type StepFocus = "read" | "game" | "code" | "build";
 
 export type SourceFile = { path: string; content: string; readOnly?: boolean };
 

@@ -28,11 +28,10 @@ On the right is the game. It runs **your Java**: whatever classes and methods yo
     "Write a method that uses the object's own fields",
   ],
   blocks: [
+    { type: "step", title: "One class, many heroes", focus: "game" },
     {
       type: "markdown",
-      md: `## One class, many heroes
-
-The game needs many heroes, each with its own name and hp. Writing a separate set of variables for every hero (\`ariaName\`, \`ariaHp\`, \`bramName\`, …) would never end. Instead we write **one class**, \`Hero\`, describing what *every* hero has, and create as many **objects** as we like:
+      md: `The game needs many heroes, each with its own name and hp. Writing a separate set of variables for every hero (\`ariaName\`, \`ariaHp\`, \`bramName\`, …) would never end. Instead we write **one class**, \`Hero\`, describing what *every* hero has, and create as many **objects** as we like:
 
 ~~~java
 Hero aria = new Hero("Aria", 100);
@@ -44,6 +43,7 @@ Hero bram = new Hero("Bram", 80);
 
 Press **▶ Run my code** in the game: two heroes appear, but their names and hp are empty (\`null\`, 0), because the constructor doesn't store anything yet.`,
     },
+    { type: "step", title: "Predict before you code", focus: "read" },
     {
       type: "predict",
       id: "qf201-shadow",
@@ -68,11 +68,10 @@ System.out.println(aria.hp);`,
       answer: 0,
       explain: "aria and bram are two different objects, each with its own hp field. Changing Bram's hp does not touch Aria's.",
     },
+    { type: "step", title: "Write the constructor and introduce()", focus: "build" },
     {
       type: "markdown",
-      md: `## Your task
-
-In \`Hero.java\`:
+      md: `In \`Hero.java\`:
 
 1. **TODO 1**: in the constructor, store the parameters in the fields (\`this.name = name;\` and the same for hp).
 2. **TODO 2**: \`introduce()\` prints exactly \`I am Aria, 100 HP!\`, using *this* hero's name and hp.
@@ -81,6 +80,7 @@ Then press **⟳ Rebuild from my code** in the game. Select a hero and press **i
 
 In the game's field list you can also change \`hp\` directly, because it is \`public\`. Remember that: it becomes a problem in the next ticket.`,
     },
+    { type: "step", title: "Why does it work?", focus: "read" },
     {
       type: "short-answer",
       id: "qf201-why",
@@ -132,11 +132,10 @@ const qf202: Ticket = {
     "Explain why not every field should simply be public",
   ],
   blocks: [
+    { type: "step", title: "Try it from outside", focus: "code" },
     {
       type: "markdown",
-      md: `## Step 1: try it
-
-Open \`Main.java\` (your scratch file). It changes \`aria.level\`, a **public** field, from outside the Hero class. Press **▶ Run main**: it works.
+      md: `Open \`Main.java\` (your scratch file). It changes \`aria.level\`, a **public** field, from outside the Hero class. Press **▶ Run main**: it works.
 
 Now remove the \`//\` in front of \`aria.hp = 50;\` and press **▶ Run main** again.`,
     },
@@ -146,21 +145,19 @@ Now remove the \`//\` in front of \`aria.hp = 50;\` and press **▶ Run main** a
       question: "What happens when Main.java runs  aria.hp = 50;  while hp is private?",
       options: ["hp becomes 50", "Compile error: The field Hero.hp is not visible", "It compiles, but crashes when it runs"],
       answer: 1,
-      explain: "private means: only code inside the Hero class may use this field. Main is another class, so the compiler refuses before the program ever runs.",
+      explain: "private means: only code inside the Hero class may use this field. Main is another class, so the compiler refuses before the program ever runs. Put the // back so Main compiles again.",
     },
+    { type: "step", title: "What the game can see", focus: "game" },
     {
       type: "markdown",
-      md: `Put the \`//\` back so Main compiles again.
-
-Now look at the game. Aria's **level** is shown, but her **HP shows 🔒 ?**: the game is also "outside code", and it cannot read a private field either. You can try **try hp =** in the field list; Java refuses in the same way.
+      md: `Look at the game. Aria's **level** is shown, but her **HP shows 🔒 ?**: the game is also "outside code", and it cannot read a private field either. You can try **try hp =** in the field list; Java refuses in the same way.
 
 So we're stuck: **how can anyone read or change hp now?**`,
     },
+    { type: "step", title: "The controlled way in", focus: "read" },
     {
       type: "markdown",
-      md: `## Step 2: the controlled way in
-
-The class itself decides what outside code may do, by offering **public methods**:
+      md: `The class itself decides what outside code may do, by offering **public methods**:
 
 ~~~java
 public int getHp() {        // a getter: lets outside code READ hp
@@ -174,11 +171,10 @@ public void setLevel(int newLevel) {   // a setter: lets outside code CHANGE lev
 
 The field stays private; the methods are the doors. Code inside Hero can still use \`hp\` directly.`,
     },
+    { type: "step", title: "Why not just make it public?", focus: "game" },
     {
       type: "markdown",
-      md: `## Step 3: "why not just make everything public?"
-
-Before answering, use the game to break something. Select Aria and set **level = -3** with the field editor. The game happily shows **Lv -3**. A level of minus three makes no sense, but because \`level\` is public, **any code anywhere** can put any value in it, at any time, and Hero cannot stop it or even notice. In a big program, when a wrong value shows up, you would have to search *every* file for who changed it.`,
+      md: `Before answering, use the game to break something. Select Aria and set **level = -3** with the field editor. The game happily shows **Lv -3**. A level of minus three makes no sense, but because \`level\` is public, **any code anywhere** can put any value in it, at any time, and Hero cannot stop it or even notice. In a big program, when a wrong value shows up, you would have to search *every* file for who changed it.`,
     },
     {
       type: "short-answer",
@@ -187,11 +183,10 @@ Before answering, use the game to break something. Select Aria and set **level =
       placeholder: "If level is public, then…",
       modelAnswer: "Any code anywhere can set it to any value, even nonsense like -3, and Hero can't prevent it or know it happened. When the value is wrong, the bug could be in any file. If the field is private, the only way in is through Hero's own methods, so Hero can check the value and there is one place to look.",
     },
+    { type: "step", title: "Add getters and a setter", focus: "build" },
     {
       type: "markdown",
-      md: `## Your task
-
-1. **TODO 3** in \`Hero.java\`: make \`level\` private too.
+      md: `1. **TODO 3** in \`Hero.java\`: make \`level\` private too.
 2. **TODO 4**: add \`public int getHp()\`, \`public int getLevel()\`, \`public void setLevel(int newLevel)\`.
 3. \`Main.java\` no longer compiles (it uses \`aria.level\`). Good: the compiler now protects level as well. Change Main to use \`setLevel(5)\` and \`getLevel()\`, and print \`getHp()\`.
 
@@ -244,11 +239,10 @@ const qf203: Ticket = {
     "Replace setHp with takeDamage and heal",
   ],
   blocks: [
+    { type: "step", title: "Smarter doors", focus: "read" },
     {
       type: "markdown",
-      md: `## A setter with a guard
-
-\`setLevel\` is the only way to change level, so a rule written there **can never be skipped**:
+      md: `\`setLevel\` is the only way to change level, so a rule written there **can never be skipped**:
 
 ~~~java
 public void setLevel(int newLevel) {
@@ -274,11 +268,10 @@ There is no \`hpBar\` field at all: the getter **computes** it from hp and maxHp
 
 You already use getters like this: \`list.get(i)\` first **checks** that i is a valid index (and throws \`IndexOutOfBoundsException\` if it isn't) before returning the element.`,
     },
+    { type: "step", title: "The setHp back door", focus: "game" },
     {
       type: "markdown",
-      md: `## Some fields should have no setter
-
-Look at the teammate's \`setHp\`. Select a hero in the game and try **setHp(9999)**.`,
+      md: `Look at the teammate's \`setHp\`. Select a hero in the game and try **setHp(9999)**.`,
     },
     {
       type: "predict",
@@ -292,6 +285,7 @@ Look at the teammate's \`setHp\`. Select a hero in the game and try **setHp(9999
       answer: 1,
       explain: "In the game, hp only changes because something **happens**: a hero is hit or healed. Each of those has rules (never below 0, never above maxHp, no negative damage). A setter is a back door around all of them, so the right design is no setter, plus methods that say what happened.",
     },
+    { type: "step", title: "Actions instead of a setter", focus: "read" },
     {
       type: "markdown",
       md: `So instead of \`setHp\`, Hero offers **actions with names that say what happened**:
@@ -317,11 +311,10 @@ And \`name\`? A hero's name is fixed once the hero is created, so it gets a gett
       placeholder: "Because…",
       modelAnswer: "hp should only change because of game events, and each event has rules (no negative damage, never below 0, never above maxHp). takeDamage and heal enforce those rules and say what happened. setHp would let any code put any number into hp and skip every rule.",
     },
+    { type: "step", title: "Build the rules", focus: "build" },
     {
       type: "markdown",
-      md: `## Your task
-
-1. **TODO 1**: \`setLevel\` only accepts 1 to 99; anything else is ignored (the old level stays).
+      md: `1. **TODO 1**: \`setLevel\` only accepts 1 to 99; anything else is ignored (the old level stays).
 2. **TODO 2**: delete \`setHp\`. Write \`takeDamage(int amount)\` and \`heal(int amount)\`: hp never goes below 0 or above maxHp, and negative amounts are ignored.
 3. **TODO 3**: write \`getHpBar()\` (10 cells; filled cells = \`hp * 10 / maxHp\`).
 
@@ -374,11 +367,10 @@ const qf204: Ticket = {
     "Tell a class's public methods apart from its internal details",
   ],
   blocks: [
+    { type: "step", title: "Find the copies", focus: "code" },
     {
       type: "markdown",
-      md: `## Find the copies
-
-Read \`takeDamage\` and \`heal\`: both end with the same clamping lines. Read \`attack\` and \`previewDamage\`: both contain \`8 + level * 2\`.`,
+      md: `Read \`takeDamage\` and \`heal\`: both end with the same clamping lines. Read \`attack\` and \`previewDamage\`: both contain \`8 + level * 2\`.`,
     },
     {
       type: "predict",
@@ -388,11 +380,10 @@ Read \`takeDamage\` and \`heal\`: both end with the same clamping lines. Read \`
       answer: 1,
       explain: "Two copies of a formula drift apart. The preview still uses the old formula. Bugs like this are why repeated code is moved into one method.",
     },
+    { type: "step", title: "One helper, one place", focus: "read" },
     {
       type: "markdown",
-      md: `## One helper, one place
-
-Move each repeated piece into its own method and call it from both places:
+      md: `Move each repeated piece into its own method and call it from both places:
 
 ~~~java
 private int clampHp(int value) {
@@ -410,16 +401,16 @@ Why **private**?
 
 You already rely on this every day: when an \`ArrayList\` runs out of room, \`add\` quietly grows its internal array using a **private** method (called \`grow\` in Java's source code). You've never called it, and you can't. That's the point.`,
     },
+    { type: "step", title: "Extract the helpers", focus: "build" },
     {
       type: "markdown",
-      md: `## Your task
-
-1. **TODO 1**: write \`private int clampHp(int value)\` and use it in \`takeDamage\` and \`heal\`.
+      md: `1. **TODO 1**: write \`private int clampHp(int value)\` and use it in \`takeDamage\` and \`heal\`.
 2. **TODO 2**: write \`private int calculateDamage()\` and use it in \`attack\` and \`previewDamage\`.
 3. **TODO 3**: balance patch: damage is \`6 + level * 3\`. Change it in **one** place.
 
 Rebuild the game and look at **📐 Your classes**: the private methods have a 🔒, and they do **not** appear as buttons: outside code (the game) cannot call them. Try **attack** and **previewDamage**: they agree.`,
     },
+    { type: "step", title: "Why private?", focus: "read" },
     {
       type: "short-answer",
       id: "qf204-why",
@@ -472,6 +463,7 @@ const qf205: Ticket = {
     "Replace a magic number with a constant",
   ],
   blocks: [
+    { type: "step", title: "Counting heroes", focus: "game" },
     {
       type: "predict",
       id: "qf205-count",
@@ -484,11 +476,10 @@ const qf205: Ticket = {
       answer: 1,
       explain: "A normal (instance) field belongs to each object. The question \"how many heroes are there?\" is not about any one hero; it's about the whole class.",
     },
+    { type: "step", title: "Data that belongs to the class", focus: "read" },
     {
       type: "markdown",
-      md: `## Data that belongs to the class
-
-\`static\` means **one copy for the whole class**, shared by every object:
+      md: `\`static\` means **one copy for the whole class**, shared by every object:
 
 ~~~java
 private static int heroCount = 0;   // one counter for the whole game
@@ -519,16 +510,16 @@ public static final int MAX_LEVEL = 99;
 
 **Limit:** don't use static just to avoid creating objects. If a value is different for each hero (hp, name), it must **not** be static.`,
     },
+    { type: "step", title: "Make it static", focus: "build" },
     {
       type: "markdown",
-      md: `## Your task
-
-1. **TODO 1**: make \`heroCount\` static (keep it private).
+      md: `1. **TODO 1**: make \`heroCount\` static (keep it private).
 2. **TODO 2**: make \`getHeroCount()\` static.
 3. **TODO 3**: add \`public static final int MAX_LEVEL = 99;\` and use it in \`setLevel\`.
 
 Rebuild: the game's top bar now shows **Hero.getHeroCount() = 3** and **Hero.MAX_LEVEL = 99**. In 📐 Your classes, static members are marked: they belong to the class, not to each hero card.`,
     },
+    { type: "step", title: "Why static?", focus: "read" },
     {
       type: "short-answer",
       id: "qf205-why",
@@ -580,11 +571,10 @@ const qf206: Ticket = {
     "Recognize when two methods should have different names instead",
   ],
   blocks: [
+    { type: "step", title: "Same action, different inputs", focus: "read" },
     {
       type: "markdown",
-      md: `## Same action, different inputs
-
-"Heal" is one idea, used two ways: heal *some* hp, or heal *completely*. Java lets one class have **several methods with the same name** as long as their **parameter lists differ**. This is called **overloading**:
+      md: `"Heal" is one idea, used two ways: heal *some* hp, or heal *completely*. Java lets one class have **several methods with the same name** as long as their **parameter lists differ**. This is called **overloading**:
 
 ~~~java
 public void heal(int amount) { ... }   // heal some
@@ -609,6 +599,7 @@ public Hero(String name) {
 
 \`this(...)\` must be the first line. Why not copy the four lines of the other constructor instead? Because the counter would then have to be copied too, and every future rule as well. With \`this(...)\` there is **one** place where a hero is set up.`,
     },
+    { type: "step", title: "Which one runs?", focus: "read" },
     {
       type: "predict",
       id: "qf206-pick",
@@ -622,11 +613,10 @@ public Hero(String name) {
       tone: "warn",
       md: "**When not to overload:** only when the methods do *the same thing* with different inputs. If they mean different things, give them different names. A known trap: `ArrayList<Integer>` has both `remove(int index)` and `remove(Object o)`, so `list.remove(1)` removes the element at **index 1**, not the number 1.",
     },
+    { type: "step", title: "Add the overloads", focus: "build" },
     {
       type: "markdown",
-      md: `## Your task
-
-1. **TODO 1**: add \`heal()\` (no parameters) that heals to full.
+      md: `1. **TODO 1**: add \`heal()\` (no parameters) that heals to full.
 2. **TODO 2**: add \`Hero(String name)\`, using \`this(name, 100);\`.
 
 Rebuild: the game now shows **two heal buttons**, \`heal()\` and \`heal(int)\`. 📐 Your classes lists both constructors.`,
@@ -675,15 +665,15 @@ const qf207: Ticket = {
     "Choose between a field and inheritance",
   ],
   blocks: [
+    { type: "step", title: "Two kinds of relationship", focus: "read" },
     {
       type: "markdown",
-      md: `## Two kinds of relationship
-
-- **has-a**: a hero *has a* weapon. The weapon is a separate thing that the hero holds; it can be swapped, dropped or shared. In Java: a **field**: \`private Weapon weapon;\`.
+      md: `- **has-a**: a hero *has a* weapon. The weapon is a separate thing that the hero holds; it can be swapped, dropped or shared. In Java: a **field**: \`private Weapon weapon;\`.
 - **is-a**: a warrior *is a* hero, a special kind of hero. In Java: **inheritance** (\`extends\`), which starts in the next ticket.
 
 A quick test: say the sentence out loud. "A hero **is a** weapon" sounds wrong; "a hero **has a** weapon" sounds right.`,
     },
+    { type: "step", title: "Checkpoint: is-a or has-a?", focus: "read" },
     {
       type: "predict",
       id: "qf207-q1",
@@ -727,15 +717,15 @@ A quick test: say the sentence out loud. "A hero **is a** weapon" sounds wrong; 
       answer: 1,
       explain: "Inheriting just to reuse methods creates nonsense (can you equip a hero onto another hero?) and ties the classes together. A has-a field gives the hero a weapon's power without pretending it is one.",
     },
+    { type: "step", title: "Give heroes weapons", focus: "build" },
     {
       type: "markdown",
-      md: `## Your task
-
-1. **Weapon.java** (TODO 1–3): private fields \`name\` and \`power\`, a constructor, and the getters \`getName()\` and \`getPower()\`. Same habits as Hero: private fields, public getters.
+      md: `1. **Weapon.java** (TODO 1–3): private fields \`name\` and \`power\`, a constructor, and the getters \`getName()\` and \`getPower()\`. Same habits as Hero: private fields, public getters.
 2. **Hero.java** (TODO 4–6): \`private Weapon weapon;\` (\`null\` means no weapon yet), \`equip(Weapon w)\`, \`getWeapon()\`, and \`calculateDamage()\` adds the weapon's power when the hero has one.
 
 Rebuild: two weapons lie on the field. Select Aria, choose a weapon in **equip(**…**)**, and compare **previewDamage()** before and after.`,
     },
+    { type: "step", title: "Why a field?", focus: "read" },
     {
       type: "short-answer",
       id: "qf207-why",
@@ -788,19 +778,17 @@ const qf208: Ticket = {
     "Explain why inheritance fits an is-a relationship",
   ],
   blocks: [
+    { type: "step", title: "Play with the copied warrior", focus: "game" },
     {
       type: "markdown",
-      md: `## What went wrong with the copy
-
-Try **heal(999)** on Bram: his hp goes far past his max. Hero fixed that bug in QF-203, but the copy was made from an old version. Bram also has no \`setLevel\`, no \`attack\`, no weapon, and he is **not counted** in \`Hero.getHeroCount()\`.
+      md: `Try **heal(999)** on Bram: his hp goes far past his max. Hero fixed that bug in QF-203, but the copy was made from an old version. Bram also has no \`setLevel\`, no \`attack\`, no weapon, and he is **not counted** in \`Hero.getHeroCount()\`.
 
 A copy is a snapshot. Every fix and every new feature in Hero has to be made twice, and nobody remembers to. And the game can't treat Bram as a hero at all: to Java, \`Warrior\` and \`Hero\` are unrelated classes.`,
     },
+    { type: "step", title: "extends: a warrior is a hero", focus: "read" },
     {
       type: "markdown",
-      md: `## extends: "a warrior is a hero, plus…"
-
-~~~java
+      md: `~~~java
 public class Warrior extends Hero {
     public Warrior(String name) {
         super(name, 130);       // let Hero set up its own fields (next ticket explains this line)
@@ -830,11 +818,10 @@ public class Warrior extends Hero {
       answer: 1,
       explain: "A Warrior object does contain Hero's name field, but private means only code written inside Hero can touch it. The subclass uses Hero's public methods, like everyone else. That keeps Hero's rules safe even from subclasses.",
     },
+    { type: "step", title: "Rewrite Warrior with extends", focus: "build" },
     {
       type: "markdown",
-      md: `## Your task
-
-Rewrite \`Warrior.java\`:
+      md: `Rewrite \`Warrior.java\`:
 
 1. \`public class Warrior extends Hero\`
 2. Delete **all** copied fields and methods.
@@ -843,6 +830,7 @@ Rewrite \`Warrior.java\`:
 
 Rebuild: Bram now has **every Hero button** plus **roar()**, heal is capped, and the hero count includes him. In 📐 Your classes, Warrior shows \`extends Hero\` and lists only its own method.`,
     },
+    { type: "step", title: "Why extends?", focus: "read" },
     {
       type: "short-answer",
       id: "qf208-why",
@@ -897,11 +885,10 @@ const qf209: Ticket = {
     "Explain why the subclass can't simply set maxHp itself",
   ],
   blocks: [
+    { type: "step", title: "Who builds which part?", focus: "read" },
     {
       type: "markdown",
-      md: `## Who builds which part?
-
-A Mage object has two parts: the **Hero part** (name, hp, maxHp, level, weapon) and the **Mage part** (mana). The Hero part's fields are private to Hero, so **only Hero's constructor can set them up**.
+      md: `A Mage object has two parts: the **Hero part** (name, hp, maxHp, level, weapon) and the **Mage part** (mana). The Hero part's fields are private to Hero, so **only Hero's constructor can set them up**.
 
 That's why the first thing every subclass constructor does is call a superclass constructor with \`super(...)\`:
 
@@ -914,6 +901,7 @@ public Mage(String name) {
 
 The arguments choose **which** Hero constructor runs, just like overloading: \`super(name)\` runs \`Hero(String)\` (100 hp); \`super(name, 70)\` runs \`Hero(String, int)\`.`,
     },
+    { type: "step", title: "Predict", focus: "read" },
     {
       type: "predict",
       id: "qf209-maxhp",
@@ -938,11 +926,10 @@ The arguments choose **which** Hero constructor runs, just like overloading: \`s
       answer: 1,
       explain: "The Hero part must be built before anything else in the object runs. If you don't write super(...) at all, Java inserts super() (with no arguments) for you, and that only compiles if Hero has a no-argument constructor. Ours doesn't.",
     },
+    { type: "step", title: "Fix the mage's constructor", focus: "build" },
     {
       type: "markdown",
-      md: `## Your task
-
-In \`Mage.java\`: call the right Hero constructor so a mage has **70 max hp**, then set **mana to 50**.
+      md: `In \`Mage.java\`: call the right Hero constructor so a mage has **70 max hp**, then set **mana to 50**.
 
 Rebuild: Cara has a shorter hp bar and a **mana** field. Check the top bar: the hero count went up by one, not two, because only one Hero constructor ran for Cara.`,
     },
@@ -993,11 +980,10 @@ const qf210: Ticket = {
     "Use @Override so the compiler catches that bug",
   ],
   blocks: [
+    { type: "step", title: "Replacing one behavior", focus: "read" },
     {
       type: "markdown",
-      md: `## Replacing one behavior
-
-Look at Hero's (read-only) \`attack\`:
+      md: `Look at Hero's (read-only) \`attack\`:
 
 ~~~java
 public void attack(Hero target) {
@@ -1019,11 +1005,10 @@ You don't touch \`attack\` at all. Hero's attack calls \`getBattleCry()\`, and f
 
 You've used this already: \`ArrayList\` overrides \`toString()\`, which is why \`System.out.println(list)\` prints \`[1, 2, 3]\` instead of something like \`java.util.ArrayList@1b6d3586\`.`,
     },
+    { type: "step", title: "The mage bug", focus: "game" },
     {
       type: "markdown",
-      md: `## The mage bug
-
-Mage has \`attack(Hero target, int power)\`. Rebuild the game: Cara now has **two** attack buttons, \`attack(Hero)\` and \`attack(Hero, int)\`. The game, and the rest of our code, calls \`attack(Hero)\`, which is still Hero's.`,
+      md: `Mage has \`attack(Hero target, int power)\`. Rebuild the game: Cara now has **two** attack buttons, \`attack(Hero)\` and \`attack(Hero, int)\`. The game, and the rest of our code, calls \`attack(Hero)\`, which is still Hero's.`,
     },
     {
       type: "predict",
@@ -1037,11 +1022,10 @@ Mage has \`attack(Hero target, int power)\`. Rebuild the game: Cara now has **tw
       answer: 1,
       explain: "Override = same name **and** same parameters, so it replaces. Overload = same name, different parameters, so it is an extra method. The extra `int power` parameter isn't even used.",
     },
+    { type: "step", title: "@Override", focus: "read" },
     {
       type: "markdown",
-      md: `## @Override: ask the compiler to check
-
-Put \`@Override\` on the buggy method and the compiler immediately says *"The method attack(Hero, int) of type Mage must override or implement a supertype method"*. \`@Override\` changes nothing when it's correct; it **catches** this exact mistake. Use it every time you mean to override.
+      md: `Put \`@Override\` on the buggy method and the compiler immediately says *"The method attack(Hero, int) of type Mage must override or implement a supertype method"*. \`@Override\` changes nothing when it's correct; it **catches** this exact mistake. Use it every time you mean to override.
 
 | | Overloading | Overriding |
 |---|---|---|
@@ -1051,15 +1035,15 @@ Put \`@Override\` on the buggy method and the compiler immediately says *"The me
 | Result | an extra method | replaces the inherited one |
 | Example | \`heal()\` / \`heal(int)\` | Warrior's \`getBattleCry()\` |`,
     },
+    { type: "step", title: "Your battle cry and the spell fix", focus: "build" },
     {
       type: "markdown",
-      md: `## Your task
-
-1. **Warrior.java TODO 1**: override \`getBattleCry()\` with your own cry (anything but \`"Hyah!"\`).
+      md: `1. **Warrior.java TODO 1**: override \`getBattleCry()\` with your own cry (anything but \`"Hyah!"\`).
 2. **Mage.java TODO 2**: add \`@Override\`, read the compiler error, then fix the parameter list so it overrides \`attack(Hero target)\`.
 
 Rebuild and press **attack** with Bram: his speech bubble shows **your** cry. Cara's spell costs 10 mana and hits twice as hard; when she runs out of mana she says so. In 📐 Your classes, overriding methods are tagged **overrides**.`,
     },
+    { type: "step", title: "Why does attack shout it?", focus: "read" },
     {
       type: "short-answer",
       id: "qf210-why",
@@ -1115,11 +1099,10 @@ const qf211: Ticket = {
     "Avoid calling the overridden method on yourself by mistake",
   ],
   blocks: [
+    { type: "step", title: "The same, plus", focus: "read" },
     {
       type: "markdown",
-      md: `## Overriding replaces… but we want "the same, plus"
-
-If Warrior overrides \`attack(Hero target)\`, Hero's attack no longer runs for warriors. We could copy Hero's attack code into Warrior, but that's the copy trap from QF-208 again (and Hero's attack uses private things Warrior can't even see).
+      md: `If Warrior overrides \`attack(Hero target)\`, Hero's attack no longer runs for warriors. We could copy Hero's attack code into Warrior, but that's the copy trap from QF-208 again (and Hero's attack uses private things Warrior can't even see).
 
 \`super.attack(target)\` means: **run the superclass's version of this method, on this object**:
 
@@ -1145,11 +1128,10 @@ Compare: \`super(...)\` calls the superclass **constructor** (first line only); 
       answer: 1,
       explain: "For a warrior, attack(...) means Warrior's attack, the method you're in. Without super, it never reaches Hero's version.",
     },
+    { type: "step", title: "super.toString()", focus: "read" },
     {
       type: "markdown",
-      md: `## Same idea for toString()
-
-Hero's \`toString()\` returns \`Bram (Lv 1, 130/130 HP)\`. Warrior's version reuses it and adds to it:
+      md: `Hero's \`toString()\` returns \`Bram (Lv 1, 130/130 HP)\`. Warrior's version reuses it and adds to it:
 
 ~~~java
 @Override
@@ -1160,11 +1142,10 @@ public String toString() {
 
 Now if Hero's format changes (say, to show the weapon), warriors and mages get the change automatically.`,
     },
+    { type: "step", title: "Add rage and better descriptions", focus: "build" },
     {
       type: "markdown",
-      md: `## Your task
-
-1. **Warrior TODO 1**: \`private int rage\`, \`getRage()\`, and override \`attack(Hero target)\` using \`super.attack(target)\`, then +10 rage.
+      md: `1. **Warrior TODO 1**: \`private int rage\`, \`getRage()\`, and override \`attack(Hero target)\` using \`super.attack(target)\`, then +10 rage.
 2. **Warrior TODO 2**: \`toString()\` = Hero's text + \`" rage " + rage\`.
 3. **Mage TODO 3**: \`toString()\` = Hero's text + \`" mana " + mana\`.
 
@@ -1217,11 +1198,10 @@ const qf212: Ticket = {
     "Explain what the reference type allows you to call",
   ],
   blocks: [
+    { type: "step", title: "A tree of classes", focus: "read" },
     {
       type: "markdown",
-      md: `## A tree of classes
-
-~~~
+      md: `~~~
           Hero
         /      \\
    Warrior     Mage
@@ -1233,11 +1213,10 @@ An Archmage **is a** Mage, and a Mage **is a** Hero, so an Archmage is a Hero to
 
 Mage has a public helper, \`addMana(int)\`, that subclasses can use: the archmage is built like a mage, then gets 50 more mana.`,
     },
+    { type: "step", title: "One type for every hero", focus: "read" },
     {
       type: "markdown",
-      md: `## One type for every hero
-
-Because each of these **is a** Hero, a variable or array of type \`Hero\` can hold any of them:
+      md: `Because each of these **is a** Hero, a variable or array of type \`Hero\` can hold any of them:
 
 ~~~java
 Hero h = new Warrior("Bram");          // OK: a warrior is a hero
@@ -1264,11 +1243,10 @@ So \`Roster.totalHp(Hero[] party)\` is written **once** and works for any mix of
       answer: 2,
       explain: "Every Archmage is a Mage and a Hero, but not every Hero is a Warrior. The arrow of is-a only goes up the tree.",
     },
+    { type: "step", title: "Archmage and Roster", focus: "build" },
     {
       type: "markdown",
-      md: `## Your task
-
-1. **Archmage TODO 1–3**: \`extends Mage\`; the constructor calls \`super(name)\` then \`addMana(50)\`; override \`getBattleCry()\` with the archmage's own cry.
+      md: `1. **Archmage TODO 1–3**: \`extends Mage\`; the constructor calls \`super(name)\` then \`addMana(50)\`; override \`getBattleCry()\` with the archmage's own cry.
 2. **Roster TODO 4**: \`totalHp(Hero[] party)\` adds \`getHp()\` of every hero in the array (0 for an empty array).
 
 Rebuild: Zed the Archmage joins, with 100 mana and a spell attack (inherited from Mage) shouting **his** cry. 📐 Your classes shows the chain \`Archmage → Mage → Hero\`.`,
@@ -1323,11 +1301,10 @@ const qf213: Ticket = {
     "Explain why no if/instanceof is needed",
   ],
   blocks: [
+    { type: "step", title: "One call, many behaviors", focus: "read" },
     {
       type: "markdown",
-      md: `## One call, many behaviors
-
-~~~java
+      md: `~~~java
 for (Hero h : members) {
     h.attack(target);
 }
@@ -1346,6 +1323,7 @@ Two rules from the last two tickets, together:
 1. **Compile time:** the variable's type (\`Hero\`) decides *whether you may call* \`attack\`.
 2. **Run time:** the object's class decides *which* \`attack\` runs.`,
     },
+    { type: "step", title: "Predict the battle", focus: "read" },
     {
       type: "predict",
       id: "qf213-dispatch",
@@ -1363,16 +1341,16 @@ Two rules from the last two tickets, together:
       tone: "info",
       md: "Without polymorphism, allAttack would need `if (h instanceof Warrior) ... else if (h instanceof Mage) ...`, and every new hero class would mean editing Party. With it, Party never changes: write a new subclass, override attack, and it just works.",
     },
+    { type: "step", title: "Everyone attack!", focus: "build" },
     {
       type: "markdown",
-      md: `## Your task
-
-In \`Party.java\`:
+      md: `In \`Party.java\`:
 1. **TODO 1**: \`allAttack(Hero target)\`: every member attacks the target, in order.
 2. **TODO 2**: \`totalHp()\`: the sum of the members' hp.
 
 **Before pressing the button**, predict each line of the battle log. Then rebuild and press **allAttack** on the dummy. The dummy should go from **300 to 246**. Press it again: did the mage's mana change the result?`,
     },
+    { type: "step", title: "Explain it", focus: "read" },
     {
       type: "short-answer",
       id: "qf213-why",
@@ -1428,22 +1406,20 @@ const qf214: Ticket = {
     "Override equals(Object) correctly",
   ],
   blocks: [
+    { type: "step", title: "Every class extends Object", focus: "game" },
     {
       type: "markdown",
-      md: `## Every class extends Object
-
-\`Potion\` doesn't say \`extends\`, so Java makes it extend **Object**, the root of every class tree (Hero too). Object gives every class a few methods, including:
+      md: `\`Potion\` doesn't say \`extends\`, so Java makes it extend **Object**, the root of every class tree (Hero too). Object gives every class a few methods, including:
 
 - \`toString()\`: by default, class name + \`@\` + a hash code: \`Potion@6d06d69c\`.
 - \`equals(Object other)\`: by default, the same as \`==\`.
 
 Rebuild the game and look at the two red potions: that's Object's toString.`,
     },
+    { type: "step", title: "== vs equals", focus: "read" },
     {
       type: "markdown",
-      md: `## == asks "same object?", equals asks "same meaning?"
-
-~~~java
+      md: `~~~java
 Potion a = new Potion("Red", 30);
 Potion b = new Potion("Red", 30);
 a == b          // false: two different objects in memory
@@ -1464,11 +1440,10 @@ You've seen this with String: \`s1 == s2\` can be false for two strings with the
       answer: 1,
       explain: "Same trap as the mage's attack in QF-210. The parameter type must be Object. Put @Override on it and the compiler checks for you.",
     },
+    { type: "step", title: "Writing equals(Object)", focus: "read" },
     {
       type: "markdown",
-      md: `## Writing equals(Object)
-
-~~~java
+      md: `~~~java
 @Override
 public boolean equals(Object other) {
     if (!(other instanceof Potion)) {
@@ -1484,15 +1459,15 @@ public boolean equals(Object other) {
 - \`color\` is a String, so it's compared with \`equals\`; \`healAmount\` is an int, so \`==\`.
 - \`p.color\` works even though color is private: private means "only code in the Potion class", and this *is* code in the Potion class.`,
     },
+    { type: "step", title: "Override toString and equals", focus: "build" },
     {
       type: "markdown",
-      md: `## Your task
-
-1. **TODO 1**: \`toString()\` returns e.g. \`Red potion (+30)\`.
+      md: `1. **TODO 1**: \`toString()\` returns e.g. \`Red potion (+30)\`.
 2. **TODO 2**: \`equals(Object other)\`: equal when color and healAmount are the same.
 
 Rebuild: the potions show their names. Select a red potion and call **equals(…)** with the other red one: **true**. Then **isSameObject(…)** with the same one: still **false**, they are two objects with the same meaning.`,
     },
+    { type: "step", title: "Explain it", focus: "read" },
     {
       type: "short-answer",
       id: "qf214-why",
