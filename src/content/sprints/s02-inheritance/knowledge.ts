@@ -1,5 +1,10 @@
 import type { KnowledgeTopic } from "../../types";
 import { sprint2Traces as T } from "./traces";
+import { tickets } from "./tickets";
+
+// The code map of the review ticket QF-215, reused here so it can be opened without a ticket.
+const arenaMap = tickets.find((t) => t.id === "QF-215")?.blocks.find((b) => b.type === "code-map");
+if (!arenaMap || arenaMap.type !== "code-map") throw new Error("QF-215 code map missing");
 
 /*
  * Knowledge Space for Sprint 2 (inheritance): optional, deeper material. Each topic starts from the problem
@@ -178,6 +183,19 @@ Adding \`@Override\` above a method tells the compiler what you intend. If no su
         tone: "warn",
         md: "Only instance methods are looked up this way. Fields and static methods are chosen by the declared type, a detail beyond AP CSA that rarely matters if fields are private.",
       },
+    ],
+  },
+  {
+    id: "arena-code-map",
+    title: "The whole arena on one map (quick review)",
+    summary: "All of Pixel Arena as one program. Click a concept to see every place it appears, or switch to a spot check.",
+    minutes: 10,
+    sections: [
+      {
+        type: "markdown",
+        md: "Everything from QF-201 to QF-214 in one program. **Explore**: click a concept on the right (overloading, static, super.method(), polymorphism…) to highlight every place it appears, or click any line to see which ideas it shows. **🎲 Spot check**: a random concept is named; click a line that shows it.",
+      },
+      { type: "code-map", title: arenaMap.title, code: arenaMap.code, concepts: arenaMap.concepts },
     ],
   },
 ];

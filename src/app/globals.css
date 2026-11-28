@@ -735,3 +735,4 @@ div.code-panel > .code-top .editor-wrap { min-height: 220px; }
   .cm-panel { border-left: 0; border-top: 1px solid var(--border); max-height: none; order: -1; }
   .cm-code { max-height: 60vh; font-size: 13px; }
 }
+.k-page:has(.code-map) { max-width: 1320px; }

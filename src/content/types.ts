@@ -132,7 +132,8 @@ export type KnowledgeSection =
   | { type: "markdown"; md: string }
   | { type: "callout"; tone: "info" | "warn"; md: string }
   | { type: "trace"; trace: Trace; caption?: string }
-  | { type: "traversal-lab"; modes: TraversalMode[]; rows: number; cols: number };
+  | { type: "traversal-lab"; modes: TraversalMode[]; rows: number; cols: number }
+  | { type: "code-map"; title?: string; code: string; concepts: CodeConcept[]; mode?: "explore" | "quiz" };
 
 /** Supplementary material that goes beyond the textbook; never required for tickets. */
 export type KnowledgeTopic = {

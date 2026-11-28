@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { getSprint } from "@/content/registry";
+import { CodeMap } from "@/components/CodeMap";
 import { Markdown } from "@/components/Markdown";
 import { TraversalViz } from "@/components/viz/TraversalViz";
 import { TraceViewer } from "./TraceViewer";
@@ -35,6 +36,8 @@ export function KnowledgePage({ sprintId, topicId }: { sprintId: string; topicId
             );
           case "trace":
             return <TraceViewer key={i} trace={s.trace} caption={s.caption} />;
+          case "code-map":
+            return <CodeMap key={i} code={s.code} concepts={s.concepts} title={s.title} mode={s.mode} />;
           case "traversal-lab":
             return (
               <div key={i} className="card" style={{ margin: "18px 0" }}>
