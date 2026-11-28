@@ -38,7 +38,7 @@ for (const t of allTickets) {
     const passed = tests.filter((x) => x.passed).length;
     const labelsOk = tests.every((x) => t.task.testLabels[x.name]);
     const run = variant === "starter" ? bridge("run", dir + "out/", t.task.mainClass) : { status: "-" };
-    const ok = (variant === "solution" ? passed === tests.length : passed < tests.length) && labelsOk && run.status !== "runtime_error";
+    const ok = (variant === "solution" || t.task.review ? passed === tests.length : passed < tests.length) && labelsOk && run.status !== "runtime_error";
     if (!ok) failed = true;
     console.log(`${ok ? "OK " : "BAD"} ${t.id} ${variant}: ${passed}/${tests.length} passed, labels ${labelsOk ? "ok" : "MISSING"}, main=${run.status}`);
     if (variant === "starter") console.log("    stdout:", JSON.stringify(run.stdout));
