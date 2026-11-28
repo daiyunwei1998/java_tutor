@@ -1,6 +1,27 @@
 # Spec C — Sprint 2: Inheritance (Runestone CSJava Unit 10)
 
-**Status:** v1.2 (2026-11-28) · implemented in part: Sprint 2 (`src/content/sprints/s02-inheritance/`) contains PF-300 to PF-303 and five Knowledge Space topics
+**Status:** v2.0 (2026-11-28) · **implemented as Pixel Arena** (QuestForge Games), QF-201 to QF-214 in `src/content/sprints/s02-inheritance/`. The Filter Plugin System case and tickets PF-300 to PF-303 described below were replaced; the textbook coverage and the why-first pattern still apply. Current mapping:
+
+| Ticket | Theme | Textbook |
+|---|---|---|
+| QF-201 | objects, fields, constructor, this | review |
+| QF-202 | private vs public: try both from outside, then getters/setters, "why not public?" | review |
+| QF-203 | setters with rules, getters that compute, fields with no setter (takeDamage/heal instead of setHp) | review |
+| QF-204 | private helper methods, balance patch in one place | review |
+| QF-205 | static counter, static method, constants (why) | review |
+| QF-206 | overloading: heal() / heal(int), Hero(String) with this(...) | review |
+| QF-207 | is-a vs has-a MCQs, Hero has-a Weapon | 10.1 |
+| QF-208 | extends (replacing a copied class) | 10.1 |
+| QF-209 | constructors and super(...) | 10.2 |
+| QF-210 | overriding (custom battle cry), @Override, overload trap | 10.3 |
+| QF-211 | super.method(), super.toString() | 10.4 |
+| QF-212 | hierarchy (Archmage), superclass references, Hero[] | 10.5 |
+| QF-213 | polymorphism: Party.allAttack over ArrayList<Hero> | 10.6 |
+| QF-214 | Object, toString, == vs equals(Object) with potions | 10.7 |
+
+Every game ticket uses the two-column workspace: lesson and code on the left, the game (running the student's own code through `src/lib/game/GameBridge.java`) and a class preview on the right.
+
+**Original v1.2 status:** implemented in part: Sprint 2 contained PF-300 to PF-303 and five Knowledge Space topics
 **Parent product:** Interactive CS Learning Platform (Spec B)
 **Previous sprint:** Sprint 1 — 2D Arrays (Mini Photoshop)
 **Target learners:** High-school Java / AP Computer Science A students

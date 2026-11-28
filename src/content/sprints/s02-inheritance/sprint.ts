@@ -5,18 +5,18 @@ import { tickets } from "./tickets";
 export const sprintInheritance: Sprint = {
   id: "inheritance",
   number: 2,
-  topic: "Inheritance",
-  unit: "Runestone CSJava Unit 10 (enrichment: not on the 2025–26 AP CSA exam)",
+  topic: "Classes & Inheritance",
+  unit: "Runestone CSJava Unit 10, with a review of class design (private, getters/setters, static, overloading)",
   status: "current",
   project: {
-    name: "Filter Plugin System",
-    company: "PixelForge Studio",
-    tagline: "Turn every Mini Photoshop filter into an object, so new filters plug in without touching the editor.",
+    name: "Pixel Arena",
+    company: "QuestForge Games",
+    tagline: "A turn-based 8-bit battle game where every button runs the Java you just wrote.",
     description:
-      "Back at PixelForge Studio. The editor's filters are a pile of static methods, and every new filter means editing the editor. This sprint you turn filters into objects that share one superclass, so one list can hold any filter in the order the user chooses.",
-    techLead: { name: "Mei", role: "Tech Lead", avatar: "👩‍💻" },
+      "QuestForge Games is building Pixel Arena, a small turn-based RPG. You start with a Hero class that can't even remember its own name, and finish with a party of warriors, mages and archmages fighting a training dummy. The game on the right runs your code: write a method and its button appears.",
+    techLead: { name: "Kai", role: "Game Lead", avatar: "🕹️" },
   },
-  // Board order: two bridge tickets (types, fields and methods), then inheritance.
+  // Board order: class design first (QF-201..207), then inheritance (QF-208..214, textbook 10.1–10.7).
   tickets,
   knowledge,
 };

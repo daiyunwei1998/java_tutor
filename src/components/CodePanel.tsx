@@ -246,7 +246,13 @@ export function CodePanel({
           </button>
         ))}
       </div>
-      {activeFile.readOnly && <div className="small muted" style={{ padding: "4px 10px", background: "var(--surface-2)" }}>This is the test file (read-only). Reading what the tests check helps you understand the requirements.</div>}
+      {activeFile.readOnly && (
+        <div className="small muted" style={{ padding: "4px 10px", background: "var(--surface-2)" }}>
+          {activeFile.path.endsWith("Test.java")
+            ? "This is the test file (read-only). Reading what the tests check helps you understand the requirements."
+            : "Read-only: the team's shared code. Your code uses it, but this ticket doesn't change it."}
+        </div>
+      )}
       <div className="editor-wrap">
         <CodeMirror
           ref={cm}

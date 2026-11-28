@@ -1,7 +1,7 @@
 // Checks every ticket: starter code compiles and runs, starter fails some tests, reference solution passes all.
 // Usage: node --experimental-strip-types tools/verify-content.mjs   (from repo root, needs a JDK)
 import { execFileSync } from "node:child_process";
-import { mkdirSync, writeFileSync, rmSync, copyFileSync, readdirSync, existsSync } from "node:fs";
+import { mkdirSync, writeFileSync, rmSync, copyFileSync, readdirSync, existsSync, statSync } from "node:fs";
 import { join, resolve } from "node:path";
 const root = resolve(import.meta.dirname, "..");
 // Every sprint folder has a tickets.ts exporting `tickets` (see src/content/registry.ts).
@@ -23,7 +23,15 @@ for (const t of allTickets) {
     const dir = join("/tmp", "verify", t.id, variant) + "/";
     rmSync(dir, { recursive: true, force: true }); mkdirSync(dir + "src", { recursive: true });
     for (const f of t.task.files) writeFileSync(dir + "src/" + f.path, f.content);
-    if (variant === "solution") copyFileSync(join(root, "tools/solutions", t.task.mainClass + ".java"), dir + "src/" + t.task.mainClass + ".java");
+    // Reference solution: tools/solutions/<task.solution or mainClass>.java replaces the file with the same class name;
+    // a folder tools/solutions/<task.solution>/ replaces every file it contains.
+    const sol = t.task.solution ?? t.task.mainClass;
+    if (variant === "solution") {
+      const solDir = join(root, "tools/solutions", sol);
+      if (existsSync(solDir) && statSync(solDir).isDirectory()) {
+        for (const n of readdirSync(solDir).filter((n) => n.endsWith(".java"))) copyFileSync(join(solDir, n), dir + "src/" + n);
+      } else copyFileSync(solDir + ".java", dir + "src/" + sol.split("/").pop() + ".java");
+    }
     const comp = bridge("compile", dir + "src/", dir + "out/", t.task.files.map((f) => f.path).join(" "), `${jars}/tutor-runtime.jar`, `${jars}/jdk-api.jar`);
     if (!comp.ok) { console.log(t.id, variant, "COMPILE FAIL", comp.diagnostics); failed = true; continue; }
     const tests = bridge("test", dir + "out/", t.task.testClass).tests;

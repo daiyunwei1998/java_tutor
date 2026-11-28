@@ -10,6 +10,7 @@ import { STATUS_LABEL } from "@/lib/ticket-status";
 import { useIssuedTickets } from "@/lib/issued";
 import { useActiveTime } from "@/lib/time-tracking";
 import { CodePanel } from "./CodePanel";
+import { GameStage } from "./game/GameStage";
 import { LessonBlocks } from "./LessonBlocks";
 import { useLiveSync, useRemoteTicket } from "./live/LiveContext";
 import { StudentLive } from "./live/StudentLive";
@@ -18,7 +19,7 @@ import { useWorkspace } from "./WorkspaceContext";
 import { StarButton } from "./StarButton";
 import { renderViz } from "./viz/VizPanel";
 
-type MobileTab = "learn" | "code" | "tasks";
+type MobileTab = "learn" | "code" | "game" | "tasks";
 
 export function Workspace({ sprintId, ticketId }: { sprintId: string; ticketId: string }) {
   const remote = useRemoteTicket();
@@ -177,6 +178,8 @@ function WorkspaceInner({ sprintId, ticketId }: { sprintId: string; ticketId: st
     />
   );
 
+  const game = ticket.game ? <div className="game-pane"><GameStage ticket={ticket} files={files} /></div> : null;
+
   return (
     <div className="ws" data-live-root>
       <div className="ws-head">
@@ -190,20 +193,39 @@ function WorkspaceInner({ sprintId, ticketId }: { sprintId: string; ticketId: st
         <strong style={{ flex: 1, minWidth: 200 }}>{ticket.title}</strong>
         <span className={`pill ${st.status}`}>{STATUS_LABEL[st.status]}</span>
         <span className="small muted">{ticket.xp} XP</span>
-        <LayoutMenu layout={layout} onChange={setLayout} />
+        {!game && <LayoutMenu layout={layout} onChange={setLayout} />}
       </div>
 
       <div className="ws-tabs" role="tablist" aria-label="Workspace">
-        {(["learn", "code", "tasks"] as MobileTab[]).map((t) => (
+        {((game ? ["learn", "code", "game", "tasks"] : ["learn", "code", "tasks"]) as MobileTab[]).map((t) => (
           <button key={t} role="tab" className="btn small" aria-selected={mobileTab === t} onClick={() => setMobileTab(t)}>
-            {{ learn: "📖 Learn", code: "⌨️ Code", tasks: "✅ Tasks" }[t]}
+            {{ learn: "📖 Learn", code: "⌨️ Code", game: "🎮 Game", tasks: "✅ Tasks" }[t]}
           </button>
         ))}
       </div>
 
       <div className="ws-body">
         <MediaSwitch
-          desktop={
+          desktop={game ? (
+            // Game tickets: lesson above code on the left; the game and the class preview on the right.
+            <PanelGroup direction="horizontal" autoSaveId="ws-layout-game">
+              <Panel id="work" defaultSize={52} minSize={35} order={1}>
+                <PanelGroup direction="vertical" autoSaveId="ws-layout-game-left">
+                  <Panel id="lesson" defaultSize={50} minSize={20} order={1}>
+                    <div className="pane" data-live-scroll="side">{learn}</div>
+                  </Panel>
+                  <PanelResizeHandle className="resize-handle horiz" aria-label="Resize" />
+                  <Panel id="code" defaultSize={50} minSize={25} order={2}>
+                    <div className="pane">{code}</div>
+                  </Panel>
+                </PanelGroup>
+              </Panel>
+              <PanelResizeHandle className="resize-handle" aria-label="Resize" />
+              <Panel id="game" defaultSize={48} minSize={30} order={2}>
+                <div className="pane">{game}</div>
+              </Panel>
+            </PanelGroup>
+          ) : (
             <PanelGroup key={`${layout.id}-${layout.v}`} direction="horizontal" autoSaveId={swap ? "ws-layout-2col-swap" : "ws-layout-2col"}>
               {swap ? (
                 <>
@@ -273,11 +295,12 @@ function WorkspaceInner({ sprintId, ticketId }: { sprintId: string; ticketId: st
                 </>
               )}
             </PanelGroup>
-          }
+          )}
           mobile={
             <div className="pane" data-live-scroll="mobile">
               {mobileTab === "learn" && learn}
               {mobileTab === "code" && code}
+              {mobileTab === "game" && game}
               {mobileTab === "tasks" && <div className="pane-pad">{tasksBox()}</div>}
             </div>
           }

@@ -13,5 +13,5 @@ export default async function AdminTicketPage({ params }: { params: Promise<{ sp
   const { sprintId, ticketId } = await params;
   const found = getTicket(sprintId, ticketId);
   if (!found) notFound();
-  return <TicketPreview sprintId={sprintId} ticketId={ticketId} solution={readSolution(found.ticket.task.mainClass)} />;
+  return <TicketPreview sprintId={sprintId} ticketId={ticketId} solution={readSolution(found.ticket.task.solution ?? found.ticket.task.mainClass)} />;
 }
