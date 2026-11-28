@@ -35,6 +35,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <Link href="/" className={path === "/" ? "active" : ""}>Dashboard</Link>
           {cur && <Link href={`/sprints/${cur.id}`} className={path.startsWith("/sprints") && !path.includes("/knowledge") ? "active" : ""}>Sprint board</Link>}
           {cur?.knowledge?.length ? <Link href={`/sprints/${cur.id}/knowledge`} className={path.includes("/knowledge") ? "active" : ""}>Knowledge Space</Link> : null}
+          <Link href="/web-map" className={path.startsWith("/web-map") ? "active" : ""}>Web Map</Link>
           {store?.profile && <Link href="/notes" className={path.startsWith("/notes") ? "active" : ""}>My notes</Link>}
         </nav>
         <div className="spacer" />
