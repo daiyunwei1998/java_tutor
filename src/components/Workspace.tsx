@@ -1,9 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { Panel, PanelGroup, PanelResizeHandle, type ImperativePanelHandle } from "react-resizable-panels";
 import { getTicket } from "@/content/registry";
+import type { LessonBlock, StepFocus } from "@/content/types";
 import type { RunResult } from "@/lib/java-runner";
 import { getTicketState, type TicketState, ticketKey, updateTicket as updateLocal, useStore } from "@/lib/progress";
 import { STATUS_LABEL } from "@/lib/ticket-status";
@@ -46,6 +48,20 @@ function WorkspaceInner({ sprintId, ticketId }: { sprintId: string; ticketId: st
   const [sideCollapsed, setSideCollapsed] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [layout, setLayout, applyLayout] = useLayout();
+  // Step mode: the lesson is shown one step at a time (tickets whose blocks contain step markers).
+  const steps = useMemo(() => splitSteps(ticket.blocks, !!ticket.game), [ticket]);
+  const [step, setStep] = useStep(key, steps?.length ?? 0);
+  useLiveSync("step", step, setStep);
+  const [gameFull, setGameFull] = useState(false);
+  useEffect(() => {
+    if (!gameFull) return;
+    const esc = (e: KeyboardEvent) => e.key === "Escape" && setGameFull(false);
+    document.addEventListener("keydown", esc);
+    return () => document.removeEventListener("keydown", esc);
+  }, [gameFull]);
+  // The game lives in one DOM node that is moved between layouts, so its world survives step changes.
+  const [gameNode, setGameNode] = useState<HTMLElement | null>(null);
+  useEffect(() => setGameNode(Object.assign(document.createElement("div"), { className: "game-pane" })), []);
   useLiveSync("result", result, setResult);
   useLiveSync("previewSignal", previewSignal, setPreviewSignal);
   useLiveSync("layout", layout.id, (id) => applyLayout(id));
@@ -111,8 +127,8 @@ function WorkspaceInner({ sprintId, ticketId }: { sprintId: string; ticketId: st
     setPreviewSignal((n) => n + 1);
   }
 
-  const learn = (
-    <div className="pane-pad">
+  const briefing = (
+    <>
       <div className="briefing">
         <div className="who" aria-hidden>{sprint.project.techLead.avatar}</div>
         <div>
@@ -124,8 +140,13 @@ function WorkspaceInner({ sprintId, ticketId }: { sprintId: string; ticketId: st
       <ul className="objectives">
         {ticket.objectives.map((o) => <li key={o}>{o}</li>)}
       </ul>
+    </>
+  );
+
+  const lessonBlocks = (blocks: LessonBlock[], showLeftover = true) => (
       <LessonBlocks
-        blocks={ticket.blocks}
+        blocks={blocks}
+        showLeftover={showLeftover}
         predictions={st.predictions}
         onPredict={(id, choice) => updateTicket(key, (t) => ({ ...t, predictions: { ...t.predictions, [id]: choice } }))}
         answers={st.answers ?? {}}
@@ -134,7 +155,28 @@ function WorkspaceInner({ sprintId, ticketId }: { sprintId: string; ticketId: st
         renderViz={(i) => renderViz(ticket.visualizations[i], ticket, files)}
         onOpenPreview={openPreview}
       />
+  );
+
+  const learn = (
+    <div className="pane-pad">
+      {briefing}
+      {lessonBlocks(ticket.blocks)}
       {tasksBox()}
+    </div>
+  );
+
+  const cur = steps ? steps[Math.min(step, steps.length - 1)] : null;
+  const isLast = !!steps && step >= steps.length - 1;
+  const stepLesson = cur && (
+    <div className="pane-pad step-lesson">
+      {step === 0 && briefing}
+      <h2 className="step-title"><span className="muted">Step {step + 1}.</span> {cur.title}</h2>
+      {lessonBlocks(cur.blocks, isLast)}
+      {isLast ? tasksBox() : (
+        <div className="step-next-row">
+          <button className="btn primary" onClick={() => setStep(step + 1)}>Next: {steps![step + 1].title} ▶</button>
+        </div>
+      )}
     </div>
   );
 
@@ -178,7 +220,60 @@ function WorkspaceInner({ sprintId, ticketId }: { sprintId: string; ticketId: st
     />
   );
 
-  const game = ticket.game ? <div className="game-pane"><GameStage ticket={ticket} files={files} /></div> : null;
+  const fullBtn = (
+    <button className="btn small ghost" onClick={() => setGameFull(!gameFull)} title={gameFull ? "Back to the lesson (Esc)" : "Show the game on the whole screen"}>
+      {gameFull ? "✕ Exit full screen" : "⛶ Full screen"}
+    </button>
+  );
+  const gamePortal = ticket.game && gameNode ? createPortal(<GameStage ticket={ticket} files={files} barExtra={fullBtn} />, gameNode) : null;
+  const game = ticket.game && gameNode ? (gameFull ? <div className="pane-pad muted small">The game is open in full screen.</div> : <GameSlot node={gameNode} />) : null;
+
+  const stepNav = steps && (
+    <nav className="step-nav" aria-label="Steps of this ticket">
+      <button className="btn small" onClick={() => setStep(step - 1)} disabled={step === 0}>◀ Back</button>
+      <ol>
+        {steps.map((s, i) => (
+          <li key={i}>
+            <button className={`step-chip${i === step ? " cur" : ""}${i < step ? " done" : ""}`} onClick={() => setStep(i)} aria-current={i === step ? "step" : undefined} title={s.title}>
+              <span className="n">{i + 1}</span><span className="t">{s.title}</span>
+            </button>
+          </li>
+        ))}
+      </ol>
+      <button className="btn small primary" onClick={() => setStep(step + 1)} disabled={isLast}>Next ▶</button>
+    </nav>
+  );
+
+  const pane = (child: ReactNode, scroll?: string) => <div className="pane" data-live-scroll={scroll}>{child}</div>;
+  let stepDesktop: ReactNode = null;
+  if (cur) {
+    const focus: StepFocus = cur.focus;
+    if (focus === "read") {
+      stepDesktop = <div className="pane step-read" data-live-scroll="side"><div className="step-read-inner">{stepLesson}</div></div>;
+    } else if (focus === "game" || focus === "code") {
+      stepDesktop = (
+        <PanelGroup direction="horizontal" autoSaveId={`ws-step-${focus}`}>
+          <Panel id="lesson" defaultSize={focus === "game" ? 40 : 42} minSize={25} order={1}>{pane(stepLesson, "side")}</Panel>
+          <PanelResizeHandle className="resize-handle" aria-label="Resize" />
+          <Panel id={focus} defaultSize={focus === "game" ? 60 : 58} minSize={30} order={2}>{pane(focus === "game" ? game : code)}</Panel>
+        </PanelGroup>
+      );
+    } else {
+      stepDesktop = (
+        <PanelGroup direction="horizontal" autoSaveId="ws-step-build">
+          <Panel id="left" defaultSize={46} minSize={30} order={1}>
+            <PanelGroup direction="vertical" autoSaveId="ws-step-build-left">
+              <Panel id="lesson" defaultSize={45} minSize={15} order={1}>{pane(stepLesson, "side")}</Panel>
+              <PanelResizeHandle className="resize-handle horiz" aria-label="Resize" />
+              <Panel id="game" defaultSize={55} minSize={20} order={2}>{pane(game)}</Panel>
+            </PanelGroup>
+          </Panel>
+          <PanelResizeHandle className="resize-handle" aria-label="Resize" />
+          <Panel id="code" defaultSize={54} minSize={30} order={2}>{pane(code)}</Panel>
+        </PanelGroup>
+      );
+    }
+  }
 
   return (
     <div className="ws" data-live-root>
@@ -193,7 +288,7 @@ function WorkspaceInner({ sprintId, ticketId }: { sprintId: string; ticketId: st
         <strong style={{ flex: 1, minWidth: 200 }}>{ticket.title}</strong>
         <span className={`pill ${st.status}`}>{STATUS_LABEL[st.status]}</span>
         <span className="small muted">{ticket.xp} XP</span>
-        {!game && <LayoutMenu layout={layout} onChange={setLayout} />}
+        {!steps && <LayoutMenu layout={layout} onChange={setLayout} />}
       </div>
 
       <div className="ws-tabs" role="tablist" aria-label="Workspace">
@@ -206,25 +301,11 @@ function WorkspaceInner({ sprintId, ticketId }: { sprintId: string; ticketId: st
 
       <div className="ws-body">
         <MediaSwitch
-          desktop={game ? (
-            // Game tickets: lesson above code on the left; the game and the class preview on the right.
-            <PanelGroup direction="horizontal" autoSaveId="ws-layout-game">
-              <Panel id="work" defaultSize={52} minSize={35} order={1}>
-                <PanelGroup direction="vertical" autoSaveId="ws-layout-game-left">
-                  <Panel id="lesson" defaultSize={50} minSize={20} order={1}>
-                    <div className="pane" data-live-scroll="side">{learn}</div>
-                  </Panel>
-                  <PanelResizeHandle className="resize-handle horiz" aria-label="Resize" />
-                  <Panel id="code" defaultSize={50} minSize={25} order={2}>
-                    <div className="pane">{code}</div>
-                  </Panel>
-                </PanelGroup>
-              </Panel>
-              <PanelResizeHandle className="resize-handle" aria-label="Resize" />
-              <Panel id="game" defaultSize={48} minSize={30} order={2}>
-                <div className="pane">{game}</div>
-              </Panel>
-            </PanelGroup>
+          desktop={stepDesktop ? (
+            <div className="step-shell">
+              {stepNav}
+              <div className="step-body">{stepDesktop}</div>
+            </div>
           ) : (
             <PanelGroup key={`${layout.id}-${layout.v}`} direction="horizontal" autoSaveId={swap ? "ws-layout-2col-swap" : "ws-layout-2col"}>
               {swap ? (
@@ -298,7 +379,7 @@ function WorkspaceInner({ sprintId, ticketId }: { sprintId: string; ticketId: st
           )}
           mobile={
             <div className="pane" data-live-scroll="mobile">
-              {mobileTab === "learn" && learn}
+              {mobileTab === "learn" && (steps ? <>{stepNav}{stepLesson}</> : learn)}
               {mobileTab === "code" && code}
               {mobileTab === "game" && game}
               {mobileTab === "tasks" && <div className="pane-pad">{tasksBox()}</div>}
@@ -307,8 +388,65 @@ function WorkspaceInner({ sprintId, ticketId }: { sprintId: string; ticketId: st
         />
       </div>
       {toast && <div className="toast" role="status">{toast}</div>}
+      {gameFull && gameNode && (
+        <div className="game-full" role="dialog" aria-label="Pixel Arena, full screen">
+          <GameSlot node={gameNode} />
+        </div>
+      )}
+      {gamePortal}
     </div>
   );
+}
+
+type Step = { title: string; focus: StepFocus; blocks: LessonBlock[] };
+
+/** Splits a lesson at its step markers. Null = no markers (classic workspace). A game ticket without markers is one build step. */
+function splitSteps(blocks: LessonBlock[], hasGame: boolean): Step[] | null {
+  if (!blocks.some((b) => b.type === "step")) return hasGame ? [{ title: "Build it", focus: "build", blocks }] : null;
+  const out: Step[] = [];
+  for (const b of blocks) {
+    if (b.type === "step") out.push({ title: b.title, focus: b.focus, blocks: [] });
+    else {
+      if (out.length === 0) out.push({ title: "Start", focus: "read", blocks: [] });
+      out[out.length - 1].blocks.push(b);
+    }
+  }
+  return out;
+}
+
+/** Current step of a ticket, remembered per browser. */
+function useStep(key: string, count: number): [number, (n: number) => void] {
+  const storeKey = `java-tutor.step:${key}`;
+  const [step, setState] = useState(0);
+  useEffect(() => {
+    try {
+      const n = Number(localStorage.getItem(storeKey) ?? 0);
+      setState(Number.isFinite(n) && n >= 0 && n < count ? n : 0);
+    } catch {
+      setState(0);
+    }
+  }, [storeKey, count]);
+  const set = (n: number) => {
+    const v = Math.max(0, Math.min(count - 1, n));
+    setState(v);
+    try {
+      localStorage.setItem(storeKey, String(v));
+    } catch {}
+  };
+  return [step, set];
+}
+
+/** Places the shared game node here; React keeps rendering the game into it through a portal. */
+function GameSlot({ node }: { node: HTMLElement }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const host = ref.current;
+    host?.appendChild(node);
+    return () => {
+      if (host && node.parentElement === host) host.removeChild(node);
+    };
+  }, [node]);
+  return <div ref={ref} className="game-slot" />;
 }
 
 /** Two resizable columns on desktop (lesson with inline visualizations | code), tabs on phones. */

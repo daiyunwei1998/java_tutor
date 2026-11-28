@@ -19,6 +19,7 @@ export function LessonBlocks({
   onOpenPreview,
   answers = {},
   onAnswer,
+  showLeftover = true,
 }: {
   blocks: LessonBlock[];
   predictions: Record<string, number>;
@@ -28,6 +29,8 @@ export function LessonBlocks({
   visualizations: VizConfig[];
   renderViz: (index: number) => ReactNode;
   onOpenPreview: () => void;
+  /** Visualizations no viz-link points to are appended at the end (only on the last step in step mode). */
+  showLeftover?: boolean;
 }) {
   const embedded = new Set<number>();
   const referenced = new Set(blocks.flatMap((b) => (b.type === "viz-link" ? [b.vizIndex] : [])));
@@ -78,6 +81,9 @@ export function LessonBlocks({
             }
             return embed(i, b.vizIndex, b.label);
           }
+          case "step":
+            // Only reached when a full lesson is shown at once (e.g. the admin preview).
+            return <h3 key={i} className="step-heading">Step: {b.title}</h3>;
           case "short-answer":
             return <ShortAnswer key={i} block={b} saved={answers[b.id]} onSave={(text) => onAnswer?.(b.id, text)} />;
           case "predict": {
@@ -108,7 +114,7 @@ export function LessonBlocks({
           }
         }
       })}
-      {leftover.map(({ i }) => embed(`extra-${i}`, i))}
+      {showLeftover && leftover.map(({ i }) => embed(`extra-${i}`, i))}
     </>
   );
 }

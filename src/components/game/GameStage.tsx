@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import type { Ticket } from "@/content/types";
 import { actionLine, readProp, runGame, type GameMethod, type GameObject, type GameRun, type GameState } from "@/lib/game/runGame";
 import { ClassPreview } from "./ClassPreview";
@@ -35,7 +35,8 @@ function methodsOf(state: GameState, o: GameObject): GameMethod[] {
  * Pixel Arena: shows the objects the ticket's Arena.setup() creates, drawn as 8-bit characters, and turns the
  * student's public methods into buttons. Every click re-runs the student's real Java (nothing is simulated).
  */
-export function GameStage({ ticket, files }: { ticket: Ticket; files: Record<string, string> }) {
+/** barExtra: extra controls for the game bar, e.g. the workspace's full-screen button. */
+export function GameStage({ ticket, files, barExtra }: { ticket: Ticket; files: Record<string, string>; barExtra?: ReactNode }) {
   const [actions, setActions] = useState<string[]>([]);
   const [run, setRun] = useState<GameRun | null>(null);
   const [busy, setBusy] = useState(false);
@@ -118,6 +119,7 @@ export function GameStage({ ticket, files }: { ticket: Ticket; files: Record<str
         {busy && <span className="small muted">☕ your Java is running…</span>}
         {stale && !busy && <span className="small" style={{ color: "var(--warn)" }}>Code changed: rebuild to see it</span>}
         <span className="spacer" />
+        {barExtra}
         {statics.map((s) => <span key={s.k} className="pill" title="a static value: it belongs to the class">{s.k} = {String(s.v)}</span>)}
       </div>
 
