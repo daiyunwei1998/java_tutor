@@ -1,6 +1,8 @@
 "use client";
 
+import { TRACES } from "@/content/traces";
 import type { Ticket, VizConfig } from "@/content/types";
+import { TraceViewer } from "@/components/knowledge/TraceViewer";
 import { ArrayMemoryViz } from "./ArrayMemoryViz";
 import { ConceptViz } from "./concepts/ConceptViz";
 import { FilterLab } from "./FilterLab";
@@ -28,6 +30,8 @@ export function renderViz(v: VizConfig, ticket: Ticket, files: Record<string, st
       return <ConceptViz concept={v.concept} start={v.start} />;
     case "filter-lab":
       return <FilterLab key={ticket.id} ticket={ticket} files={files} filter={v.filter} />;
+    case "trace":
+      return <TraceViewer key={v.traceId} trace={TRACES[v.traceId]} caption={v.caption} />;
   }
 }
 

@@ -56,6 +56,7 @@ export function TicketSummary({
   const starter = editable.find((f) => f.path === file)?.content ?? "";
   const code = st.files?.[file];
   const ticketNotes = notes.filter((n) => n.tickets.includes(key));
+  const whyQuestions = ticket.blocks.filter((b): b is Extract<typeof b, { type: "short-answer" }> => b.type === "short-answer");
 
   return (
     <div className="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="ts-title" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
@@ -101,6 +102,18 @@ export function TicketSummary({
               <p className="small muted">{file}: no changes from the starter code yet.</p>
             ) : (
               <pre className="ts-code"><code>{code}</code></pre>
+            )}
+
+            {whyQuestions.length > 0 && (
+              <div style={{ marginTop: 10 }}>
+                <strong>&quot;Why&quot; answers ({whyQuestions.filter((q) => st.answers?.[q.id]).length}/{whyQuestions.length})</strong>
+                {whyQuestions.map((q) => (
+                  <div key={q.id} className="small" style={{ margin: "6px 0" }}>
+                    <div className="muted">{q.question.replace(/`/g, "")}</div>
+                    <div style={{ whiteSpace: "pre-wrap" }}>{st.answers?.[q.id] ?? "— not answered yet"}</div>
+                  </div>
+                ))}
+              </div>
             )}
 
             <div className="row" style={{ justifyContent: "space-between", marginTop: 10 }}>

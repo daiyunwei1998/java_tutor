@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import type { LessonBlock, VizConfig } from "@/content/types";
 import { Markdown } from "./Markdown";
 import { isPreviewViz } from "./viz/VizPanel";
@@ -17,10 +17,14 @@ export function LessonBlocks({
   visualizations,
   renderViz,
   onOpenPreview,
+  answers = {},
+  onAnswer,
 }: {
   blocks: LessonBlock[];
   predictions: Record<string, number>;
   onPredict: (id: string, choice: number) => void;
+  answers?: Record<string, string>;
+  onAnswer?: (id: string, text: string) => void;
   visualizations: VizConfig[];
   renderViz: (index: number) => ReactNode;
   onOpenPreview: () => void;
@@ -74,6 +78,8 @@ export function LessonBlocks({
             }
             return embed(i, b.vizIndex, b.label);
           }
+          case "short-answer":
+            return <ShortAnswer key={i} block={b} saved={answers[b.id]} onSave={(text) => onAnswer?.(b.id, text)} />;
           case "predict": {
             const chosen = predictions[b.id];
             const answered = chosen !== undefined;
@@ -104,5 +110,60 @@ export function LessonBlocks({
       })}
       {leftover.map(({ i }) => embed(`extra-${i}`, i))}
     </>
+  );
+}
+
+/** "Why" question: the student writes first, then compares with a model answer. Never graded. */
+function ShortAnswer({
+  block,
+  saved,
+  onSave,
+}: {
+  block: Extract<LessonBlock, { type: "short-answer" }>;
+  saved?: string;
+  onSave: (text: string) => void;
+}) {
+  const [text, setText] = useState(saved ?? "");
+  const [editing, setEditing] = useState(saved === undefined);
+  const done = saved !== undefined && !editing;
+  return (
+    <div className="predict" role="group" aria-labelledby={`sa-${block.id}`}>
+      <div className="small muted">✍️ In your own words (not graded; your teacher reads it in code review)</div>
+      <div id={`sa-${block.id}`} style={{ fontWeight: 600 }}>
+        <Markdown>{block.question}</Markdown>
+      </div>
+      {done ? (
+        <>
+          <div className="console" style={{ whiteSpace: "pre-wrap", color: "var(--text)" }}>{saved}</div>
+          <div className="callout">
+            <strong>One good answer</strong> (compare with yours: the same idea in different words is great)
+            <Markdown>{block.modelAnswer}</Markdown>
+          </div>
+          <button className="btn small ghost" onClick={() => setEditing(true)}>Edit my answer</button>
+        </>
+      ) : (
+        <>
+          <textarea
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            placeholder={block.placeholder}
+            rows={3}
+            maxLength={1500}
+            style={{ width: "100%", marginTop: 6 }}
+            aria-label={block.question}
+          />
+          <button
+            className="btn small primary"
+            disabled={text.trim().length < 4}
+            onClick={() => {
+              onSave(text.trim());
+              setEditing(false);
+            }}
+          >
+            Save and compare
+          </button>
+        </>
+      )}
+    </div>
   );
 }
