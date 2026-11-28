@@ -127,6 +127,8 @@ function WorkspaceInner({ sprintId, ticketId }: { sprintId: string; ticketId: st
         blocks={ticket.blocks}
         predictions={st.predictions}
         onPredict={(id, choice) => updateTicket(key, (t) => ({ ...t, predictions: { ...t.predictions, [id]: choice } }))}
+        answers={st.answers ?? {}}
+        onAnswer={(id, text) => updateTicket(key, (t) => ({ ...t, answers: { ...(t.answers ?? {}), [id]: text } }))}
         visualizations={ticket.visualizations}
         renderViz={(i) => renderViz(ticket.visualizations[i], ticket, files)}
         onOpenPreview={openPreview}

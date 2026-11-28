@@ -15,6 +15,8 @@ export type TicketState = {
   lastTest?: { passed: number; total: number; at: string };
   files: Record<string, string>;
   predictions: Record<string, number>;
+  /** Answers to short-answer ("why") blocks, in the student's words. Optional so older saved progress still loads. */
+  answers?: Record<string, string>;
   hintsShown: number;
   mergedAt?: string;
   tutorVerified?: boolean;
