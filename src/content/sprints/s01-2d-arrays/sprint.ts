@@ -20,7 +20,7 @@ export const sprint2dArrays: Sprint = {
   number: 1,
   topic: "2D Arrays",
   unit: "AP CSA Unit 9",
-  status: "current",
+  status: "done",
   project: {
     name: "Mini Photoshop",
     company: "PixelForge Studio",
