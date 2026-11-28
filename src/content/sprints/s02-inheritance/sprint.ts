@@ -7,8 +7,7 @@ export const sprintInheritance: Sprint = {
   number: 2,
   topic: "Inheritance",
   unit: "Runestone CSJava Unit 10 (enrichment: not on the 2025–26 AP CSA exam)",
-  // Switch to "current" (and Sprint 1 to "done") when you assign it.
-  status: "upcoming",
+  status: "current",
   project: {
     name: "Filter Plugin System",
     company: "PixelForge Studio",
