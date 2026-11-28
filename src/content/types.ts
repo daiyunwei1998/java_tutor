@@ -23,7 +23,7 @@ export type ImageFilterId = "brighten";
 export type FilterLabId = "grayscale" | "flip" | "blur" | "edges" | "pipeline" | "selection";
 /** Worked-example explanations with real photos and numbers (components/viz/concepts/). */
 /** Hand-written traces registered in src/content/traces.ts. */
-export type TraceId = "prim-vs-ref" | "deep-copy" | "field-vs-local" | "two-objects" | "shadowing" | "super-chain" | "dispatch-overload";
+export type TraceId = "prim-vs-ref" | "field-vs-local" | "two-objects" | "shadowing" | "super-chain" | "dispatch-overload";
 export type ConceptId = "rgb-grayscale" | "flip-mapping" | "box-blur" | "sobel" | "pipeline-frames" | "loop-bounds"
   | "life-neighbors" | "spiral-bounds" | "pascal-triangle";
 
@@ -61,6 +61,20 @@ export type CodeTask = {
   /** Human-readable labels for test methods. */
   testLabels: Record<string, string>;
   hints: string[];
+  /**
+   * Reference solution, as a path under tools/solutions/ without ".java" (default: mainClass).
+   * Use a folder when several tickets have a class with the same name, e.g. "QF-203/Hero".
+   */
+  solution?: string;
+};
+
+/**
+ * Pixel Arena game preview (components/game/GameStage.tsx). The ticket must include a read-only Arena.java with
+ * `public static List<Object> setup()` that creates the objects shown in the game.
+ */
+export type GameConfig = {
+  /** Files left out of the game build, e.g. a scratch Main.java where students try code that may not compile. */
+  exclude?: string[];
 };
 
 /** Why a ticket exists: the one skill it is designed to teach, for planning and trimming a sprint. */
@@ -90,6 +104,8 @@ export type Ticket = {
   blocks: LessonBlock[];
   visualizations: VizConfig[];
   task: CodeTask;
+  /** When set, the workspace shows the Pixel Arena game and the class preview next to the lesson and code. */
+  game?: GameConfig;
 };
 
 /** A block on a Knowledge Space page (one topic = one single-column page). */

@@ -629,3 +629,42 @@ div.code-panel > .code-top .editor-wrap { min-height: 220px; }
 .nt-kv b { color: var(--muted); font-weight: 600; }
 .nt-app { border: 1px solid var(--border); border-radius: 8px; background: var(--surface); padding: 10px; min-height: 260px; }
 .nt-app .shift { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--border); }
+
+/* ---------- Pixel Arena game preview (src/components/game) ---------- */
+.game { display: flex; flex-direction: column; gap: 10px; }
+.game-bar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.game-bar .spacer { flex: 1; }
+.game-stage { display: flex; gap: 14px; flex-wrap: wrap; align-items: flex-end; justify-content: center; padding: 34px 12px 12px; min-height: 190px;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  background: linear-gradient(to bottom, #b9d6e8 0%, #d9ead3 62%, #8fae6a 62%, #7d9c5c 100%); image-rendering: pixelated; }
+:root[data-theme="dark"] .game-stage { background: linear-gradient(to bottom, #263445 0%, #31423a 62%, #3d5230 62%, #33452a 100%); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .game-stage { background: linear-gradient(to bottom, #263445 0%, #31423a 62%, #3d5230 62%, #33452a 100%); } }
+.game-char { position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 8px; border-radius: 8px; border: 2px solid transparent; background: rgba(251, 249, 244, 0.72); cursor: pointer; font: inherit; color: var(--text); min-width: 96px; }
+:root[data-theme="dark"] .game-char { background: rgba(36, 39, 43, 0.75); }
+.game-char.sel { border-color: var(--accent); }
+.game-char.empty { cursor: default; color: var(--muted); }
+.game-name { font-weight: 700; font-family: var(--mono); font-size: 13px; }
+.game-hp { position: relative; width: 84px; height: 12px; border: 1px solid var(--text); border-radius: 2px; background: var(--bad-soft); overflow: hidden; display: block; }
+.game-hp span { position: absolute; left: 0; top: 0; bottom: 0; background: var(--ok); }
+.game-hp em { position: relative; font-style: normal; font-size: 10px; font-family: var(--mono); display: block; text-align: center; line-height: 12px; }
+.game-bubble { position: absolute; bottom: calc(100% - 4px); left: 50%; transform: translateX(-50%); background: #fff; color: #222; border: 2px solid #222; border-radius: 8px; padding: 3px 8px; font-family: var(--mono); font-size: 12px; white-space: pre; max-width: 260px; overflow: hidden; text-overflow: ellipsis; z-index: 2; }
+.game-bubble::after { content: ""; position: absolute; top: 100%; left: 50%; margin-left: -5px; border: 5px solid transparent; border-top-color: #222; }
+.game-result { font-size: 13px; padding: 6px 10px; border-radius: 6px; border-left: 4px solid var(--ok); background: var(--ok-soft); }
+.game-result.bad { border-left-color: var(--bad); background: var(--bad-soft); }
+.game-actions { border: 1px solid var(--border); border-radius: var(--radius); padding: 8px 10px; background: var(--surface); }
+.game-methods { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; }
+.game-method { display: inline-flex; gap: 3px; align-items: center; font-family: var(--mono); }
+.game-fields { margin-top: 8px; display: grid; gap: 4px; }
+.game-field { display: grid; grid-template-columns: minmax(90px, auto) 1fr auto auto; gap: 8px; align-items: center; font-family: var(--mono); font-size: 13px; }
+.game-classes summary { cursor: pointer; }
+.cp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; margin-top: 8px; }
+.cp-card { border: 2px solid var(--text); border-radius: 4px; background: var(--surface); font-family: var(--mono); font-size: 12.5px; }
+.cp-head { padding: 4px 8px; border-bottom: 2px solid var(--text); background: var(--surface-2); text-align: center; }
+.cp-sec { padding: 4px 8px; border-bottom: 1px solid var(--border); }
+.cp-sec:last-child { border-bottom: 0; }
+.cp-row { padding: 1px 0; }
+.cp-row.static { text-decoration: underline; text-decoration-style: dotted; }
+.cp-tag { font-size: 10.5px; border: 1px solid var(--border); border-radius: 4px; padding: 0 3px; margin: 0 3px; color: var(--muted); }
+.cp-tag.ov { color: var(--accent); border-color: var(--accent); }
+.cp-legend { grid-column: 1 / -1; }
+.game-pane { padding: 12px; }

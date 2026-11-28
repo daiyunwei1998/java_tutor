@@ -3,8 +3,8 @@ import { sprint2Traces as T } from "./traces";
 
 /*
  * Knowledge Space for Sprint 2 (inheritance): optional, deeper material. Each topic starts from the problem
- * the idea solves, then shows it in a code ↔ memory trace. Sprint 1's topics already cover references,
- * aliasing and arrays in methods; these pages build on them instead of repeating them.
+ * the idea solves, then shows it in a code ↔ memory trace. Examples use the Pixel Arena
+ * classes (Hero, Mage) from the tickets.
  */
 export const knowledge: KnowledgeTopic[] = [
   {
@@ -27,14 +27,14 @@ Every variable is a box, and \`=\` always does the same thing: **copy what is in
 | Default value of a field | \`0\`, \`0.0\`, \`false\`, \`'\\u0000'\` | \`null\` |
 | Can be used with \`extends\` | no | classes can (this sprint) |`,
       },
-      { type: "trace", trace: T["prim-vs-ref"], caption: "The same = on an int and on an array" },
+      { type: "trace", trace: T["prim-vs-ref"], caption: "The same = on an int and on a Hero" },
       {
         type: "markdown",
         md: `## The reason
 
 - A primitive value is tiny (an \`int\` is 4 bytes). Copying it on every assignment is cheap, and two separate copies can never surprise you.
-- An object can be enormous: a 1000 × 1000 image is a million \`int\`s. Copying it on every \`=\` or method call would make programs slow, and two parts of a program could never work on the *same* object.
-- So Java copies only the small reference. When you need an independent copy, you create one yourself (PF-300's deep copy).
+- An object can be enormous: a 1000 × 1000 image is a million \`int\`s. Copying it on every \`=\` or method call would make programs slow, and two parts of a program could never work on the *same* object. In Pixel Arena, \`party.allAttack(dummy)\` must damage *the* dummy on the screen, not a copy of it.
+- So Java copies only the small reference. When you need an independent object, you create one yourself with \`new\`.
 
 ## Wrappers
 
@@ -55,24 +55,24 @@ Collections hold references only, which is why \`ArrayList<int>\` does not compi
   {
     id: "fields-vs-locals",
     title: "What an object remembers: fields vs local variables",
-    summary: "Where a variable lives decides how long it lives. Why a filter's setting must be a field, and how this tells a method which object it is working for.",
+    summary: "Where a variable lives decides how long it lives. Why a hero's hp must be a field, and how this tells a method which object it is working for.",
     minutes: 8,
     sections: [
       {
         type: "markdown",
-        md: `With only static methods, everything a method needs comes in through parameters and everything it produces goes out through \`return\`. That works until something must be **remembered between calls**: a filter's setting, a counter, a score. Parallel lists can store such data elsewhere, but one forgotten \`remove\` and the lists no longer line up (PF-301).
+        md: `With only static methods, everything a method needs comes in through parameters and everything it produces goes out through \`return\`. That works until something must be **remembered between calls**: a hero's hp, a counter, a score. Parallel lists (\`names\`, \`hps\`, \`levels\`) can store such data elsewhere, but one forgotten \`remove\` and the lists no longer line up.
 
 The fix is to let each object keep its own data. The trace shows where each kind of variable lives:
 
 - **Local variables and parameters** live in the **frame** of one method call. The frame disappears when the method returns.
 - **Fields** live **inside the object**, as long as the object exists.`,
       },
-      { type: "trace", trace: T["field-vs-local"], caption: "temp starts over every call; clicks is remembered" },
+      { type: "trace", trace: T["field-vs-local"], caption: "newHp starts over every call; hp is remembered" },
       {
         type: "markdown",
         md: `## Which object? \`this\`
 
-An instance method always runs *for* one object. Inside the method, the hidden variable \`this\` points to that object, and a field name like \`amount\` means \`this.amount\`. That is why \`apply(img)\` needs no amount parameter: the object it runs for already knows its amount.`,
+An instance method always runs *for* one object. Inside the method, the hidden variable \`this\` points to that object, and a field name like \`hp\` means \`this.hp\`. That is why \`aria.takeDamage(35)\` needs no "which hero" parameter: the object it runs for is the hero.`,
       },
       { type: "trace", trace: T["two-objects"], caption: "One class, two objects, two separate fields" },
       {
@@ -92,25 +92,25 @@ Making *everything* a field is a mistake too: a field that is really scratch spa
   },
   {
     id: "constructors-and-this",
-    title: "Constructors, this, and the amount = amount bug",
-    summary: "Why constructors exist, and why one missing \"this.\" compiles fine but leaves a field at 0.",
+    title: "Constructors, this, and the name = name bug",
+    summary: "Why constructors exist, and why one missing \"this.\" compiles fine but leaves a field empty.",
     minutes: 5,
     sections: [
       {
         type: "markdown",
-        md: `A constructor exists so that an object is **valid from the moment it is created**. If a filter needs an amount, the constructor takes it and stores it; nobody can create a filter and forget to set it.
+        md: `A constructor exists so that an object is **valid from the moment it is created**. If a hero needs a name, the constructor takes it and stores it; nobody can create a hero and forget to name it.
 
 The most common constructor bug compiles, runs, and is quietly wrong: a parameter with the same name as a field.`,
       },
       { type: "trace", trace: T.shadowing, caption: "Same name, two variables: the parameter wins" },
       {
         type: "markdown",
-        md: `Inside the constructor, \`amount\` means the closest variable, the parameter. \`amount = amount;\` assigns the parameter to itself, and the field keeps its default value 0. Two ways to avoid it:
+        md: `Inside the constructor, \`name\` means the closest variable, the parameter. \`name = name;\` assigns the parameter to itself, and the field keeps its default value null. Two ways to avoid it:
 
-- write \`this.amount = amount;\` (\`this.amount\` always means the field), or
-- name the parameter differently, for example \`newAmount\`.
+- write \`this.name = name;\` (\`this.name\` always means the field), or
+- name the parameter differently, for example \`heroName\`.
 
-Routing the constructor through the setter (\`setAmount(amount)\`) also keeps the class's rules in one place: the range check runs whether the value comes from the constructor or from a later change.`,
+Routing a constructor through a setter (\`setLevel(level)\`) also keeps the class's rules in one place: the 1..99 check runs whether the value comes from the constructor or from a later change.`,
       },
     ],
   },
@@ -122,21 +122,21 @@ Routing the constructor through the setter (\`setAmount(amount)\`) also keeps th
     sections: [
       {
         type: "markdown",
-        md: `\`class BrightnessFilter extends Filter\` says *every BrightnessFilter is a Filter*. What does such an object actually contain?
+        md: `\`class Mage extends Hero\` says *every Mage is a Hero*. What does such an object actually contain?
 
-- **All the fields of both classes**: \`name\` (declared in Filter) and \`amount\` (declared in BrightnessFilter). There is only one object, not a Filter object plus a BrightnessFilter object.
-- Filter's \`private\` field \`name\` **exists inside the object**, but code in BrightnessFilter **cannot use the name** \`name\`. Java's specification puts it this way: private members are *not inherited*. The storage is there; access is not. The subclass uses Filter's public methods (\`getName()\`) instead.
+- **All the fields of both classes**: \`name\` and \`maxHp\` (declared in Hero) and \`mana\` (declared in Mage). There is only one object, not a Hero object plus a Mage object.
+- Hero's \`private\` field \`name\` **exists inside the object**, but code in Mage **cannot use the name** \`name\`. Java's specification puts it this way: private members are *not inherited*. The storage is there; access is not. The subclass uses Hero's public methods (\`getName()\`) instead.
 
-So who sets \`name\`? Only Filter's code can, which is what \`super(...)\` is for.`,
+So who sets \`name\` and \`maxHp\`? Only Hero's code can, which is what \`super(...)\` is for.`,
       },
-      { type: "trace", trace: T["super-chain"], caption: "new BrightnessFilter(40): Filter's constructor runs first" },
+      { type: "trace", trace: T["super-chain"], caption: "new Mage(\"Cara\"): Hero's constructor runs first" },
       {
         type: "markdown",
         md: `## Rules, and the reason for each
 
 | Rule | Reason |
 |---|---|
-| Constructors are not inherited | A subclass usually needs **more** setup (BrightnessFilter needs an amount). Inheriting \`Filter(String name)\` would let someone build a BrightnessFilter without one. |
+| Constructors are not inherited | A subclass usually needs **different** setup (a Mage needs mana and always has 70 max hp). Inheriting \`Hero(String name, int maxHp)\` would let someone build a Mage with 500 max hp and no mana. |
 | \`super(...)\` runs before the rest of the subclass constructor | The subclass's setup may use the superclass's part (inherited methods, its fields through getters), so that part must be valid first. |
 | No \`super(...)\` written → Java inserts \`super();\` | Every object must run its superclass's setup. If the superclass has no no-argument constructor, you get *Implicit super constructor … is undefined*, which is the superclass insisting on required data. |`,
       },
@@ -150,28 +150,28 @@ So who sets \`name\`? Only Filter's code can, which is what \`super(...)\` is fo
   {
     id: "override-vs-overload",
     title: "Which method runs? Override vs overload",
-    summary: "Why a method with one extra parameter silently does nothing in a pipeline, and how @Override turns that into a compile error.",
+    summary: "Why a method with one extra parameter is silently ignored by the battle loop, and how @Override turns that into a compile error.",
     minutes: 6,
     sections: [
       {
         type: "markdown",
-        md: `A pipeline that holds an \`ArrayList<Filter>\` only knows that every Filter has \`apply(int[][] img)\`. It calls \`f.apply(img)\` without knowing which kind of filter \`f\` is. Two questions follow:
+        md: `A Party that holds an \`ArrayList<Hero>\` only knows that every Hero has \`attack(Hero target)\`. It calls \`h.attack(target)\` without knowing which kind of hero \`h\` is. Two questions follow:
 
-1. **Why does the compiler allow the call?** It checks the *declared* type: \`f\` is a \`Filter\`, and Filter has \`apply(int[][])\`. That is enough.
+1. **Why does the compiler allow the call?** It checks the *declared* type: \`h\` is a \`Hero\`, and Hero has \`attack(Hero)\`. That is enough.
 2. **Which method body runs?** At run time Java starts at the object's *actual* class and looks for a method with exactly that name and parameter list, moving up to the superclass if there is none.
 
 That second step is where a small mistake hides.`,
       },
-      { type: "trace", trace: T["dispatch-overload"], caption: "An overload is a different method, so Filter's apply runs" },
+      { type: "trace", trace: T["dispatch-overload"], caption: "An overload is a different method, so Hero's attack runs" },
       {
         type: "markdown",
         md: `| | Override | Overload |
 |---|---|---|
 | Name | same | same |
 | Parameter list | exactly the same | different |
-| Effect through a \`Filter\` variable | the subclass's version runs | the superclass's version still runs |
+| Effect through a \`Hero\` variable | the subclass's version runs | the superclass's version still runs |
 
-Adding \`@Override\` above a method tells the compiler what you intend. If no superclass method matches (an extra parameter, \`Apply\` instead of \`apply\`), compilation fails right there, instead of a user reporting weeks later that a filter does nothing.`,
+Adding \`@Override\` above a method tells the compiler what you intend. If no superclass method matches (an extra parameter, \`Attack\` instead of \`attack\`), compilation fails right there, instead of a player reporting weeks later that the mage never casts spells.`,
       },
       {
         type: "callout",
