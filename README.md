@@ -9,6 +9,11 @@ Each sprint has its own mini project and story (Sprint 1: the Mini Photoshop at 
 - **Knowledge Space** per sprint (`/sprints/<id>/knowledge`): supplementary, deeper material that extends the
   Runestone CSJava book instead of repeating it. Each topic is a short single-page tutorial with an interactive
   code ↔ memory trace (stack frames, heap objects, reference arrows).
+- **Web Map** (`/web-map`): a large clickable diagram of how a web app works (browser, DNS, HTTP, API server,
+  login, database, hosting) with an animated "follow one request" walkthrough. Each part opens hands-on tutorials that
+  run against a pretend REST server in the browser: HTTP methods playground, REST API design, status codes, HTML forms,
+  JSON ↔ Java, CRUD with SQL, DNS, sessions, and a simulated DevTools Network panel plus a guided exercise in real
+  DevTools, each with multiple-choice questions answered by doing. Content: `src/content/webmap.ts`; server: `src/lib/webmap/mockServer.ts`.
 - **Accounts**: `stu` and `test` by default (password = username; it only tells accounts apart). Progress is stored
   in the database, so it follows the student to another computer. To add accounts, set
   `SEED_ACCOUNTS=stu,test,newname` in Vercel and redeploy; they are created automatically (password = username).
