@@ -25,9 +25,8 @@ export function CodeMap({ code, concepts, title, mode: startMode = "explore" }: 
   }, []);
   const inRanges = (c: CodeConcept | null, n: number) => !!c && c.ranges.some(([a, b]) => n >= a && n <= b);
 
-  function scrollTo(c: CodeConcept) {
-    const first = Math.min(...c.ranges.map((r) => r[0]));
-    rows.current[first]?.scrollIntoView({ block: "center", behavior: "smooth" });
+  function scrollTo(c: CodeConcept, place = 0) {
+    rows.current[c.ranges[place][0]]?.scrollIntoView({ block: "center", behavior: "smooth" });
   }
   function pick(id: string) {
     setLineSel(null);
@@ -107,7 +106,12 @@ export function CodeMap({ code, concepts, title, mode: startMode = "explore" }: 
                 <div className="cm-explain">
                   <strong>{shown.label}</strong>
                   <Markdown>{shown.explain}</Markdown>
-                  <div className="small muted">{shown.ranges.length} place{shown.ranges.length > 1 ? "s" : ""} highlighted</div>
+                  <div className="small muted">{shown.ranges.length} place{shown.ranges.length > 1 ? "s" : ""} highlighted · jump to:</div>
+                  <div className="cm-chips" style={{ marginTop: 4 }}>
+                    {shown.ranges.map(([a, b], k) => (
+                      <button key={k} className="cm-chip" onClick={() => scrollTo(shown, k)}>line {a}{b > a ? `–${b}` : ""}</button>
+                    ))}
+                  </div>
                 </div>
               )}
               {lineSel !== null && (
