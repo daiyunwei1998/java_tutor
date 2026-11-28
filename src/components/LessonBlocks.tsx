@@ -2,6 +2,7 @@
 
 import { useState, type ReactNode } from "react";
 import type { LessonBlock, VizConfig } from "@/content/types";
+import { CodeMap } from "./CodeMap";
 import { Markdown } from "./Markdown";
 import { isPreviewViz } from "./viz/VizPanel";
 
@@ -84,6 +85,8 @@ export function LessonBlocks({
           case "step":
             // Only reached when a full lesson is shown at once (e.g. the admin preview).
             return <h3 key={i} className="step-heading">Step: {b.title}</h3>;
+          case "code-map":
+            return <CodeMap key={`${i}-${b.mode ?? "explore"}`} code={b.code} concepts={b.concepts} title={b.title} mode={b.mode} />;
           case "short-answer":
             return <ShortAnswer key={i} block={b} saved={answers[b.id]} onSave={(text) => onAnswer?.(b.id, text)} />;
           case "predict": {

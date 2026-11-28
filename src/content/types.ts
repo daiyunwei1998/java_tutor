@@ -52,7 +52,15 @@ export type LessonBlock =
    * read = the lesson alone; game = lesson | game; code = lesson | code; build = lesson above the game | code.
    * Tickets without step markers keep the classic lesson | code workspace.
    */
-  | { type: "step"; title: string; focus: StepFocus };
+  | { type: "step"; title: string; focus: StepFocus }
+  /**
+   * A long read-only program with a concept panel beside it (components/CodeMap.tsx): clicking a concept
+   * highlights its lines; "spot check" names a random concept and the student clicks a line that shows it.
+   */
+  | { type: "code-map"; title?: string; code: string; concepts: CodeConcept[]; mode?: "explore" | "quiz" };
+
+/** One concept on a code map. ranges are 1-based inclusive line ranges in the map's code. */
+export type CodeConcept = { id: string; label: string; group: string; explain: string; ranges: [number, number][] };
 
 export type StepFocus = "read" | "game" | "code" | "build";
 
@@ -75,6 +83,8 @@ export type CodeTask = {
    * Use a folder when several tickets have a class with the same name, e.g. "QF-203/Hero".
    */
   solution?: string;
+  /** Review tickets: the starter already passes every test (tools/verify-content.mjs then expects all tests to pass). */
+  review?: boolean;
 };
 
 /**
